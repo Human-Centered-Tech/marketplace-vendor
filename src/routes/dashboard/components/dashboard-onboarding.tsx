@@ -1,4 +1,3 @@
-import { Container, Heading, Text } from "@medusajs/ui"
 import { OnboardingRow } from "./onboarding-row"
 import { useUpdateOnboarding } from "../../../hooks/api"
 import { useEffect } from "react"
@@ -22,43 +21,70 @@ export const DashboardOnboarding = ({
     mutateAsync()
   }, [])
 
+  const completedCount = [store_information, locations_shipping, products].filter(Boolean).length
+  const totalSteps = 3
+
   return (
-    <Container className="divide-y p-0">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div>
-          <Heading>Welcome to Mercur marketplace</Heading>
-          <Text className="text-ui-fg-subtle" size="small">
-            Please complete these steps so you can start selling on the
-            marketplace
-          </Text>
+    <div className="rounded-xl bg-white p-0 shadow-[0_4px_24px_rgba(23,41,74,0.08)]">
+      {/* Header with navy background */}
+      <div className="rounded-t-xl bg-co-navy px-8 py-6">
+        <div className="mb-2 flex items-center gap-3">
+          <img
+            src="/Logo.png"
+            alt="Catholic Owned"
+            className="h-8 w-auto object-contain brightness-0 invert"
+          />
+        </div>
+        <h1 className="font-poppins text-base font-medium text-co-text-on-dark/80">
+          Welcome to the Vendor Portal
+        </h1>
+        <p className="font-poppins mt-1 text-sm text-co-text-on-dark/70">
+          Complete these steps to start selling on the marketplace
+        </p>
+        {/* Progress bar */}
+        <div className="mt-4 flex items-center gap-3">
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-co-gold transition-all duration-500"
+              style={{ width: `${(completedCount / totalSteps) * 100}%` }}
+            />
+          </div>
+          <span className="font-poppins text-xs font-medium text-co-gold">
+            {completedCount}/{totalSteps}
+          </span>
         </div>
       </div>
-      <div className="px-6 py-4">
+
+      {/* Gold rule */}
+      <div className="h-[2px] bg-gradient-to-r from-transparent via-co-gold to-transparent" />
+
+      {/* Onboarding steps */}
+      <div className="px-4 py-4 space-y-1">
         <OnboardingRow
-          label="Complete the store information"
+          stepNumber={1}
+          label="Complete your store information"
+          description="Add your business name, description, and branding"
           state={store_information}
           link="/settings/store"
           buttonLabel="Manage"
         />
-        {/* <OnboardingRow
-          label='Setup Stripe Connect account'
-          state={stripe_connect}
-          link='/stripe-connect'
-          buttonLabel='Setup'
-        /> */}
         <OnboardingRow
-          label="Setup Locations & Shipping"
+          stepNumber={2}
+          label="Setup locations & shipping"
+          description="Configure where you ship from and your shipping rates"
           state={locations_shipping}
           link="/settings/locations"
           buttonLabel="Setup"
         />
         <OnboardingRow
-          label="Add products and start selling"
+          stepNumber={3}
+          label="Add your first product"
+          description="List a product and start selling to the Catholic community"
           state={products}
           link="/products/create"
           buttonLabel="Add"
         />
       </div>
-    </Container>
+    </div>
   )
 }

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,6 +32,193 @@
   :root {
     @apply bg-ui-bg-subtle text-ui-fg-base antialiased;
     text-rendering: optimizeLegibility;
+
+    /*
+     * ============================================
+     * Catholic Owned® Design System Token Overrides
+     * Palette: Navy #17294A, Gold #F2CD69, Cream #FAF9F5
+     * ============================================
+     */
+
+    /* --- Backgrounds --- */
+    --bg-base: rgba(255, 255, 255, 1);             /* Surface white - cards, modals */
+    --bg-base-hover: rgba(250, 249, 245, 1);       /* Cream on hover */
+    --bg-base-pressed: rgba(240, 236, 226, 1);     /* Darker cream on press */
+    --bg-subtle: rgba(250, 249, 245, 1);           /* Warm cream - page bg */
+    --bg-subtle-hover: rgba(244, 241, 234, 1);     /* Slightly darker cream */
+    --bg-subtle-pressed: rgba(236, 232, 222, 1);
+    --bg-component: rgba(250, 249, 245, 1);        /* Cream for components */
+    --bg-component-hover: rgba(244, 241, 234, 1);
+    --bg-component-pressed: rgba(236, 232, 222, 1);
+    --bg-field: rgba(250, 249, 245, 1);            /* Cream input fields */
+    --bg-field-hover: rgba(244, 241, 234, 1);
+    --bg-field-component: rgba(255, 255, 255, 1);
+    --bg-field-component-hover: rgba(250, 249, 245, 1);
+    --bg-interactive: rgba(23, 41, 74, 1);         /* Navy - toggles, switches on */
+    --bg-highlight: rgba(242, 205, 105, 0.1);      /* Gold tint - highlights */
+    --bg-highlight-hover: rgba(242, 205, 105, 0.18);
+    --bg-overlay: rgba(23, 41, 74, 0.4);           /* Navy overlay */
+    --bg-disabled: rgba(244, 241, 234, 1);
+    --bg-switch-off: rgba(212, 208, 198, 1);
+    --bg-switch-off-hover: rgba(196, 192, 182, 1);
+
+    /* --- Foreground / Text --- */
+    --fg-base: rgba(20, 20, 15, 1);               /* #14140F - primary text */
+    --fg-subtle: rgba(97, 97, 97, 1);             /* #616161 - secondary text */
+    --fg-muted: rgba(140, 136, 126, 1);            /* Warm muted */
+    --fg-disabled: rgba(180, 176, 166, 1);
+    --fg-on-color: rgba(250, 249, 245, 1);         /* Cream text on dark bg */
+    --fg-on-inverted: rgba(255, 255, 255, 1);
+    --fg-interactive: rgba(23, 41, 74, 1);         /* Navy for links */
+    --fg-interactive-hover: rgba(30, 53, 96, 1);   /* Lighter navy on hover */
+    --fg-error: rgba(179, 58, 58, 1);             /* #B33A3A */
+
+    /* --- Borders --- */
+    --border-base: rgba(23, 41, 74, 0.1);         /* Navy at 10% */
+    --border-strong: rgba(23, 41, 74, 0.2);        /* Navy at 20% */
+    --border-interactive: rgba(242, 205, 105, 1);  /* Gold for focus rings */
+    --border-error: rgba(179, 58, 58, 1);
+    --border-danger: rgba(179, 58, 58, 1);
+    --border-transparent: rgba(255, 255, 255, 0);
+    --border-menu-top: rgba(23, 41, 74, 0.08);
+    --border-menu-bot: rgba(255, 255, 255, 1);
+
+    /* --- Buttons --- */
+    --button-inverted: rgba(23, 41, 74, 1);        /* Navy primary */
+    --button-inverted-hover: rgba(30, 53, 96, 1);
+    --button-inverted-pressed: rgba(15, 29, 53, 1);
+    --button-neutral: rgba(255, 255, 255, 1);
+    --button-neutral-hover: rgba(250, 249, 245, 1);
+    --button-neutral-pressed: rgba(244, 241, 234, 1);
+    --button-danger: rgba(179, 58, 58, 1);         /* Catholic Owned error red */
+    --button-danger-hover: rgba(149, 42, 42, 1);
+    --button-danger-pressed: rgba(130, 36, 36, 1);
+    --button-transparent: rgba(255, 255, 255, 0);
+    --button-transparent-hover: rgba(250, 249, 245, 1);
+    --button-transparent-pressed: rgba(244, 241, 234, 1);
+
+    /* --- Contrast (inverted surfaces like command bar) --- */
+    --contrast-bg-base: rgba(23, 41, 74, 1);       /* Navy */
+    --contrast-bg-base-hover: rgba(30, 53, 96, 1);
+    --contrast-bg-base-pressed: rgba(15, 29, 53, 1);
+    --contrast-bg-subtle: rgba(30, 53, 96, 1);
+    --contrast-fg-primary: rgba(250, 249, 245, 0.92);
+    --contrast-fg-secondary: rgba(250, 249, 245, 0.6);
+    --contrast-border-base: rgba(250, 249, 245, 0.16);
+    --contrast-border-top: rgba(23, 41, 74, 1);
+    --contrast-border-bot: rgba(250, 249, 245, 0.1);
+
+    /* --- Tags (status badges) --- */
+    --tag-green-bg: rgba(61, 122, 74, 0.1);       /* Success green */
+    --tag-green-bg-hover: rgba(61, 122, 74, 0.18);
+    --tag-green-border: rgba(61, 122, 74, 0.25);
+    --tag-green-icon: rgba(61, 122, 74, 1);
+    --tag-green-text: rgba(46, 100, 57, 1);
+    --tag-red-bg: rgba(179, 58, 58, 0.08);        /* Error red */
+    --tag-red-bg-hover: rgba(179, 58, 58, 0.14);
+    --tag-red-border: rgba(179, 58, 58, 0.2);
+    --tag-red-icon: rgba(179, 58, 58, 1);
+    --tag-red-text: rgba(150, 40, 40, 1);
+    --tag-orange-bg: rgba(212, 160, 23, 0.1);     /* Warning gold */
+    --tag-orange-bg-hover: rgba(212, 160, 23, 0.18);
+    --tag-orange-border: rgba(212, 160, 23, 0.3);
+    --tag-orange-icon: rgba(212, 160, 23, 1);
+    --tag-orange-text: rgba(160, 120, 10, 1);
+    --tag-blue-bg: rgba(23, 41, 74, 0.06);        /* Navy info */
+    --tag-blue-bg-hover: rgba(23, 41, 74, 0.12);
+    --tag-blue-border: rgba(23, 41, 74, 0.15);
+    --tag-blue-icon: rgba(23, 41, 74, 0.7);
+    --tag-blue-text: rgba(23, 41, 74, 1);
+    --tag-purple-bg: rgba(91, 33, 182, 0.06);
+    --tag-purple-bg-hover: rgba(91, 33, 182, 0.12);
+    --tag-purple-border: rgba(91, 33, 182, 0.15);
+    --tag-purple-icon: rgba(91, 33, 182, 0.7);
+    --tag-purple-text: rgba(91, 33, 182, 1);
+    --tag-neutral-bg: rgba(23, 41, 74, 0.04);
+    --tag-neutral-bg-hover: rgba(23, 41, 74, 0.08);
+    --tag-neutral-border: rgba(23, 41, 74, 0.1);
+    --tag-neutral-icon: rgba(140, 136, 126, 1);
+    --tag-neutral-text: rgba(97, 97, 97, 1);
+
+    /* --- Alpha channels --- */
+    --alpha-250: rgba(23, 41, 74, 0.1);
+    --alpha-400: rgba(23, 41, 74, 0.24);
+
+    /* --- Shadows (warm navy tints instead of gray) --- */
+    --elevation-card-rest: 0px 0px 0px 1px rgba(23, 41, 74, 0.06), 0px 1px 2px -1px rgba(23, 41, 74, 0.06), 0px 2px 4px 0px rgba(23, 41, 74, 0.03);
+    --elevation-card-hover: 0px 0px 0px 1px rgba(23, 41, 74, 0.08), 0px 1px 2px -1px rgba(23, 41, 74, 0.06), 0px 2px 8px 0px rgba(23, 41, 74, 0.07);
+    --elevation-flyout: 0px 0px 0px 1px rgba(23, 41, 74, 0.06), 0px 4px 8px 0px rgba(23, 41, 74, 0.06), 0px 8px 16px 0px rgba(23, 41, 74, 0.06);
+    --elevation-modal: 0px 0px 0px 1px rgba(255, 255, 255, 1) inset, 0px 0px 0px 1.5px rgba(23, 41, 74, 0.08) inset, 0px 0px 0px 1px rgba(23, 41, 74, 0.06), 0px 8px 16px 0px rgba(23, 41, 74, 0.06), 0px 16px 32px 0px rgba(23, 41, 74, 0.06);
+    --elevation-tooltip: 0px 0px 0px 1px rgba(23, 41, 74, 0.06), 0px 2px 4px 0px rgba(23, 41, 74, 0.06), 0px 4px 8px 0px rgba(23, 41, 74, 0.06);
+
+    --borders-base: 0px 1px 2px 0px rgba(23, 41, 74, 0.08), 0px 0px 0px 1px rgba(23, 41, 74, 0.06);
+    --borders-focus: 0px 0px 0px 1px rgba(255, 255, 255, 1), 0px 0px 0px 3px rgba(242, 205, 105, 0.6);
+    --borders-interactive-with-active: 0px 0px 0px 4px rgba(242, 205, 105, 0.2), 0px 0px 0px 1px rgba(242, 205, 105, 1);
+    --borders-interactive-with-shadow: 0px 1px 2px 0px rgba(23, 41, 74, 0.3), 0px 0px 0px 1px rgba(242, 205, 105, 1);
+    --borders-interactive-with-focus: 0px 1px 2px 0px rgba(23, 41, 74, 0.3), 0px 0px 0px 1px rgba(242, 205, 105, 1), 0px 0px 0px 2px rgba(255, 255, 255, 1), 0px 0px 0px 4px rgba(242, 205, 105, 0.6);
+    --borders-error: 0px 0px 0px 1px rgba(179, 58, 58, 1), 0px 0px 0px 3px rgba(179, 58, 58, 0.15);
+
+    --buttons-neutral: 0px 1px 2px 0px rgba(23, 41, 74, 0.08), 0px 0px 0px 1px rgba(23, 41, 74, 0.06);
+    --buttons-neutral-focus: 0px 1px 2px 0px rgba(23, 41, 74, 0.08), 0px 0px 0px 1px rgba(23, 41, 74, 0.06), 0px 0px 0px 2px rgba(255, 255, 255, 1), 0px 0px 0px 4px rgba(242, 205, 105, 0.6);
+    --buttons-inverted: 0px 0.75px 0px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px 0px rgba(23, 41, 74, 0.4), 0px 0px 0px 1px rgba(23, 41, 74, 1);
+    --buttons-inverted-focus: 0px 0.75px 0px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px 0px rgba(23, 41, 74, 0.4), 0px 0px 0px 1px rgba(23, 41, 74, 1), 0px 0px 0px 2px rgba(255, 255, 255, 1), 0px 0px 0px 4px rgba(242, 205, 105, 0.6);
+    --buttons-danger: 0px 0.75px 0px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px 0px rgba(179, 58, 58, 0.4), 0px 0px 0px 1px rgba(179, 58, 58, 1);
+    --buttons-danger-focus: 0px 0.75px 0px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px 0px rgba(179, 58, 58, 0.4), 0px 0px 0px 1px rgba(179, 58, 58, 1), 0px 0px 0px 2px rgba(255, 255, 255, 1), 0px 0px 0px 4px rgba(242, 205, 105, 0.6);
+  }
+}
+
+@layer components {
+  /* Catholic Owned auth page styles */
+  .co-auth-page {
+    @apply min-h-dvh w-dvw flex items-center justify-center;
+    background-color: #FAF9F5;
+    background-image:
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5c2 4 6 8 12 10-6 2-10 6-12 10-2-4-6-8-12-10 6-2 10-6 12-10zm0 20c1 3 4 5 8 7-4 2-7 4-8 7-1-3-4-5-8-7 4-2 7-4 8-7z' fill='%2317294A' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
+  }
+
+  .co-auth-card {
+    @apply w-full max-w-[420px] mx-4 rounded-xl p-8;
+    background: #FFFFFF;
+    box-shadow: 0 4px 24px rgba(23, 41, 74, 0.08);
+  }
+
+  .co-gold-rule {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #F2CD69, transparent);
+  }
+
+  .co-btn-primary {
+    @apply w-full py-3 px-6 rounded-lg font-poppins font-medium text-sm transition-all duration-200;
+    background-color: #17294A;
+    color: #FAF9F5;
+  }
+  .co-btn-primary:hover {
+    background-color: #1E3560;
+    box-shadow: 0 2px 8px rgba(23, 41, 74, 0.25);
+  }
+  .co-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  input.co-input,
+  .co-input {
+    @apply w-full rounded-lg px-4 py-3 font-garamond text-base transition-all duration-200;
+    background-color: #FAF9F5 !important;
+    border: 1px solid rgba(23, 41, 74, 0.12) !important;
+    box-shadow: none !important;
+    color: #14140F !important;
+    caret-color: #17294A !important;
+  }
+  input.co-input::placeholder,
+  .co-input::placeholder {
+    color: #616161 !important;
+  }
+  input.co-input:focus,
+  .co-input:focus {
+    outline: none !important;
+    border-color: #F2CD69 !important;
+    box-shadow: 0 0 0 3px rgba(242, 205, 105, 0.2) !important;
   }
 }
 
