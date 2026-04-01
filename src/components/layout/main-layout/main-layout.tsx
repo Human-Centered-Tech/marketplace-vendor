@@ -71,27 +71,46 @@ const Header = () => {
   const fallback = seller?.photo || "M"
 
   return (
-    <div className="w-full p-3 p-0.5 pr-2 bg-ui-bg-subtle grid w-full grid-cols-[24px_1fr_15px] items-center gap-x-3">
-      {fallback ? (
-        <div className="w-7 h-7">
-          <ImageAvatar src={seller?.photo || "/logo.svg"} size={7} rounded />
-        </div>
-      ) : (
-        <Skeleton className="h-6 w-6 rounded-md" />
-      )}
-      <div className="block overflow-hidden text-left">
-        {name ? (
-          <Text
-            size="small"
-            weight="plus"
-            leading="compact"
-            className="truncate"
-          >
-            {name}
-          </Text>
+    <div className="w-full px-3 pt-3 pb-2">
+      {/* Catholic Owned brand */}
+      <div className="mb-2">
+        <img
+          src="/Logo.png"
+          alt="Catholic Owned"
+          className="h-10 w-auto object-contain"
+        />
+        <Text
+          size="xsmall"
+          leading="compact"
+          className="mt-0.5 text-co-gold-dark uppercase tracking-[0.15em] font-poppins font-medium"
+          style={{ fontSize: '0.6rem' }}
+        >
+          Vendor Portal
+        </Text>
+      </div>
+      {/* Store name */}
+      <div className="flex items-center gap-2.5 rounded-md px-0.5 py-1">
+        {fallback ? (
+          <div className="h-6 w-6 shrink-0">
+            <ImageAvatar src={seller?.photo || "/Logo.png"} size={6} rounded />
+          </div>
         ) : (
-          <Skeleton className="h-[9px] w-[120px]" />
+          <Skeleton className="h-6 w-6 rounded-md" />
         )}
+        <div className="block min-w-0 overflow-hidden text-left">
+          {name ? (
+            <Text
+              size="xsmall"
+              weight="plus"
+              leading="compact"
+              className="truncate"
+            >
+              {name}
+            </Text>
+          ) : (
+            <Skeleton className="h-[9px] w-[120px]" />
+          )}
+        </div>
       </div>
     </div>
   )

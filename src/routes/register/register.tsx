@@ -1,12 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Alert, Button, Heading, Hint, Input, Text } from "@medusajs/ui"
+import { Alert, Hint, Input } from "@medusajs/ui"
 import { useForm } from "react-hook-form"
 import { Trans, useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import * as z from "zod"
 
 import { Form } from "../../components/common/form"
-import AvatarBox from "../../components/common/logo-box/avatar-box"
 import { useSignUpWithEmailPass } from "../../hooks/api"
 import { isFetchError } from "../../lib/is-fetch-error"
 import { useState } from "react"
@@ -93,41 +92,78 @@ export const Register = () => {
 
   if (success)
     return (
-      <div className="bg-ui-bg-subtle flex min-h-dvh w-dvw items-center justify-center">
-        <div className="mb-4 flex flex-col items-center">
-          <Heading>Thank You for registering!</Heading>
-          <Text
-            size="small"
-            className="text-ui-fg-subtle text-center mt-2 max-w-[320px]"
-          >
-            You may need to wait for admin authorization before logging in. A
-            confirmation email will be sent to you shortly.
-          </Text>
+      <div className="co-auth-page">
+        <div className="co-auth-card text-center">
+          {/* Success icon */}
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border-2 border-co-success bg-co-success/10">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 13l4 4L19 7"
+                stroke="#3D7A4A"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+
+          <img
+            src="/Logo.png"
+            alt="Catholic Owned"
+            className="h-14 w-auto object-contain"
+          />
+          <div className="co-gold-rule mx-auto mt-3 mb-4 w-16" />
+          <p className="font-garamond mx-auto max-w-[320px] text-lg leading-relaxed text-co-text-secondary">
+            Thank you for registering! Your account is pending admin
+            authorization. You'll receive a confirmation email shortly.
+          </p>
 
           <Link to="/login">
-            <Button className="mt-8">Back to login page</Button>
+            <button className="co-btn-primary mt-8">Back to Sign In</button>
           </Link>
         </div>
       </div>
     )
 
   return (
-    <div className="bg-ui-bg-subtle flex min-h-dvh w-dvw items-center justify-center">
-      <div className="m-4 flex w-full max-w-[280px] flex-col items-center">
-        <AvatarBox />
-        <div className="mb-4 flex flex-col items-center">
-          <Heading>{t("register.title")}</Heading>
-          <Text size="small" className="text-ui-fg-subtle text-center">
-            {t("register.hint")}
-          </Text>
+    <div className="co-auth-page">
+      <div className="co-auth-card">
+        {/* Brand Header */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <img
+            src="/Logo.png"
+            alt="Catholic Owned"
+            className="h-16 w-auto object-contain"
+          />
+          <p className="font-poppins mt-2 text-xs font-medium uppercase tracking-[0.2em] text-co-gold-dark">
+            Vendor Portal
+          </p>
+          <div className="co-gold-rule mt-4 w-16" />
         </div>
+
+        {/* Welcome text */}
+        <div className="mb-6 text-center">
+          <h2 className="font-garamond text-xl font-medium text-co-text">
+            {t("register.title")}
+          </h2>
+          <p className="font-poppins mt-1 text-sm text-co-text-secondary">
+            {t("register.hint")}
+          </p>
+        </div>
+
         <div className="flex w-full flex-col gap-y-3">
           <Form {...form}>
             <form
               onSubmit={handleSubmit}
-              className="flex w-full flex-col gap-y-6"
+              className="flex w-full flex-col gap-y-5"
             >
-              <div className="flex flex-col gap-y-2">
+              <div className="flex flex-col gap-y-3">
                 <Form.Field
                   control={form.control}
                   name="name"
@@ -137,7 +173,7 @@ export const Register = () => {
                         <Form.Control>
                           <Input
                             {...field}
-                            className="bg-ui-bg-field-component mb-2"
+                            className="co-input"
                             placeholder="Company name"
                           />
                         </Form.Control>
@@ -154,7 +190,7 @@ export const Register = () => {
                         <Form.Control>
                           <Input
                             {...field}
-                            className="bg-ui-bg-field-component"
+                            className="co-input"
                             placeholder={t("fields.email")}
                           />
                         </Form.Control>
@@ -173,7 +209,7 @@ export const Register = () => {
                           <Input
                             type="password"
                             {...field}
-                            className="bg-ui-bg-field-component"
+                            className="co-input"
                             placeholder={t("fields.password")}
                           />
                         </Form.Control>
@@ -192,7 +228,7 @@ export const Register = () => {
                           <Input
                             type="password"
                             {...field}
-                            className="bg-ui-bg-field-component"
+                            className="co-input"
                             placeholder="Confirm Password"
                           />
                         </Form.Control>
@@ -210,30 +246,39 @@ export const Register = () => {
               )}
               {serverError && (
                 <Alert
-                  className="bg-ui-bg-base items-center p-2"
+                  className="items-center rounded-lg p-3"
                   dismissible
                   variant="error"
                 >
                   {serverError}
                 </Alert>
               )}
-              <Button className="w-full" type="submit" isLoading={isPending}>
-                Sign up
-              </Button>
+              <button
+                className="co-btn-primary"
+                type="submit"
+                disabled={isPending}
+              >
+                {isPending ? "Creating account..." : "Create Vendor Account"}
+              </button>
             </form>
           </Form>
         </div>
-        <span className="text-ui-fg-muted txt-small my-6">
-          <Trans
-            i18nKey="register.alreadySeller"
-            components={[
-              <Link
-                to="/login"
-                className="text-ui-fg-interactive transition-fg hover:text-ui-fg-interactive-hover focus-visible:text-ui-fg-interactive-hover font-medium outline-none"
-              />,
-            ]}
-          />
-        </span>
+
+        <div className="co-gold-rule mt-6 mb-4" />
+
+        <div className="text-center">
+          <span className="font-poppins text-sm text-co-text-secondary">
+            <Trans
+              i18nKey="register.alreadySeller"
+              components={[
+                <Link
+                  to="/login"
+                  className="font-medium text-co-navy transition-colors hover:text-co-gold-dark"
+                />,
+              ]}
+            />
+          </span>
+        </div>
       </div>
     </div>
   )

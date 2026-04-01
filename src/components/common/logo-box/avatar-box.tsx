@@ -1,7 +1,5 @@
 import { motion } from "motion/react"
 
-import { IconAvatar } from "../icon-avatar"
-
 export default function AvatarBox({
   checked,
   size = 44,
@@ -10,13 +8,10 @@ export default function AvatarBox({
   size?: number
 }) {
   return (
-    <IconAvatar
-      size={size === 44 ? "xlarge" : "small"}
-      className="bg-ui-button-neutral shadow-buttons-neutral after:button-neutral-gradient relative mb-4 flex items-center justify-center rounded-xl after:inset-0 after:content-['']"
-    >
+    <div className="relative mb-4 flex items-center justify-center">
       {checked && (
         <motion.div
-          className="absolute -right-[5px] -top-1 flex size-5 items-center justify-center rounded-full border-[0.5px] border-[rgba(3,7,18,0.2)] bg-[#3B82F6] bg-gradient-to-b from-white/0 to-white/20 shadow-[0px_1px_2px_0px_rgba(3,7,18,0.12),0px_1px_2px_0px_rgba(255,255,255,0.10)_inset,0px_-1px_5px_0px_rgba(255,255,255,0.10)_inset,0px_0px_0px_0px_rgba(3,7,18,0.06)_inset]"
+          className="absolute -right-[5px] -top-1 flex size-5 items-center justify-center rounded-full border-[0.5px] border-co-navy/20 bg-co-success bg-gradient-to-b from-white/0 to-white/20 shadow-[0px_1px_2px_0px_rgba(3,7,18,0.12)]"
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{
@@ -50,33 +45,15 @@ export default function AvatarBox({
           </svg>
         </motion.div>
       )}
-      <svg
-        width="44"
-        height="44"
-        viewBox="0 0 44 44"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+      <div
+        className="flex items-center justify-center rounded-xl bg-co-navy shadow-[0_2px_8px_rgba(23,41,74,0.2)]"
+        style={{ width: size, height: size }}
       >
-        <rect width="44" height="44" rx="10" fill="#FAFAFA" />
-        <g clipPath="url(#clip0_11_175)">
-          <path d="M8 7V20.7349L19.821 13.8675L8 7Z" fill="#4C24DD" />
-          <path
-            d="M36.0002 37.0001V23.2651L24.1792 30.1326L36.0002 37.0001Z"
-            fill="#4C24DD"
-          />
-          <path d="M8 23.2651V37L36 20.7349V7L8 23.2651Z" fill="#4C24DD" />
-        </g>
-        <defs>
-          <clipPath id="clip0_11_175">
-            <rect
-              width="28"
-              height="30"
-              fill="white"
-              transform="translate(8 7)"
-            />
-          </clipPath>
-        </defs>
-      </svg>
-    </IconAvatar>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <rect x="10.5" y="3" width="3" height="18" rx="0.75" fill="#F2CD69"/>
+          <rect x="5" y="9.5" width="14" height="3" rx="0.75" fill="#F2CD69"/>
+        </svg>
+      </div>
+    </div>
   )
 }
