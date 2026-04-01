@@ -2650,17 +2650,17 @@
   },
   "login": {
     "forgotPassword": "Forgot password? - <0>Reset</0>",
-    "title": "Welcome to Mercur Seller Panel",
-    "hint": "Sign in to access the account area",
+    "title": "Welcome to Catholic Owned",
+    "hint": "Sign in to access your vendor account",
     "notSellerYet": "Not a seller yet? - <0>Create an account</0>"
   },
   "register": {
-    "title": "Join Mercur Seller Panel",
-    "hint": "Sign up to start selling",
+    "title": "Become a Vendor",
+    "hint": "Sign up to start selling to the Catholic community",
     "alreadySeller": "Already have an account? - <0>Sign In</0>"
   },
   "invite": {
-    "title": "Welcome to Mercur Seller Panel",
+    "title": "Welcome to Catholic Owned",
     "hint": "Create your account below",
     "backToLogin": "Back to login",
     "createAccount": "Create account",
