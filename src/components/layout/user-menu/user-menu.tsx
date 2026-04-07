@@ -1,4 +1,5 @@
 import {
+  BuildingStorefront,
   CircleHalfSolid,
   EllipsisHorizontal,
   Keyboard,
@@ -59,6 +60,17 @@ export const UserMenu = () => {
             {t("app.menus.user.shortcuts")}
           </DropdownMenu.Item>
           <ThemeToggle />
+          {__STOREFRONT_URL__ && (
+            <>
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item asChild>
+                <a href={__STOREFRONT_URL__}>
+                  <BuildingStorefront className="text-ui-fg-subtle mr-2" />
+                  Switch to Storefront
+                </a>
+              </DropdownMenu.Item>
+            </>
+          )}
           <DropdownMenu.Separator />
           <Logout />
         </DropdownMenu.Content>

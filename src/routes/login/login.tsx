@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Alert, Hint, Input } from "@medusajs/ui"
+import { Alert, Hint, Input, Spinner } from "@medusajs/ui"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { Trans, useTranslation } from "react-i18next"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
@@ -19,6 +20,23 @@ export const Login = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+
+  // SSO handoff: detect token in URL fragment (#handoff=<token>)
+  const [isHandoff] = useState(
+    () => typeof window !== "undefined" && window.location.hash.startsWith("#handoff=")
+  )
+
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash.startsWith("#handoff=")) {
+      const token = decodeURIComponent(hash.slice("#handoff=".length))
+      if (token) {
+        window.localStorage.setItem("medusa_auth_token", token)
+        window.history.replaceState(null, "", window.location.pathname)
+        navigate("/dashboard", { replace: true })
+      }
+    }
+  }, [navigate])
 
   const reason = searchParams.get("reason") || ""
 
@@ -74,6 +92,19 @@ export const Login = () => {
   const validationError =
     form.formState.errors.email?.message ||
     form.formState.errors.password?.message
+
+  if (isHandoff) {
+    return (
+      <div className="co-auth-page">
+        <div className="co-auth-card flex flex-col items-center justify-center py-16">
+          <Spinner className="text-ui-fg-interactive animate-spin" />
+          <p className="font-poppins text-sm text-co-text-secondary mt-4">
+            Signing you in...
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="co-auth-page">
