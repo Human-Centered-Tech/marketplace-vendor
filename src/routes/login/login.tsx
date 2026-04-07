@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Alert, Hint, Input, Spinner } from "@medusajs/ui"
+import { Alert, Hint, Input } from "@medusajs/ui"
+import { Spinner } from "@medusajs/icons"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { Trans, useTranslation } from "react-i18next"
