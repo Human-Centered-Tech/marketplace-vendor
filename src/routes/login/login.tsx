@@ -208,6 +208,18 @@ export const Login = () => {
               />
             </span>
           )}
+          {__STOREFRONT_URL__ && (
+            <span className="font-poppins text-xs text-co-text-secondary mt-2">
+              You can also access your vendor dashboard by logging in at{" "}
+              <a
+                href={__STOREFRONT_URL__}
+                className="font-medium text-co-navy transition-colors hover:text-co-gold-dark"
+              >
+                the main site
+              </a>
+              .
+            </span>
+          )}
         </div>
       </div>
     </div>
