@@ -21,9 +21,10 @@ import { useTranslation } from "react-i18next"
 
 import { Skeleton } from "../../common/skeleton"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useLogout, useUserMe } from "../../../hooks/api"
+import { backendUrl, publishableApiKey } from "../../../lib/client/client"
 import { queryClient } from "../../../lib/query-client"
 import { useGlobalShortcuts } from "../../../providers/keybind-provider/hooks"
 import { useTheme } from "../../../providers/theme-provider"
@@ -40,6 +41,31 @@ export const UserMenu = () => {
     setOpenMenu(false)
     setOpenModal(!openModal)
   }
+
+  const handleSwitchToStorefront = useCallback(async () => {
+    const storefrontUrl = __STOREFRONT_URL__
+    if (!storefrontUrl) return
+
+    try {
+      const bearer = window.localStorage.getItem("medusa_auth_token") || ""
+      const res = await fetch(`${backendUrl}/store/account/customer-token`, {
+        headers: {
+          authorization: `Bearer ${bearer}`,
+          "x-publishable-api-key": publishableApiKey,
+        },
+      })
+
+      if (res.ok) {
+        const { token } = await res.json()
+        window.location.href = `${storefrontUrl}/customer-handoff#handoff=${token}`
+        return
+      }
+    } catch {
+      // Fall through to plain navigation
+    }
+
+    window.location.href = storefrontUrl
+  }, [])
 
   return (
     <div>
@@ -63,11 +89,9 @@ export const UserMenu = () => {
           {__STOREFRONT_URL__ && (
             <>
               <DropdownMenu.Separator />
-              <DropdownMenu.Item asChild>
-                <a href={__STOREFRONT_URL__}>
-                  <BuildingStorefront className="text-ui-fg-subtle mr-2" />
-                  Switch to Storefront
-                </a>
+              <DropdownMenu.Item onClick={handleSwitchToStorefront}>
+                <BuildingStorefront className="text-ui-fg-subtle mr-2" />
+                Switch to Storefront
               </DropdownMenu.Item>
             </>
           )}
