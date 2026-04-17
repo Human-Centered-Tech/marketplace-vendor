@@ -3,6 +3,7 @@ import { useOnboarding, useOrders } from "../../hooks/api"
 import { DashboardCharts } from "./components/dashboard-charts"
 import { DashboardOnboarding } from "./components/dashboard-onboarding"
 import { ChartSkeleton } from "./components/chart-skeleton"
+import { AnalyticsPanel } from "./components/analytics-panel"
 import { useReviews } from "../../hooks/api/review"
 
 export const Dashboard = () => {
@@ -53,10 +54,13 @@ export const Dashboard = () => {
     )
 
   return (
-    <DashboardCharts
-      notFulfilledOrders={notFulfilledOrders}
-      fulfilledOrders={fulfilledOrders}
-      reviewsToReply={reviewsToReply}
-    />
+    <div className="flex flex-col gap-4">
+      <DashboardCharts
+        notFulfilledOrders={notFulfilledOrders}
+        fulfilledOrders={fulfilledOrders}
+        reviewsToReply={reviewsToReply}
+      />
+      <AnalyticsPanel />
+    </div>
   )
 }
