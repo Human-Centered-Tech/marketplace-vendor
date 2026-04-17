@@ -4,6 +4,7 @@ import { DashboardCharts } from "./components/dashboard-charts"
 import { DashboardOnboarding } from "./components/dashboard-onboarding"
 import { ChartSkeleton } from "./components/chart-skeleton"
 import { AnalyticsPanel } from "./components/analytics-panel"
+import { CatholicSetupPanel } from "./components/catholic-setup-panel"
 import { useReviews } from "../../hooks/api/review"
 
 export const Dashboard = () => {
@@ -60,6 +61,7 @@ export const Dashboard = () => {
         fulfilledOrders={fulfilledOrders}
         reviewsToReply={reviewsToReply}
       />
+      <CatholicSetupPanel />
       <AnalyticsPanel />
     </div>
   )
