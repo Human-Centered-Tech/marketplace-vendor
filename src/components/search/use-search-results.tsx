@@ -744,6 +744,6 @@ function transformDynamicSearchResults<T extends { count?: number }>(
     area: type,
     hasMore: count > limit,
     count,
-    items: data.map(transform),
+    items: data.filter(Boolean).map(transform),
   }
 }

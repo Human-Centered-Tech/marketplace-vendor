@@ -1,16 +1,9 @@
-import { Button, Heading, Text, toast } from "@medusajs/ui"
-import { RouteDrawer, useRouteModal } from "../../../components/modals"
+import { Button, Heading, Tabs } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
-import { useMemo, useState } from "react"
-import {
-  // useConfirmImportProducts,
-  useImportProducts,
-} from "../../../hooks/api"
-import { UploadImport } from "./components/upload-import"
-import { ImportSummary } from "./components/import-summary"
-import { Trash } from "@medusajs/icons"
-import { FilePreview } from "../../../components/common/file-preview"
-import { getProductImportCsvTemplate } from "./helpers/import-template"
+
+import { RouteDrawer } from "../../../components/modals"
+import { EtsyImportTab } from "./components/etsy-import-tab"
+import { MercurImportTab } from "./components/mercur-import-tab"
 
 export const ProductImport = () => {
   const { t } = useTranslation()
@@ -25,112 +18,23 @@ export const ProductImport = () => {
           {t("products.import.description")}
         </RouteDrawer.Description>
       </RouteDrawer.Header>
-      <ProductImportContent />
-    </RouteDrawer>
-  )
-}
-
-const ProductImportContent = () => {
-  const { t } = useTranslation()
-  const [filename, setFilename] = useState<string>()
-
-  const { mutateAsync: importProducts, isPending, data } = useImportProducts()
-  // const { mutateAsync: confirm } =
-  //   useConfirmImportProducts();
-  const { handleSuccess } = useRouteModal()
-
-  const productImportTemplateContent = useMemo(() => {
-    return getProductImportCsvTemplate()
-  }, [])
-
-  const handleUploaded = async (file: File) => {
-    setFilename(file.name)
-    await importProducts(
-      { file },
-      {
-        onSuccess: () => {
-          toast.info(t("products.import.success.title"))
-          handleSuccess()
-        },
-        onError: (err) => {
-          toast.error(err.message)
-          setFilename(undefined)
-        },
-      }
-    )
-  }
-
-  // const handleConfirm = async () => {
-  //   if (!data?.transaction_id) {
-  //     return;
-  //   }
-
-  //   await confirm(data.transaction_id, {
-  //     onSuccess: () => {
-  //       toast.info(t('products.import.success.title'), {
-  //         description: t(
-  //           'products.import.success.description'
-  //         ),
-  //       });
-  //       handleSuccess();
-  //     },
-  //     onError: (err) => {
-  //       toast.error(err.message);
-  //     },
-  //   });
-  // };
-
-  const uploadedFileActions = [
-    {
-      actions: [
-        {
-          label: t("actions.delete"),
-          icon: <Trash />,
-          onClick: () => setFilename(undefined),
-        },
-      ],
-    },
-  ]
-
-  return (
-    <>
-      <RouteDrawer.Body>
-        <Heading level="h2">{t("products.import.upload.title")}</Heading>
-        <Text size="small" className="text-ui-fg-subtle">
-          {t("products.import.upload.description")}
-        </Text>
-
-        <div className="mt-4">
-          {filename ? (
-            <FilePreview
-              filename={filename}
-              loading={isPending}
-              activity={t("products.import.upload.preprocessing")}
-              actions={uploadedFileActions}
-            />
-          ) : (
-            <UploadImport onUploaded={handleUploaded} />
-          )}
-        </div>
-
-        {data?.summary && !!filename && (
-          <div className="mt-4">
-            <ImportSummary summary={data?.summary} />
-          </div>
-        )}
-
-        <Heading className="mt-6" level="h2">
-          {t("products.import.template.title")}
-        </Heading>
-        <Text size="small" className="text-ui-fg-subtle">
-          {t("products.import.template.description")}
-        </Text>
-        <div className="mt-4">
-          <FilePreview
-            filename={"product-import-template.csv"}
-            url={productImportTemplateContent}
-          />
-        </div>
+      <RouteDrawer.Body className="overflow-y-auto">
+        <Tabs defaultValue="mercur" className="flex h-full flex-col">
+          <Tabs.List className="mb-4">
+            <Tabs.Trigger value="mercur">
+              {t("products.import.tabs.mercur")}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="etsy">
+              {t("products.import.tabs.etsy")}
+            </Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="mercur">
+            <MercurImportTab />
+          </Tabs.Content>
+          <Tabs.Content value="etsy">
+            <EtsyImportTab />
+          </Tabs.Content>
+        </Tabs>
       </RouteDrawer.Body>
       <RouteDrawer.Footer>
         <div className="flex items-center gap-x-2">
@@ -139,15 +43,8 @@ const ProductImportContent = () => {
               {t("actions.cancel")}
             </Button>
           </RouteDrawer.Close>
-          {/* <Button
-            onClick={handleConfirm}
-            size='small'
-            disabled={!data?.transaction_id || !filename}
-          >
-            {t('actions.import')}
-          </Button> */}
         </div>
       </RouteDrawer.Footer>
-    </>
+    </RouteDrawer>
   )
 }

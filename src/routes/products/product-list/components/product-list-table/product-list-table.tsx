@@ -1,4 +1,4 @@
-import { Trash } from "@medusajs/icons"
+import { Spinner, Trash } from "@medusajs/icons"
 import {
   Button,
   Container,
@@ -21,8 +21,9 @@ import { ExtendedAdminProduct } from "../../../../../types/products"
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { _DataTable } from "../../../../../components/table/data-table"
 import {
-  useDeleteProduct,
   useBulkDeleteProducts,
+  useBulkUpdateProducts,
+  useDeleteProduct,
   useProducts,
 } from "../../../../../hooks/api/products"
 import { useProductTableColumns } from "../../../../../hooks/table/columns/use-product-table-columns"
@@ -54,7 +55,7 @@ export const ProductListTable = () => {
     placeholderData: keepPreviousData,
   }
 
-  const { products, count, isLoading, isError, error } = useProducts(
+  const { products, count, isLoading, isFetching, isError, error } = useProducts(
     searchParams,
     options
   )
@@ -77,7 +78,38 @@ export const ProductListTable = () => {
   })
 
   const { mutateAsync } = useBulkDeleteProducts()
+  const { mutateAsync: bulkUpdate } = useBulkUpdateProducts()
   const prompt = usePrompt()
+
+  const handleBulkPublish = async () => {
+    const keys = Object.keys(rowSelection)
+    if (keys.length === 0) return
+
+    const res = await prompt({
+      title: t("products.bulkPublish.title"),
+      description: t("products.bulkPublish.description", { count: keys.length }),
+      confirmText: t("products.bulkPublish.confirm"),
+      cancelText: t("actions.cancel"),
+    })
+    if (!res) return
+
+    await bulkUpdate(
+      { update: keys.map((id) => ({ id, status: "published" })) },
+      {
+        onSuccess: () => {
+          setRowSelection({})
+          toast.success(
+            t("products.bulkPublish.success", { count: keys.length }),
+          )
+        },
+        onError: (error) => {
+          toast.error(t("products.bulkPublish.error"), {
+            description: error.message,
+          })
+        },
+      },
+    )
+  }
 
   const handleDelete = async () => {
     const keys = Object.keys(rowSelection)
@@ -123,7 +155,12 @@ export const ProductListTable = () => {
   return (
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
-        <Heading level="h2">{t("products.domain")}</Heading>
+        <div className="flex items-center gap-x-2">
+          <Heading level="h2">{t("products.domain")}</Heading>
+          {isFetching && !isLoading && (
+            <Spinner className="text-ui-fg-subtle h-4 w-4 animate-spin" />
+          )}
+        </div>
         <div className="flex items-center justify-center gap-x-2">
           <Button size="small" variant="secondary" asChild>
             <Link to={`export${location.search}`}>{t("actions.export")}</Link>
@@ -159,6 +196,11 @@ export const ProductListTable = () => {
           },
         ]}
         commands={[
+          {
+            action: handleBulkPublish,
+            label: t("products.bulkPublish.action"),
+            shortcut: "p",
+          },
           {
             action: handleDelete,
             label: t("actions.delete"),
