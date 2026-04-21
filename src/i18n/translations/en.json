@@ -469,6 +469,10 @@
       "uploadLabel": "Import Products",
       "uploadHint": "Drag and drop a CSV file or click to upload",
       "description": "Import products by providing a CSV file in a pre-defined format",
+      "tabs": {
+        "mercur": "Mercur CSV",
+        "etsy": "Etsy CSV"
+      },
       "template": {
         "title": "Unsure about how to arrange your list?",
         "description": "Download the template below to ensure you are following the correct format."
@@ -483,6 +487,31 @@
       "success": {
         "title": "We are processing your import",
         "description": "Importing data may take a while. We will notify you when we are done."
+      },
+      "etsy": {
+        "continue": "Continue import",
+        "rehostNotice": "Product images will be re-hosted to our system shortly after import. You may briefly see Etsy-hosted images.",
+        "howTo": {
+          "title": "How to export from Etsy",
+          "step1": "In your Etsy Shop Manager, open Settings → Options → Download Data.",
+          "step2": "Under 'Currently for sale listings', click Download CSV.",
+          "step3": "Upload the file below. All imported products will start as drafts so you can review before publishing."
+        },
+        "listings": {
+          "title": "Etsy Listings CSV",
+          "description": "Drop the 'Currently for sale listings' CSV you just downloaded. We'll translate it into our format before upload.",
+          "uploadLabel": "Upload Etsy listings CSV"
+        },
+        "preview": {
+          "importedListings": "Listings to import",
+          "totalVariants": "Total variants",
+          "skippedListings": "Listings skipped"
+        },
+        "warnings": {
+          "title_one": "{{count}} warning",
+          "title_other": "{{count}} warnings",
+          "showAll": "Show {{count}} more"
+        }
       }
     },
     "deleteWarning": "You are about to delete the product {{title}}. This action cannot be undone.",
@@ -721,6 +750,14 @@
       "description": "You are about to delete {{count}} products from catalog. This action cannot be undone.",
       "success": "Successfully deleted {{count}} product(s).",
       "error": "Failed to delete products"
+    },
+    "bulkPublish": {
+      "action": "Publish selected",
+      "title": "Publish Products",
+      "description": "You are about to publish {{count}} product(s). They will become visible to shoppers.",
+      "confirm": "Publish",
+      "success": "Successfully published {{count}} product(s).",
+      "error": "Failed to publish products"
     }
   },
   "collections": {

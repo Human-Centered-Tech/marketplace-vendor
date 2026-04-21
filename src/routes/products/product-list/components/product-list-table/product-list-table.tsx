@@ -21,8 +21,9 @@ import { ExtendedAdminProduct } from "../../../../../types/products"
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { _DataTable } from "../../../../../components/table/data-table"
 import {
-  useDeleteProduct,
   useBulkDeleteProducts,
+  useBulkUpdateProducts,
+  useDeleteProduct,
   useProducts,
 } from "../../../../../hooks/api/products"
 import { useProductTableColumns } from "../../../../../hooks/table/columns/use-product-table-columns"
@@ -77,7 +78,38 @@ export const ProductListTable = () => {
   })
 
   const { mutateAsync } = useBulkDeleteProducts()
+  const { mutateAsync: bulkUpdate } = useBulkUpdateProducts()
   const prompt = usePrompt()
+
+  const handleBulkPublish = async () => {
+    const keys = Object.keys(rowSelection)
+    if (keys.length === 0) return
+
+    const res = await prompt({
+      title: t("products.bulkPublish.title"),
+      description: t("products.bulkPublish.description", { count: keys.length }),
+      confirmText: t("products.bulkPublish.confirm"),
+      cancelText: t("actions.cancel"),
+    })
+    if (!res) return
+
+    await bulkUpdate(
+      { update: keys.map((id) => ({ id, status: "published" })) },
+      {
+        onSuccess: () => {
+          setRowSelection({})
+          toast.success(
+            t("products.bulkPublish.success", { count: keys.length }),
+          )
+        },
+        onError: (error) => {
+          toast.error(t("products.bulkPublish.error"), {
+            description: error.message,
+          })
+        },
+      },
+    )
+  }
 
   const handleDelete = async () => {
     const keys = Object.keys(rowSelection)
@@ -159,6 +191,11 @@ export const ProductListTable = () => {
           },
         ]}
         commands={[
+          {
+            action: handleBulkPublish,
+            label: t("products.bulkPublish.action"),
+            shortcut: "p",
+          },
           {
             action: handleDelete,
             label: t("actions.delete"),

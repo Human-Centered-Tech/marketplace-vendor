@@ -8,7 +8,13 @@ import {
   UseQueryOptions,
 } from "@tanstack/react-query"
 import { ProductAttributesResponse } from "../../types/products"
-import { fetchQuery, importProductsQuery, sdk } from "../../lib/client"
+import {
+  batchUpdateProductsQuery,
+  BatchUpdateProductsPayload,
+  fetchQuery,
+  importProductsQuery,
+  sdk,
+} from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
 import { queryKeysFactory } from "../../lib/query-key-factory"
 import { inventoryItemsQueryKeys } from "./inventory.tsx"
@@ -515,6 +521,30 @@ export const useBulkDeleteProducts = (
         })
       })
 
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
+export const useBulkUpdateProducts = (
+  options?: UseMutationOptions<
+    { updated: unknown[]; deleted: unknown[] },
+    FetchError,
+    BatchUpdateProductsPayload
+  >
+) => {
+  return useMutation({
+    mutationFn: (payload) => batchUpdateProductsQuery(payload),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.lists(),
+      })
+      variables.update?.forEach((u) => {
+        queryClient.invalidateQueries({
+          queryKey: productsQueryKeys.detail(u.id),
+        })
+      })
       options?.onSuccess?.(data, variables, context)
     },
     ...options,

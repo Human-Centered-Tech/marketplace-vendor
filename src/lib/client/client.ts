@@ -15,6 +15,31 @@ if (typeof window !== "undefined") {
   ;(window as any).__sdk = sdk
 }
 
+export type BatchUpdateProductsPayload = {
+  update?: Array<{ id: string; status?: string; title?: string; discountable?: boolean }>
+  delete?: string[]
+}
+
+export const batchUpdateProductsQuery = async (
+  payload: BatchUpdateProductsPayload,
+) => {
+  const bearer = window.localStorage.getItem("medusa_auth_token") || ""
+  const response = await fetch(`${backendUrl}/vendor/products/batch`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${bearer}`,
+      "Content-Type": "application/json",
+      "x-publishable-api-key": publishableApiKey,
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.message || "Batch update failed")
+  }
+  return response.json()
+}
+
 export const importProductsQuery = async (file: File) => {
   const formData = new FormData()
   formData.append("file", file)
