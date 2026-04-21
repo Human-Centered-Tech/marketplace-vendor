@@ -44,7 +44,7 @@ export const MappingPreview = ({ stats, warnings }: Props) => {
           <Heading level="h3" className="text-ui-fg-base text-xs font-medium">
             {t("products.import.etsy.warnings.title", { count: warnings.length })}
           </Heading>
-          <ul className="mt-2 flex flex-col gap-y-1">
+          <ul className="mt-2 flex max-h-48 flex-col gap-y-1 overflow-y-auto pr-1">
             {visibleWarnings.map((w, i) => (
               <li
                 key={i}

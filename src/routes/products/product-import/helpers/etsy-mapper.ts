@@ -73,15 +73,33 @@ function collectImages(row: EtsyRow): string[] {
  *     "TS123-S-RED,TS123-M-RED,TS123-S-BLUE,TS123-M-BLUE"
  *
  * When variationCount matches the comma-count, we treat the cell as
- * per-variant SKUs. Otherwise we fall back to one shared SKU.
+ * per-variant SKUs. Otherwise we suffix the single SKU with the combo's
+ * axis values so Medusa's seller-scoped SKU uniqueness constraint doesn't
+ * reject duplicate rows.
  */
-function resolveSku(rawSku: string, variantIndex: number, variationCount: number): string {
+function resolveSku(
+  rawSku: string,
+  variantIndex: number,
+  combos: { axes: { value: string }[] }[],
+): string {
   if (!rawSku) return ""
   const parts = rawSku.split(",").map((p) => p.trim())
-  if (parts.length === variationCount && variationCount > 1) {
+  if (parts.length === combos.length && combos.length > 1) {
     return parts[variantIndex] ?? ""
   }
-  return parts[0] ?? rawSku
+  const base = parts[0] ?? rawSku
+  if (combos.length <= 1) return base
+  const combo = combos[variantIndex]
+  const suffix = combo.axes
+    .map((a) =>
+      a.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, ""),
+    )
+    .filter(Boolean)
+    .join("-")
+  return suffix ? `${base}-${suffix}` : `${base}-${variantIndex + 1}`
 }
 
 export function parseEtsyCsv(text: string): Papa.ParseResult<EtsyRow> {
@@ -158,7 +176,10 @@ export function mapEtsyRows(rows: EtsyRow[]): MappingResult {
     const quantity = quantityStr ? parseInt(quantityStr, 10) : 0
 
     const rawSku = readCell(row, ETSY_HEADERS.SKU).trim()
-    const tags = readCell(row, ETSY_HEADERS.TAGS).trim()
+    // Tags intentionally ignored in v1: Mercur's CSV normalizer throws
+    // "Tag with value X not found" for any tag that isn't pre-created,
+    // and creating tags inline would require a separate endpoint. Vendor
+    // can re-tag after import. See normalize-for-import.js:84-88.
     const materials = readCell(row, ETSY_HEADERS.MATERIALS).trim()
     const description = readCell(row, ETSY_HEADERS.DESCRIPTION).trim()
     const images = collectImages(row)
@@ -194,7 +215,7 @@ export function mapEtsyRows(rows: EtsyRow[]): MappingResult {
     }
 
     combos.forEach((combo, variantIdx) => {
-      const variantSku = resolveSku(rawSku, variantIdx, combos.length)
+      const variantSku = resolveSku(rawSku, variantIdx, combos)
 
       const mercurRow: MercurRow = {
         "Product Handle": handle,
@@ -203,7 +224,6 @@ export function mapEtsyRows(rows: EtsyRow[]): MappingResult {
         "Product Status": DEFAULT_PRODUCT_STATUS,
         "Product Thumbnail": thumbnail,
         "Product Material": materials,
-        "Product Tags": tags,
         "Product Discountable": "true",
         "Variant Title": combo.title,
         "Variant SKU": variantSku,

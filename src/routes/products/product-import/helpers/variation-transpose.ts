@@ -48,9 +48,17 @@ export function parseVariationAxes(inputs: VariationInputs): VariationAxis[] {
   return axes
 }
 
+/**
+ * Build the cartesian product of axis values, iterating the FIRST axis
+ * fastest (inner loop). Matches how sellers commonly lay out per-variant
+ * SKU lists: all sizes of Color 1, then all sizes of Color 2, etc.
+ *
+ * [["Small","Medium"], ["Red","Blue"]]
+ *   → [["Small","Red"],["Medium","Red"],["Small","Blue"],["Medium","Blue"]]
+ */
 function cartesian<T>(arrays: T[][]): T[][] {
-  return arrays.reduce<T[][]>(
-    (acc, curr) => acc.flatMap((a) => curr.map((c) => [...a, c])),
+  return arrays.reduceRight<T[][]>(
+    (acc, curr) => acc.flatMap((existing) => curr.map((val) => [val, ...existing])),
     [[]],
   )
 }
@@ -108,8 +116,12 @@ export function transposeVariations(
   const valueGrid = kept.map((a) => a.values)
   const combos: VariantCombo[] = cartesian(valueGrid).map((valueRow) => {
     const axesForCombo = kept.map((a, i) => ({ name: a.name, value: valueRow[i] }))
+    // Include axis names in the title so purely-numeric values (e.g. ring
+    // sizes "5", "6") don't get auto-typed to numbers by Medusa's
+    // json-2-csv parser on import. A title of "Size: 6" stays a string;
+    // a title of just "6" is coerced to 5 and fails zod validation.
     return {
-      title: valueRow.join(" / "),
+      title: axesForCombo.map((a) => `${a.name}: ${a.value}`).join(" / "),
       axes: axesForCombo,
       lookupKey: buildLookupKey(joinId, axesForCombo),
     }

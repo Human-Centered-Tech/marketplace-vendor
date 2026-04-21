@@ -1,4 +1,4 @@
-import { Trash } from "@medusajs/icons"
+import { Spinner, Trash } from "@medusajs/icons"
 import {
   Button,
   Container,
@@ -55,7 +55,7 @@ export const ProductListTable = () => {
     placeholderData: keepPreviousData,
   }
 
-  const { products, count, isLoading, isError, error } = useProducts(
+  const { products, count, isLoading, isFetching, isError, error } = useProducts(
     searchParams,
     options
   )
@@ -155,7 +155,12 @@ export const ProductListTable = () => {
   return (
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
-        <Heading level="h2">{t("products.domain")}</Heading>
+        <div className="flex items-center gap-x-2">
+          <Heading level="h2">{t("products.domain")}</Heading>
+          {isFetching && !isLoading && (
+            <Spinner className="text-ui-fg-subtle h-4 w-4 animate-spin" />
+          )}
+        </div>
         <div className="flex items-center justify-center gap-x-2">
           <Button size="small" variant="secondary" asChild>
             <Link to={`export${location.search}`}>{t("actions.export")}</Link>

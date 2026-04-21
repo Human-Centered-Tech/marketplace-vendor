@@ -490,7 +490,10 @@
       },
       "etsy": {
         "continue": "Continue import",
-        "rehostNotice": "Product images will be re-hosted to our system shortly after import. You may briefly see Etsy-hosted images.",
+        "continueLoading": "Importing...",
+        "uploading": "Uploading {{count}} variants. This can take a minute for large catalogs — keep this tab open.",
+        "uploadFailed": "Import failed:",
+        "rehostNotice": "Product images will be re-hosted to our system shortly after import. You may briefly see Etsy-hosted images. Tags from Etsy are not imported in this version — re-tag after review.",
         "howTo": {
           "title": "How to export from Etsy",
           "step1": "In your Etsy Shop Manager, open Settings → Options → Download Data.",

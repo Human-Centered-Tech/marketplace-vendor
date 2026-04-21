@@ -1,5 +1,5 @@
 import { Button, Heading, Hint, Text, toast } from "@medusajs/ui"
-import { Trash } from "@medusajs/icons"
+import { Spinner, Trash } from "@medusajs/icons"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -24,6 +24,7 @@ export const EtsyImportTab = () => {
   const [listingsFile, setListingsFile] = useState<LocalFile>()
   const [mapping, setMapping] = useState<MappingResult>()
   const [parseError, setParseError] = useState<string>()
+  const [uploadError, setUploadError] = useState<string>()
 
   const { mutateAsync: importProducts, isPending } = useImportProducts()
 
@@ -41,6 +42,7 @@ export const EtsyImportTab = () => {
 
   const runMapping = async (listings: LocalFile | undefined) => {
     setParseError(undefined)
+    setUploadError(undefined)
     if (!listings) {
       setMapping(undefined)
       return
@@ -80,6 +82,7 @@ export const EtsyImportTab = () => {
 
   const handleContinue = async () => {
     if (!mapping || mapping.empty) return
+    setUploadError(undefined)
     await importProducts(
       { file: mapping.file },
       {
@@ -88,6 +91,7 @@ export const EtsyImportTab = () => {
           handleSuccess()
         },
         onError: (err) => {
+          setUploadError(err.message)
           toast.error(err.message)
         },
       },
@@ -152,6 +156,26 @@ export const EtsyImportTab = () => {
         </div>
       )}
 
+      {isPending && (
+        <div className="bg-ui-bg-highlight text-ui-fg-interactive flex items-center gap-x-2 rounded-md p-3 text-xs">
+          <Spinner className="animate-spin" />
+          <Text size="small" className="text-ui-fg-interactive">
+            {t("products.import.etsy.uploading", {
+              count: mapping?.stats.totalVariants ?? 0,
+            })}
+          </Text>
+        </div>
+      )}
+
+      {uploadError && !isPending && (
+        <Hint variant="error">
+          <span className="font-medium">
+            {t("products.import.etsy.uploadFailed")}
+          </span>{" "}
+          {uploadError}
+        </Hint>
+      )}
+
       <div className="flex justify-end">
         <Button
           size="small"
@@ -160,7 +184,9 @@ export const EtsyImportTab = () => {
           isLoading={isPending}
           onClick={handleContinue}
         >
-          {t("products.import.etsy.continue")}
+          {isPending
+            ? t("products.import.etsy.continueLoading")
+            : t("products.import.etsy.continue")}
         </Button>
       </div>
     </div>

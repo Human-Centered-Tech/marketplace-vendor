@@ -583,6 +583,9 @@ export const useImportProducts = (
   return useMutation({
     mutationFn: (payload) => importProductsQuery(payload.file),
     onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.lists(),
+      })
       options?.onSuccess?.(data, variables, context)
     },
     ...options,

@@ -18,9 +18,9 @@ export const ProductImport = () => {
           {t("products.import.description")}
         </RouteDrawer.Description>
       </RouteDrawer.Header>
-      <Tabs defaultValue="mercur">
-        <div className="border-ui-border-base border-b px-6 pt-4">
-          <Tabs.List>
+      <RouteDrawer.Body className="overflow-y-auto">
+        <Tabs defaultValue="mercur" className="flex h-full flex-col">
+          <Tabs.List className="mb-4">
             <Tabs.Trigger value="mercur">
               {t("products.import.tabs.mercur")}
             </Tabs.Trigger>
@@ -28,16 +28,14 @@ export const ProductImport = () => {
               {t("products.import.tabs.etsy")}
             </Tabs.Trigger>
           </Tabs.List>
-        </div>
-        <RouteDrawer.Body>
           <Tabs.Content value="mercur">
             <MercurImportTab />
           </Tabs.Content>
           <Tabs.Content value="etsy">
             <EtsyImportTab />
           </Tabs.Content>
-        </RouteDrawer.Body>
-      </Tabs>
+        </Tabs>
+      </RouteDrawer.Body>
       <RouteDrawer.Footer>
         <div className="flex items-center gap-x-2">
           <RouteDrawer.Close asChild>
