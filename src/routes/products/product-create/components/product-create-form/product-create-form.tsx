@@ -13,7 +13,7 @@ import {
   useExtendableForm,
 } from "../../../../../extensions"
 import { useCreateProduct } from "../../../../../hooks/api/products"
-import { uploadFilesQuery } from "../../../../../lib/client"
+import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import {
   PRODUCT_CREATE_FORM_DEFAULTS,
   ProductCreateSchema,
@@ -146,6 +146,8 @@ export const ProductCreateForm = ({
       }
     }
 
+    const vendorTagIds = payload.tags || []
+
     await mutateAsync(
       {
         ...payload,
@@ -156,10 +158,7 @@ export const ProductCreateForm = ({
         height: parseInt(payload.height || "") || undefined,
         width: parseInt(payload.width || "") || undefined,
         type_id: payload.type_id || undefined,
-        tags:
-          payload.tags?.map((tag) => ({
-            id: tag,
-          })) || [],
+        tags: undefined,
         collection_id: payload.collection_id || undefined,
         shipping_profile_id: undefined,
         enable_variants: undefined,
@@ -183,7 +182,20 @@ export const ProductCreateForm = ({
         })),
       },
       {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
+          if (vendorTagIds.length > 0) {
+            try {
+              await fetchQuery(
+                `/vendor/products/${data.product.id}/vendor-tags`,
+                {
+                  method: "POST",
+                  body: { tag_ids: vendorTagIds },
+                }
+              )
+            } catch (err: any) {
+              toast.error(err.message || "Failed to assign tags")
+            }
+          }
           toast.success(
             t("products.create.successToast", {
               title: data.product.title,

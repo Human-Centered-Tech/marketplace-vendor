@@ -1,5 +1,6 @@
 import { ExtendedAdminProduct } from "../../../../../types/products"
 import { Button, toast } from "@medusajs/ui"
+import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import * as zod from "zod"
 
@@ -13,6 +14,11 @@ import {
   useExtendableForm,
 } from "../../../../../extensions"
 import { useUpdateProduct } from "../../../../../hooks/api/products"
+import { useCreateProductTag } from "../../../../../hooks/api/tags"
+import {
+  useProductVendorTags,
+  useSetProductVendorTags,
+} from "../../../../../hooks/api/product-vendor-tags"
 import { useComboboxData } from "../../../../../hooks/use-combobox-data"
 import { fetchQuery } from "../../../../../lib/client"
 
@@ -89,48 +95,104 @@ export const ProductOrganizationForm = ({
       }),
     getOptions: (data) =>
       data.product_tags.map((tag: any) => ({
-        label: tag.value,
+        label: tag.label || tag.value,
         value: tag.id,
       })),
   })
+
+  const { product_tags: productVendorTags } = useProductVendorTags(product.id)
 
   const form = useExtendableForm({
     defaultValues: {
       type_id: product.type_id ?? "",
       collection_id: product.collection_id ?? "",
       category_ids: product.categories?.[0]?.id || "",
-      tag_ids: product.tags?.map((t) => t.id) || [],
+      tag_ids: productVendorTags?.map((t) => t.id) || [],
     },
     schema: ProductOrganizationSchema,
     configs: configs,
     data: product,
   })
 
-  const { mutateAsync, isPending } = useUpdateProduct(product.id)
+  // Reset tag_ids once the vendor-tags query resolves (fetch is async).
+  // Use reset (not setValue) so the field is not marked as dirty.
+  useEffect(() => {
+    if (productVendorTags) {
+      form.resetField("tag_ids", {
+        defaultValue: productVendorTags.map((t) => t.id),
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productVendorTags?.map((t) => t.id).join(",")])
+
+  const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProduct(
+    product.id
+  )
+  const { mutateAsync: setVendorTags, isPending: isSettingTags } =
+    useSetProductVendorTags(product.id)
+  const { mutateAsync: createTag } = useCreateProductTag()
+
+  const handleCreateTag = async () => {
+    const value = tags.searchValue?.trim()
+    if (!value) return
+    try {
+      const result: any = await createTag({ value })
+      const newId = result?.product_tag?.id
+      if (newId) {
+        const current = form.getValues("tag_ids") ?? []
+        const cleaned = current.filter((id) => id !== value && id !== newId)
+        cleaned.push(newId)
+        form.setValue("tag_ids", cleaned)
+      }
+    } catch (error: any) {
+      const current = form.getValues("tag_ids") ?? []
+      form.setValue(
+        "tag_ids",
+        current.filter((id) => id !== value)
+      )
+      toast.error(error.message)
+    }
+  }
 
   const handleSubmit = form.handleSubmit(async (data) => {
-    await mutateAsync(
-      {
-        type_id: data.type_id || null,
-        collection_id: data.collection_id || null,
-        categories: [{ id: data.category_ids || "" }],
-        tags: data.tag_ids?.map((t) => ({ id: t })),
-      },
-      {
-        onSuccess: ({ product }) => {
-          toast.success(
-            t("products.organization.edit.toasts.success", {
-              title: product.title,
-            })
-          )
-          handleSuccess()
-        },
-        onError: (error) => {
-          toast.error(error.message)
-        },
-      }
-    )
+    const dirty = form.formState.dirtyFields
+    const productPayload: Record<string, any> = {}
+    if (dirty.type_id) productPayload.type_id = data.type_id || null
+    if (dirty.collection_id)
+      productPayload.collection_id = data.collection_id || null
+    if (dirty.category_ids) {
+      productPayload.categories = data.category_ids
+        ? [{ id: data.category_ids }]
+        : []
+    }
+
+    const tasks: Promise<unknown>[] = []
+    if (Object.keys(productPayload).length > 0) {
+      tasks.push(updateProduct(productPayload))
+    }
+    if (dirty.tag_ids) {
+      tasks.push(setVendorTags({ tag_ids: data.tag_ids ?? [] }))
+    }
+
+    if (tasks.length === 0) {
+      handleSuccess()
+      return
+    }
+
+    try {
+      await Promise.all(tasks)
+      toast.success(
+        t("products.organization.edit.toasts.success", {
+          title: product.title,
+        })
+      )
+      handleSuccess()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
   })
+
+  const isPending = isUpdating || isSettingTags
 
   return (
     <RouteDrawer.Form form={form}>
@@ -223,6 +285,7 @@ export const ProductOrganizationForm = ({
                         options={tags.options}
                         onSearchValueChange={tags.onSearchValueChange}
                         searchValue={tags.searchValue}
+                        onCreateOption={handleCreateTag}
                       />
                     </Form.Control>
                     <Form.ErrorMessage />

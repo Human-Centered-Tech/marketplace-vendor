@@ -2,9 +2,11 @@ import { Heading } from "@medusajs/ui"
 import { UseFormReturn } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
+import { toast } from "@medusajs/ui"
 import { Form } from "../../../../../../../components/common/form"
 import { SwitchBox } from "../../../../../../../components/common/switch-box"
 import { Combobox } from "../../../../../../../components/inputs/combobox"
+import { useCreateProductTag } from "../../../../../../../hooks/api/tags"
 import { useComboboxData } from "../../../../../../../hooks/use-combobox-data"
 import { fetchQuery } from "../../../../../../../lib/client"
 import { ProductCreateSchemaType } from "../../../../types"
@@ -56,10 +58,34 @@ export const ProductCreateOrganizationSection = ({
       }),
     getOptions: (data) =>
       data.product_tags.map((tag: any) => ({
-        label: tag.value,
+        label: tag.label || tag.value,
         value: tag.id,
       })),
   })
+
+  const { mutateAsync: createTag } = useCreateProductTag()
+
+  const handleCreateTag = async () => {
+    const value = tags.searchValue?.trim()
+    if (!value) return
+    try {
+      const result: any = await createTag({ value })
+      const newId = result?.product_tag?.id
+      if (newId) {
+        const current = form.getValues("tags") ?? []
+        const cleaned = current.filter((id) => id !== value && id !== newId)
+        cleaned.push(newId)
+        form.setValue("tags", cleaned)
+      }
+    } catch (error: any) {
+      const current = form.getValues("tags") ?? []
+      form.setValue(
+        "tags",
+        current.filter((id) => id !== value)
+      )
+      toast.error(error.message)
+    }
+  }
 
   return (
     <div id="organize" className="flex flex-col gap-y-8">
@@ -154,6 +180,7 @@ export const ProductCreateOrganizationSection = ({
                     searchValue={tags.searchValue}
                     onSearchValueChange={tags.onSearchValueChange}
                     fetchNextPage={tags.fetchNextPage}
+                    onCreateOption={handleCreateTag}
                   />
                 </Form.Control>
                 <Form.ErrorMessage />

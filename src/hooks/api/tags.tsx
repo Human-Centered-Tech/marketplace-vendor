@@ -7,7 +7,7 @@ import {
   useMutation,
   useQuery,
 } from "@tanstack/react-query"
-import { fetchQuery, sdk } from "../../lib/client"
+import { fetchQuery } from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
 import { queryKeysFactory } from "../../lib/query-key-factory"
 
@@ -81,6 +81,7 @@ export const useCreateProductTag = (
       queryClient.invalidateQueries({
         queryKey: productTagsQueryKeys.lists(),
       })
+      queryClient.invalidateQueries({ queryKey: ["product_tags"] })
 
       options?.onSuccess?.(data, variables, context)
     },
@@ -98,7 +99,11 @@ export const useUpdateProductTag = (
   >
 ) => {
   return useMutation({
-    mutationFn: async (data) => sdk.admin.productTag.update(id, data, query),
+    mutationFn: async (body) =>
+      fetchQuery(`/vendor/product-tags/${id}`, {
+        method: "POST",
+        body,
+      }),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({
         queryKey: productTagsQueryKeys.lists(),
@@ -106,6 +111,7 @@ export const useUpdateProductTag = (
       queryClient.invalidateQueries({
         queryKey: productTagsQueryKeys.detail(data.product_tag.id, query),
       })
+      queryClient.invalidateQueries({ queryKey: ["product_tags"] })
 
       options?.onSuccess?.(data, variables, context)
     },
@@ -122,7 +128,10 @@ export const useDeleteProductTag = (
   >
 ) => {
   return useMutation({
-    mutationFn: async () => sdk.admin.productTag.delete(id),
+    mutationFn: async () =>
+      fetchQuery(`/vendor/product-tags/${id}`, {
+        method: "DELETE",
+      }),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({
         queryKey: productTagsQueryKeys.lists(),
@@ -130,6 +139,7 @@ export const useDeleteProductTag = (
       queryClient.invalidateQueries({
         queryKey: productTagsQueryKeys.detail(id),
       })
+      queryClient.invalidateQueries({ queryKey: ["product_tags"] })
 
       options?.onSuccess?.(data, variables, context)
     },

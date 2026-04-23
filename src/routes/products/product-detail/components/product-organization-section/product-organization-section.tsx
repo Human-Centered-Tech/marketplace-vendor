@@ -6,6 +6,7 @@ import { Link } from "react-router-dom"
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { SectionRow } from "../../../../../components/common/section"
 import { useDashboardExtension } from "../../../../../extensions"
+import { useProductVendorTags } from "../../../../../hooks/api/product-vendor-tags"
 
 type ProductOrganizationSectionProps = {
   product: ExtendedAdminProduct
@@ -16,6 +17,7 @@ export const ProductOrganizationSection = ({
 }: ProductOrganizationSectionProps) => {
   const { t } = useTranslation()
   const { getDisplays } = useDashboardExtension()
+  const { product_tags: vendorTags } = useProductVendorTags(product.id)
 
   return (
     <Container className="divide-y p-0">
@@ -39,11 +41,11 @@ export const ProductOrganizationSection = ({
       <SectionRow
         title={t("fields.tags")}
         value={
-          product.tags?.length
-            ? product.tags.map((tag) => (
+          vendorTags?.length
+            ? vendorTags.map((tag) => (
                 <OrganizationTag
                   key={tag.id}
-                  label={tag.value}
+                  label={tag.label || tag.value}
                   to={`/settings/product-tags/${tag.id}`}
                 />
               ))
