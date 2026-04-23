@@ -67,16 +67,25 @@ export const uploadFilesQuery = async (files: any[]) => {
     formData.append("files", file)
   }
 
-  return await fetch(`${backendUrl}/vendor/uploads`, {
+  const bearer = window.localStorage.getItem("medusa_auth_token") || ""
+
+  const response = await fetch(`${backendUrl}/vendor/uploads`, {
     method: "POST",
     body: formData,
     headers: {
-      authorization: `Bearer ${token}`,
+      authorization: `Bearer ${bearer}`,
       "x-publishable-api-key": publishableApiKey,
     },
   })
-    .then((res) => res.json())
-    .catch(() => null)
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(
+      errorData.message || `Upload failed with status ${response.status}`
+    )
+  }
+
+  return response.json()
 }
 
 export const fetchQuery = async (
