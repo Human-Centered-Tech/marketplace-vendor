@@ -9,7 +9,7 @@ import {
   useRouteModal,
 } from "../../../../../components/modals"
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
-import { useCreateVendorRequest } from "../../../../../hooks/api"
+import { useCreateProductTag } from "../../../../../hooks/api"
 
 const ProductTagCreateSchema = z.object({
   value: z.string().min(1),
@@ -26,26 +26,18 @@ export const ProductTagCreateForm = () => {
     resolver: zodResolver(ProductTagCreateSchema),
   })
 
-  const { mutateAsync, isPending } = useCreateVendorRequest()
+  const { mutateAsync, isPending } = useCreateProductTag()
 
   const handleSubmit = form.handleSubmit(async (data) => {
-    await mutateAsync(
-      {
-        request: {
-          type: "product_tag",
-          data,
-        },
+    await mutateAsync(data, {
+      onSuccess: () => {
+        toast.success("Product Tag Created")
+        handleSuccess()
       },
-      {
-        onSuccess: () => {
-          toast.success("Product Tag Requested")
-          handleSuccess()
-        },
-        onError: (error) => {
-          toast.error(error.message)
-        },
-      }
-    )
+      onError: (error) => {
+        toast.error(error.message)
+      },
+    })
   })
 
   return (
@@ -59,7 +51,7 @@ export const ProductTagCreateForm = () => {
           <div className="flex w-full max-w-[720px] flex-col gap-y-8">
             <div className="flex flex-col gap-y-1">
               <RouteFocusModal.Title asChild>
-                <Heading>Request Product Tag</Heading>
+                <Heading>Create Product Tag</Heading>
               </RouteFocusModal.Title>
               <RouteFocusModal.Description asChild>
                 <Text size="small" className="text-ui-fg-subtle">
@@ -94,7 +86,7 @@ export const ProductTagCreateForm = () => {
               </Button>
             </RouteFocusModal.Close>
             <Button size="small" type="submit" isLoading={isPending}>
-              Request
+              Create
             </Button>
           </div>
         </RouteFocusModal.Footer>
