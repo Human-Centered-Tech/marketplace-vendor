@@ -1447,6 +1447,21 @@ export const RouteMap: RouteObject[] = [
             ],
           },
           {
+            path: "shop-collections",
+            errorElement: <ErrorBoundary />,
+            element: <Outlet />,
+            handle: {
+              breadcrumb: () => "Shop Collections",
+            },
+            children: [
+              {
+                path: "",
+                lazy: () =>
+                  import("../../routes/shop-collections/shop-collection-list"),
+              },
+            ],
+          },
+          {
             path: "workflows",
             errorElement: <ErrorBoundary />,
             element: <Outlet />,
