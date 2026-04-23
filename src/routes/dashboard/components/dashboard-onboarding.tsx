@@ -6,14 +6,12 @@ type DashboardProps = {
   products: boolean
   locations_shipping: boolean
   store_information: boolean
-  stripe_connect: boolean
 }
 
 export const DashboardOnboarding = ({
   products,
   locations_shipping,
   store_information,
-  // stripe_connect,
 }: DashboardProps) => {
   const { mutateAsync } = useUpdateOnboarding()
 

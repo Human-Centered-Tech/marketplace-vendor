@@ -5,6 +5,7 @@ import { DashboardOnboarding } from "./components/dashboard-onboarding"
 import { ChartSkeleton } from "./components/chart-skeleton"
 import { AnalyticsPanel } from "./components/analytics-panel"
 import { CatholicSetupPanel } from "./components/catholic-setup-panel"
+import { PendingPayoutBanner } from "./components/pending-payout-banner"
 import { useReviews } from "../../hooks/api/review"
 
 export const Dashboard = () => {
@@ -43,14 +44,12 @@ export const Dashboard = () => {
     !onboarding?.products ||
     !onboarding?.locations_shipping ||
     !onboarding?.store_information
-    // !onboarding?.stripe_connect
   )
     return (
       <DashboardOnboarding
         products={onboarding?.products}
         locations_shipping={onboarding?.locations_shipping}
         store_information={onboarding?.store_information}
-        stripe_connect={onboarding?.stripe_connect}
       />
     )
 
@@ -61,6 +60,7 @@ export const Dashboard = () => {
         fulfilledOrders={fulfilledOrders}
         reviewsToReply={reviewsToReply}
       />
+      <PendingPayoutBanner />
       <CatholicSetupPanel />
       <AnalyticsPanel />
     </div>

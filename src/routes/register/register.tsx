@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Alert, Hint, Input } from "@medusajs/ui"
+import { Alert, Checkbox, Hint, Input } from "@medusajs/ui"
 import { useForm } from "react-hook-form"
 import { Trans, useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
@@ -17,6 +17,9 @@ const RegisterSchema = z.object({
   confirmPassword: z.string().min(2, {
     message: "Confirm Password should be a string",
   }),
+  agreedToTos: z.boolean().refine((v) => v === true, {
+    message: "You must agree to the Vendor Agreement to continue",
+  }),
 })
 
 export const Register = () => {
@@ -30,13 +33,14 @@ export const Register = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      agreedToTos: false,
     },
   })
 
   const { mutateAsync, isPending } = useSignUpWithEmailPass()
 
   const handleSubmit = form.handleSubmit(
-    async ({ name, email, password, confirmPassword }) => {
+    async ({ name, email, password, confirmPassword, agreedToTos: _tos }) => {
       if (password !== confirmPassword) {
         form.setError("password", {
           type: "manual",
@@ -88,7 +92,8 @@ export const Register = () => {
     form.formState.errors.email?.message ||
     form.formState.errors.password?.message ||
     form.formState.errors.name?.message ||
-    form.formState.errors.confirmPassword?.message
+    form.formState.errors.confirmPassword?.message ||
+    form.formState.errors.agreedToTos?.message
 
   if (success)
     return (
@@ -235,6 +240,36 @@ export const Register = () => {
                       </Form.Item>
                     )
                   }}
+                />
+                <Form.Field
+                  control={form.control}
+                  name="agreedToTos"
+                  render={({ field: { value, onChange } }) => (
+                    <Form.Item>
+                      <div className="flex items-start gap-2 pt-1">
+                        <Checkbox
+                          id="agreedToTos"
+                          checked={!!value}
+                          onCheckedChange={(v) => onChange(Boolean(v))}
+                        />
+                        <label
+                          htmlFor="agreedToTos"
+                          className="text-sm text-co-text-secondary"
+                        >
+                          I agree to the{" "}
+                          <a
+                            href="/vendor-agreement.pdf"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline font-medium text-co-navy"
+                          >
+                            Catholic Owned Vendor Agreement
+                          </a>
+                          . You'll re-confirm this when you add banking info.
+                        </label>
+                      </div>
+                    </Form.Item>
+                  )}
                 />
               </div>
               {validationError && (

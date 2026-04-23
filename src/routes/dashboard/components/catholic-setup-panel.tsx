@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Container, Heading, Text, Badge } from "@medusajs/ui"
 import { sdk, backendUrl } from "../../../lib/client"
+import { useBankingInfo } from "../../../hooks/api/banking-info"
 
 type CatholicOnboarding = {
   seller_id: string
@@ -39,6 +40,8 @@ export const CatholicSetupPanel = () => {
         .fetch<CatholicOnboarding>("/vendor/catholic-onboarding")
         .catch(() => null),
   })
+  const { data: bankingResp } = useBankingInfo()
+  const bankingOnFile = Boolean(bankingResp?.banking_info)
 
   const buildStorefrontUrl = (path: string) => {
     // Use the reverse-SSO handoff endpoint so the vendor logs into
@@ -107,6 +110,19 @@ export const CatholicSetupPanel = () => {
         : {
             label: "Add parish",
             to: buildStorefrontUrl("/user/directory/edit"),
+          },
+    },
+    {
+      done: bankingOnFile,
+      label: "Banking information",
+      hint: bankingOnFile
+        ? "Your ACH banking info is on file. Payouts begin end of June when the marketplace launches."
+        : "Add your ACH account so you're ready when payouts start (end of June launch).",
+      cta: bankingOnFile
+        ? null
+        : {
+            label: "Add banking info",
+            to: "/banking-info",
           },
     },
   ]
