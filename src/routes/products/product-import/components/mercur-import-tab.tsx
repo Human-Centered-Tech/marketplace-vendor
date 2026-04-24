@@ -24,12 +24,21 @@ export const MercurImportTab = () => {
     await importProducts(
       { file },
       {
-        onSuccess: () => {
-          toast.info(t("products.import.success.title"))
+        onSuccess: (data: any) => {
+          const count = Array.isArray(data?.products) ? data.products.length : 0
+          toast.success(
+            count === 1
+              ? "1 product imported as draft"
+              : `${count} products imported as draft`,
+            {
+              description:
+                "Review them in your product list, then bulk-publish when ready.",
+            },
+          )
           handleSuccess()
         },
         onError: (err) => {
-          toast.error(err.message)
+          toast.error("Import failed", { description: err.message })
           setFilename(undefined)
         },
       },

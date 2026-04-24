@@ -90,6 +90,7 @@ export const ProductListTable = () => {
       description: t("products.bulkPublish.description", { count: keys.length }),
       confirmText: t("products.bulkPublish.confirm"),
       cancelText: t("actions.cancel"),
+      variant: "confirmation",
     })
     if (!res) return
 
