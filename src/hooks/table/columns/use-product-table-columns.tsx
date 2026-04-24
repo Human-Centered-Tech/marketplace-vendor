@@ -14,6 +14,10 @@ import {
   ProductHeader,
 } from "../../../components/table/table-cells/product/product-cell"
 import {
+  PriceCell,
+  PriceHeader,
+} from "../../../components/table/table-cells/product/price-cell"
+import {
   ProductStatusCell,
   ProductStatusHeader,
 } from "../../../components/table/table-cells/product/product-status-cell"
@@ -48,6 +52,13 @@ export const useProductTableColumns = () => {
       columnHelper.accessor("variants", {
         header: () => <VariantHeader />,
         cell: ({ row }) => <VariantCell variants={row.original.variants} />,
+      }),
+      columnHelper.display({
+        id: "price",
+        header: () => <PriceHeader />,
+        cell: ({ row }) => (
+          <PriceCell variants={row.original.variants as any} />
+        ),
       }),
       columnHelper.accessor("status", {
         header: () => <ProductStatusHeader />,

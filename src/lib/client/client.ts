@@ -3,8 +3,6 @@ import Medusa from "@medusajs/js-sdk"
 export const backendUrl = __BACKEND_URL__ ?? "/"
 export const publishableApiKey = __PUBLISHABLE_API_KEY__ ?? ""
 
-const token = window.localStorage.getItem("medusa_auth_token") || ""
-
 export const sdk = new Medusa({
   baseUrl: backendUrl,
   publishableKey: publishableApiKey,
@@ -24,6 +22,14 @@ export const batchUpdateProductsQuery = async (
   payload: BatchUpdateProductsPayload,
 ) => {
   const bearer = window.localStorage.getItem("medusa_auth_token") || ""
+  // Mercur's batch endpoint validator requires BOTH `update` and `delete`
+  // (neither is optional server-side), even when the caller only intends to
+  // do one or the other. Default the missing one to an empty array so callers
+  // can send just what they care about.
+  const fullPayload = {
+    update: payload.update ?? [],
+    delete: payload.delete ?? [],
+  }
   const response = await fetch(`${backendUrl}/vendor/products/batch`, {
     method: "POST",
     headers: {
@@ -31,7 +37,7 @@ export const batchUpdateProductsQuery = async (
       "Content-Type": "application/json",
       "x-publishable-api-key": publishableApiKey,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(fullPayload),
   })
   if (!response.ok) {
     const err = await response.json().catch(() => ({}))

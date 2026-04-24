@@ -170,7 +170,10 @@ export function mapEtsyRows(rows: EtsyRow[]): MappingResult {
       })
       continue
     }
-    const priceMinor = Math.round(priceMajor * 100)
+    // Medusa v2 stores prices in major units (decimal dollars), not cents.
+    // The Etsy CSV PRICE column is already in major units, so pass it through
+    // as-is. Round to two decimals to keep the BigNumber clean.
+    const priceForMedusa = (Math.round(priceMajor * 100) / 100).toFixed(2)
 
     const quantityStr = readCell(row, ETSY_HEADERS.QUANTITY).trim()
     const quantity = quantityStr ? parseInt(quantityStr, 10) : 0
@@ -230,7 +233,7 @@ export function mapEtsyRows(rows: EtsyRow[]): MappingResult {
         "Variant Inventory Quantity": String(quantity),
         "Variant Allow Backorder": "false",
         "Variant Manage Inventory": "true",
-        "Price USD": String(priceMinor),
+        "Variant Price USD": priceForMedusa,
       }
 
       combo.axes.forEach((axis, axisIdx) => {
