@@ -79,7 +79,10 @@ export const Login = () => {
             message: error.message,
           })
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (typeof data === "string") {
+            window.localStorage.setItem("medusa_auth_token", data)
+          }
           setTimeout(() => {
             navigate(from, { replace: true })
           }, 1000)
