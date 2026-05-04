@@ -29,9 +29,9 @@ export const getOrderStatus = (
 
 export const getOrderPaymentStatus = (
   t: TFunction<"translation">,
-  status: string
+  status: string | null | undefined
 ) => {
-  const [label, color] = {
+  const [label = "-", color = "orange"] = ({
     pending: [t("orders.status.pending"), "red"],
     authorized: [t("orders.payment.status.authorized"), "orange"],
     partially_authorized: [
@@ -51,16 +51,16 @@ export const getOrderPaymentStatus = (
     ],
     canceled: [t("orders.payment.status.canceled"), "red"],
     requires_action: [t("orders.payment.status.requiresAction"), "orange"],
-  }[status] as [string, "red" | "orange" | "green"]
+  }[status as string] ?? []) as [string, "red" | "orange" | "green"]
 
   return { label, color }
 }
 
 export const getOrderFulfillmentStatus = (
   t: TFunction<"translation">,
-  status: string
+  status: string | null | undefined
 ) => {
-  const [label, color] = {
+  const [label = "-", color = "orange"] = ({
     not_fulfilled: [t("orders.fulfillment.status.notFulfilled"), "red"],
     partially_fulfilled: [
       t("orders.fulfillment.status.partiallyFulfilled"),
@@ -84,7 +84,7 @@ export const getOrderFulfillmentStatus = (
     returned: [t("orders.fulfillment.status.returned"), "green"],
     canceled: [t("orders.fulfillment.status.canceled"), "red"],
     requires_action: [t("orders.fulfillment.status.requiresAction"), "orange"],
-  }[status] as [string, "red" | "orange" | "green"]
+  }[status as string] ?? []) as [string, "red" | "orange" | "green"]
 
   return { label, color }
 }
