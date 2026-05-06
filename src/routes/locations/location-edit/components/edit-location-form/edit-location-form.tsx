@@ -21,9 +21,9 @@ const EditLocationSchema = zod.object({
     address_1: zod.string().min(1),
     address_2: zod.string().optional(),
     country_code: zod.string().min(2).max(2),
-    city: zod.string().optional(),
-    postal_code: zod.string().optional(),
-    province: zod.string().optional(),
+    city: zod.string().min(1, "City is required"),
+    postal_code: zod.string().min(1, "ZIP/postal code is required"),
+    province: zod.string().min(1, "State/province is required"),
     company: zod.string().optional(),
     phone: zod.string().optional(), // TODO: Add validation
   }),
@@ -131,7 +131,7 @@ export const EditLocationForm = ({ location }: EditLocationFormProps) => {
               render={({ field }) => {
                 return (
                   <Form.Item>
-                    <Form.Label optional>{t("fields.postalCode")}</Form.Label>
+                    <Form.Label>{t("fields.postalCode")}</Form.Label>
                     <Form.Control>
                       <Input size="small" {...field} />
                     </Form.Control>
@@ -146,7 +146,7 @@ export const EditLocationForm = ({ location }: EditLocationFormProps) => {
               render={({ field }) => {
                 return (
                   <Form.Item>
-                    <Form.Label optional>{t("fields.city")}</Form.Label>
+                    <Form.Label>{t("fields.city")}</Form.Label>
                     <Form.Control>
                       <Input size="small" {...field} />
                     </Form.Control>
@@ -176,7 +176,7 @@ export const EditLocationForm = ({ location }: EditLocationFormProps) => {
               render={({ field }) => {
                 return (
                   <Form.Item>
-                    <Form.Label optional>{t("fields.state")}</Form.Label>
+                    <Form.Label>{t("fields.state")}</Form.Label>
                     <Form.Control>
                       <Input size="small" {...field} />
                     </Form.Control>
