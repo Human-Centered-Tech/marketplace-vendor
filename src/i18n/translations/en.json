@@ -653,7 +653,7 @@
     "variant": {
       "edit": {
         "header": "Edit Variant",
-        "success": "Product variant edited sucessfully"
+        "success": "Product variant edited successfully"
       },
       "create": {
         "header": "Variant details"
@@ -689,7 +689,7 @@
           "levelsBatch": "Inventory levels updated.",
           "update": "Inventory item updated successfully.",
           "updateLevel": "Inventory level updated successfully.",
-          "itemsManageSuccess": "Inventory items sucessfully updated."
+          "itemsManageSuccess": "Inventory items successfully updated."
         }
       }
     },
@@ -2524,9 +2524,9 @@
     "removeSalesChannelsWarning_one": "You are about to remove {{count}} sales channel from the location.",
     "removeSalesChannelsWarning_other": "You are about to remove {{count}} sales channels from the location.",
     "toast": {
-      "create": "Location created sucessfully",
-      "update": "Location updated sucessfully",
-      "removeChannel": "Sales channel removed sucessfully"
+      "create": "Location created successfully",
+      "update": "Location updated successfully",
+      "removeChannel": "Sales channel removed successfully"
     }
   },
   "reservations": {

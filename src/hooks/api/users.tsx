@@ -70,6 +70,13 @@ export const useUpdateMe = (
         queryKey: usersQueryKeys.me(),
       })
 
+      // Seller fields drive the seller_onboarding.store_information flag,
+      // so refetching onboarding after a /vendor/sellers/me update lets the
+      // dashboard reflect the new state without a manual reload.
+      queryClient.invalidateQueries({
+        queryKey: ["onboarding"],
+      })
+
       options?.onSuccess?.(data, variables, context)
     },
     ...options,

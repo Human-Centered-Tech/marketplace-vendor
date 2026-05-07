@@ -52,9 +52,9 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
   const form = useForm<z.infer<typeof EditStoreSchema>>({
     defaultValues: {
       name: seller.name,
-      description: seller.description,
-      phone: seller.phone,
-      email: seller.email,
+      description: seller.description ?? "",
+      phone: seller.phone ?? "",
+      email: seller.email ?? "",
       media: [],
     },
     resolver: zodResolver(EditStoreSchema),

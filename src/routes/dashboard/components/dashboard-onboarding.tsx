@@ -61,7 +61,7 @@ export const DashboardOnboarding = ({
         <OnboardingRow
           stepNumber={1}
           label="Complete your store information"
-          description="Add your business name, description, and branding"
+          description="Add your business name, description, branding, and company address"
           state={store_information}
           link="/settings/store"
           buttonLabel="Manage"
