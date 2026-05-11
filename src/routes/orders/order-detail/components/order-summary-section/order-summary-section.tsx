@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 
 import {
   ArrowLongRight,
+  InformationCircle,
   TriangleDownMini,
 } from "@medusajs/icons"
 import {
@@ -170,6 +171,7 @@ export const OrderSummarySection = ({
       <ItemBreakdown order={order} reservations={reservations!} />
       <CostBreakdown order={order} />
       <Total order={order} />
+      <VendorPayout order={order} />
 
       {(showAllocateButton || showReturns || showPayment || showRefund) && (
         <div className="bg-ui-bg-subtle flex items-center justify-end gap-x-2 rounded-b-xl px-4 py-4">
@@ -569,6 +571,16 @@ const CostBreakdown = ({
                   : "orders.summary.taxTotal"
               )}
             </span>
+            <span
+              className="text-ui-fg-muted txt-small select-none"
+              title="Catholic Owned is the marketplace facilitator and collects state sales tax on behalf of all sellers. You are not responsible for filing or remitting sales tax for sales made through this platform."
+              aria-label="Tax explanation"
+            >
+              <InformationCircle className="inline" />
+            </span>
+            <span className="txt-small text-ui-fg-muted select-none">
+              · Collected by Catholic Owned
+            </span>
             {hasTaxLines && (
               <TriangleDownMini
                 style={{
@@ -611,13 +623,52 @@ const CostBreakdown = ({
       </>
       {commission && (
         <Cost
-          label={"Commission"}
-          value={getLocaleAmount(
+          label={"Catholic Owned commission"}
+          value={`- ${getLocaleAmount(
             parseFloat(commission.commission_value.amount),
             commission.commission_value.currency_code
-          )}
+          )}`}
         />
       )}
+    </div>
+  )
+}
+
+// "Your payout" — what the vendor actually receives after the platform
+// commission deduction. Under marketplace facilitator posture (see
+// DECISION_LOG.md, 2026-05-08) the sales tax line is collected and
+// remitted by the platform and is NOT part of vendor's net.
+const VendorPayout = ({ order }: { order: ExtendedAdminOrder }) => {
+  // Use commission hook — same source as the Commission line above so
+  // the math is consistent end-to-end.
+  const { commission } = useOrderCommission(order.id!)
+
+  const commissionAmount = commission
+    ? parseFloat(commission.commission_value.amount as unknown as string) || 0
+    : 0
+
+  // Item subtotal is the sum of this seller's line items at pre-tax,
+  // pre-discount price. shipping_subtotal is shipping fees they're owed
+  // (shipping that went to this seller's shipping profile). Tax is
+  // intentionally excluded — that goes to Catholic Owned for remittance.
+  const itemSubtotal = order.item_subtotal ?? order.subtotal ?? 0
+  const shippingSubtotal = order.shipping_subtotal ?? 0
+  const net = itemSubtotal + shippingSubtotal - commissionAmount
+
+  return (
+    <div className="flex flex-col gap-y-2 px-6 py-4 bg-ui-bg-subtle rounded-b-xl">
+      <div className="text-ui-fg-base flex items-center justify-between">
+        <Text weight="plus" size="small" leading="compact">
+          Your payout
+        </Text>
+        <Text weight="plus" size="small" leading="compact">
+          {getStylizedAmount(net, order.currency_code)}
+        </Text>
+      </div>
+      <Text size="xsmall" className="text-ui-fg-muted">
+        Items + shipping − Catholic Owned commission. Sales tax is collected
+        and remitted by Catholic Owned and is not part of your payout.
+      </Text>
     </div>
   )
 }
