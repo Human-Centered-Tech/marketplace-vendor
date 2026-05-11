@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Container, Heading, Text, Badge } from "@medusajs/ui"
 import { sdk, backendUrl } from "../../../lib/client"
-import { useBankingInfo } from "../../../hooks/api/banking-info"
+import { usePayoutAccount } from "../../../hooks/api/payout-account"
 
 type CatholicOnboarding = {
   seller_id: string
@@ -40,8 +40,9 @@ export const CatholicSetupPanel = () => {
         .fetch<CatholicOnboarding>("/vendor/catholic-onboarding")
         .catch(() => null),
   })
-  const { data: bankingResp } = useBankingInfo()
-  const bankingOnFile = Boolean(bankingResp?.banking_info)
+  const { data: payoutResp } = usePayoutAccount()
+  const payoutActive = payoutResp?.payout_account?.status === "active"
+  const payoutPending = payoutResp?.payout_account?.status === "pending"
 
   const buildStorefrontUrl = (path: string) => {
     // Use the reverse-SSO handoff endpoint so the vendor logs into
@@ -113,16 +114,18 @@ export const CatholicSetupPanel = () => {
           },
     },
     {
-      done: bankingOnFile,
-      label: "Banking information",
-      hint: bankingOnFile
-        ? "Your ACH banking info is on file. Payouts begin end of June when the marketplace launches."
-        : "Add your ACH account so you're ready when payouts start (end of June launch).",
-      cta: bankingOnFile
+      done: payoutActive,
+      label: "Payouts set up",
+      hint: payoutActive
+        ? "Your account is verified — payouts are enabled."
+        : payoutPending
+          ? "We're reviewing your details. This usually takes 1–3 business days."
+          : "Connect a bank account so we can deposit your earnings from sales.",
+      cta: payoutActive
         ? null
         : {
-            label: "Add banking info",
-            to: "/banking-info",
+            label: payoutPending ? "Continue setup" : "Set up payouts",
+            to: "/payouts",
           },
     },
   ]

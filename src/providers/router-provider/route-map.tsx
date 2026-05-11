@@ -36,6 +36,36 @@ export const RouteMap: RouteObject[] = [
             lazy: () => import("../../routes/banking-info"),
           },
           {
+            path: "payouts",
+            handle: {
+              breadcrumb: () => "Payouts",
+            },
+            errorElement: <ErrorBoundary />,
+            lazy: () => import("../../routes/payouts"),
+          },
+          {
+            path: "onboarding/done",
+            handle: {
+              breadcrumb: () => "Onboarding",
+            },
+            errorElement: <ErrorBoundary />,
+            lazy: async () => {
+              const { OnboardingDone } = await import("../../routes/onboarding")
+              return { Component: OnboardingDone }
+            },
+          },
+          {
+            path: "onboarding/retry",
+            handle: {
+              breadcrumb: () => "Onboarding",
+            },
+            errorElement: <ErrorBoundary />,
+            lazy: async () => {
+              const { OnboardingRetry } = await import("../../routes/onboarding")
+              return { Component: OnboardingRetry }
+            },
+          },
+          {
             path: "dashboard",
             errorElement: <ErrorBoundary />,
             lazy: () => import("../../routes/dashboard"),

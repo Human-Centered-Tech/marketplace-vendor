@@ -237,8 +237,8 @@ const useExtensionRoutes = (): Omit<INavItem, "pathname">[] => {
   return [
     {
       icon: <StripeIcon />,
-      label: "Banking Info",
-      to: "/banking-info",
+      label: "Payouts",
+      to: "/payouts",
     },
   ]
 }
