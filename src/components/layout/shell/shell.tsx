@@ -25,18 +25,15 @@ export const Shell = ({ children }: PropsWithChildren) => {
   const navigation = useNavigation()
   const { seller } = useMe()
 
-  const isSuspended = seller?.store_status === "SUSPENDED"
-
   const loading = navigation.state === "loading"
 
   return (
     <KeybindProvider shortcuts={globalShortcuts}>
       <div className="flex flex-col h-screen">
-        {isSuspended && (
-          <div className="w-full bg-red-600 text-white p-1 text-center text-sm">
-            Your store is <b>suspended</b>. Please contact support.
-          </div>
-        )}
+        <StoreStatusBanner
+          status={seller?.store_status}
+          handle={seller?.handle}
+        />
         <div className="relative flex flex-1 h-full items-start overflow-hidden lg:flex-row">
           <NavigationBar loading={loading} />
           <div className="h-full">
@@ -62,6 +59,85 @@ export const Shell = ({ children }: PropsWithChildren) => {
       </div>
     </KeybindProvider>
   )
+}
+
+// Full-width status strip at the top of the vendor portal. Mirrors the
+// store_status finite-state-machine:
+//   INACTIVE  → draft mode (default for new vendors). CTAs to preview /
+//               go live. The most common state until the vendor pays.
+//   ACTIVE    → live and visible. Slim confirmation strip with a link to
+//               the public store page.
+//   SUSPENDED → admin-blocked. Red strip, no self-serve action.
+const StoreStatusBanner = ({
+  status,
+  handle,
+}: {
+  status?: "ACTIVE" | "INACTIVE" | "SUSPENDED" | string
+  handle?: string
+}) => {
+  if (!status) return null
+
+  if (status === "SUSPENDED") {
+    return (
+      <div className="w-full bg-red-600 text-white p-1 text-center text-sm">
+        Your store is <b>suspended</b>. Please contact support.
+      </div>
+    )
+  }
+
+  if (status === "INACTIVE") {
+    const storefrontUrl =
+      (import.meta as any).env?.VITE_STOREFRONT_URL ||
+      "http://localhost:3000"
+    return (
+      <div className="w-full bg-amber-50 border-b border-amber-300 text-amber-900 px-4 py-2 flex items-center justify-center gap-x-4 text-sm">
+        <span>
+          🚧 Your store is in <b>draft mode</b> — shoppers can't see it yet.
+        </span>
+        <div className="flex items-center gap-x-3">
+          {handle && (
+            <a
+              href={`${storefrontUrl}/sellers/${handle}?preview=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:no-underline font-medium"
+            >
+              Preview as public
+            </a>
+          )}
+          <Link
+            to="/go-live"
+            className="rounded-md bg-amber-900 text-amber-50 px-3 py-1 font-semibold hover:bg-amber-800"
+          >
+            Go live →
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === "ACTIVE") {
+    return (
+      <div className="w-full bg-emerald-50 border-b border-emerald-200 text-emerald-900 px-4 py-1 flex items-center justify-center gap-x-4 text-xs">
+        <span>✅ Your store is live</span>
+        {handle && (
+          <a
+            href={`${
+              (import.meta as any).env?.VITE_STOREFRONT_URL ||
+              "http://localhost:3000"
+            }/sellers/${handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:no-underline font-medium"
+          >
+            View public page →
+          </a>
+        )}
+      </div>
+    )
+  }
+
+  return null
 }
 
 const NavigationBar = ({ loading }: { loading: boolean }) => {

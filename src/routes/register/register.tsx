@@ -125,12 +125,12 @@ export const Register = () => {
           />
           <div className="co-gold-rule mx-auto mt-3 mb-4 w-16" />
           <p className="font-garamond mx-auto max-w-[320px] text-lg leading-relaxed text-co-text-secondary">
-            Thank you for registering! Your account is pending admin
-            authorization. You'll receive a confirmation email shortly.
+            Your merchant account is ready. Sign in to set up payouts,
+            add your first products, and go live when you're ready.
           </p>
 
           <Link to="/login">
-            <button className="co-btn-primary mt-8">Back to Sign In</button>
+            <button className="co-btn-primary mt-8">Sign in</button>
           </Link>
         </div>
       </div>
@@ -265,7 +265,8 @@ export const Register = () => {
                           >
                             Catholic Owned Vendor Agreement
                           </a>
-                          . You'll re-confirm this when you add banking info.
+                          . You'll also accept Stripe's terms when you set
+                          up payouts.
                         </label>
                       </div>
                     </Form.Item>
