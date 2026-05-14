@@ -1,4 +1,3 @@
-import { useMemo } from "react"
 import {
   Badge,
   Button,
@@ -8,38 +7,37 @@ import {
   toast,
 } from "@medusajs/ui"
 import { Link } from "react-router-dom"
-import { useMe } from "../../hooks/api"
 import { useGoLive } from "../../hooks/api/go-live"
-import { usePayoutAccount } from "../../hooks/api/payout-account"
-import { useProducts } from "../../hooks/api/products"
+import { useSetup } from "../../hooks/api/setup"
 
-// /go-live — explicit transition page that takes a draft store live.
+// /go-live — focused, final-step screen for taking a draft store live.
 //
-// Mirrors the server-side preflight in marketplace-backend's
-// vendor/store/go-live route: payouts must be active, at least one
-// product must be published, and a directory listing must exist. The
-// client side just renders the checklist + button. The server is the
-// source of truth; the button calls POST /vendor/store/go-live and acts
-// on the structured response (live / needs_payment / preflight error).
+// All preflight state comes from /vendor/setup (same source the dashboard
+// SetupChecklist uses) so the two screens never disagree. The server-side
+// preflight in POST /vendor/store/go-live remains the source of truth;
+// this page just renders an explicit preview of the same checks before
+// the vendor commits.
 export const GoLive = () => {
-  const { seller } = useMe()
-  const { data: payoutData, isLoading: payoutLoading } = usePayoutAccount()
-  const { count: publishedCount, isLoading: productsLoading } = useProducts({
-    status: ["published"],
-    limit: 0,
-    fields: "id",
-  } as any)
+  const { data, isPending } = useSetup()
   const goLiveMutation = useGoLive()
 
-  const isAlreadyLive = seller?.store_status === "ACTIVE"
-  const payoutsReady = payoutData?.payout_account?.status === "active"
-  const hasPublishedProduct = (publishedCount ?? 0) > 0
-  const preflightLoading = payoutLoading || productsLoading
+  if (isPending || !data) {
+    return (
+      <Container className="divide-y p-0">
+        <div className="px-6 py-6">
+          <Text className="text-ui-fg-subtle">Loading preflight…</Text>
+        </div>
+      </Container>
+    )
+  }
 
-  const allReady = useMemo(
-    () => payoutsReady && hasPublishedProduct,
-    [payoutsReady, hasPublishedProduct]
-  )
+  const { store_basics, catholic_owned, go_live } = data
+  const payoutsReady = store_basics.payouts === "active"
+  const hasPublishedProduct = store_basics.products.published_count > 0
+  const hasListing = catholic_owned.listing_exists
+  const isAlreadyLive = go_live.store_status === "ACTIVE"
+  const allReady =
+    payoutsReady && hasPublishedProduct && hasListing && !isAlreadyLive
 
   const handleGoLive = async () => {
     try {
@@ -48,15 +46,11 @@ export const GoLive = () => {
         toast.success("Your store is live!")
         return
       }
-      // needs_payment → hand the user off to the storefront subscription
-      // flow. They're already logged in there as a customer; the directory
-      // checkout will collect payment and the Stripe webhook will flip the
-      // store to ACTIVE on completion.
+      // needs_payment → hand off to the storefront subscription flow.
+      // The directory checkout collects payment; the Stripe webhook
+      // flips store_status to ACTIVE on completion.
       window.location.assign(result.subscribe_url)
     } catch (err: any) {
-      // Server returned a structured preflight error (400). The fields
-      // above already reflect what's missing; surface the message so the
-      // user sees the same reason on the button click.
       toast.error(
         err?.message ||
           "Couldn't go live. Check the requirements below and try again."
@@ -99,7 +93,6 @@ export const GoLive = () => {
       <div className="px-6 py-6 flex flex-col gap-3 max-w-2xl">
         <Text weight="plus">Before going live</Text>
         <ChecklistItem
-          loading={preflightLoading}
           done={payoutsReady}
           title="Set up payouts"
           subtitle="Verify your bank account through Stripe so we can deposit your earnings."
@@ -107,12 +100,18 @@ export const GoLive = () => {
           ctaLabel="Set up payouts"
         />
         <ChecklistItem
-          loading={preflightLoading}
           done={hasPublishedProduct}
           title="Publish at least one product"
           subtitle="You can add more — or edit this one — at any time after going live."
           ctaTo="/products"
           ctaLabel="Add a product"
+        />
+        <ChecklistItem
+          done={hasListing}
+          title="Create your directory listing"
+          subtitle="Your business's public profile on Catholic Owned. You'll do this on the storefront — there's a link from your dashboard."
+          ctaTo="/"
+          ctaLabel="Open dashboard"
         />
       </div>
 
@@ -134,7 +133,7 @@ export const GoLive = () => {
           >
             Go live &amp; pay →
           </Button>
-          {!allReady && !preflightLoading && (
+          {!allReady && (
             <Text size="small" className="text-ui-fg-subtle">
               Finish the checklist above first.
             </Text>
@@ -146,14 +145,12 @@ export const GoLive = () => {
 }
 
 const ChecklistItem = ({
-  loading,
   done,
   title,
   subtitle,
   ctaTo,
   ctaLabel,
 }: {
-  loading: boolean
   done: boolean
   title: string
   subtitle: string
@@ -162,16 +159,17 @@ const ChecklistItem = ({
 }) => (
   <div className="flex items-start gap-3 rounded-md border px-3 py-2.5">
     <div className="pt-0.5" aria-hidden>
-      {loading ? (
-        <span className="text-ui-fg-muted">…</span>
-      ) : done ? (
+      {done ? (
         <span className="text-emerald-600 font-bold">✓</span>
       ) : (
         <span className="text-amber-600">○</span>
       )}
     </div>
     <div className="flex-1">
-      <Text weight={done ? "regular" : "plus"} className={done ? "line-through text-ui-fg-subtle" : ""}>
+      <Text
+        weight={done ? "regular" : "plus"}
+        className={done ? "line-through text-ui-fg-subtle" : ""}
+      >
         {title}
       </Text>
       {!done && (
@@ -180,7 +178,7 @@ const ChecklistItem = ({
         </Text>
       )}
     </div>
-    {!done && !loading && (
+    {!done && (
       <Link to={ctaTo} className="shrink-0">
         <Button variant="secondary" size="small">
           {ctaLabel}

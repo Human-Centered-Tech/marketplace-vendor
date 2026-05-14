@@ -32,8 +32,10 @@ export const useGoLive = (
       })) as GoLiveResponse,
     onSuccess: (data, variables, context) => {
       // store_status may have flipped → invalidate the seller cache so
-      // the banner in shell.tsx updates without a manual reload.
+      // the banner in shell.tsx updates without a manual reload, and the
+      // /vendor/setup composite so the dashboard checklist re-renders.
       queryClient.invalidateQueries({ queryKey: ["users", "me"] })
+      queryClient.invalidateQueries({ queryKey: ["setup"] })
       options?.onSuccess?.(data, variables, context)
     },
     ...options,

@@ -1,24 +1,21 @@
 import { useEffect, useState } from "react"
-import { useOnboarding, useOrders } from "../../hooks/api"
+import { useOrders } from "../../hooks/api"
 import { DashboardCharts } from "./components/dashboard-charts"
-import { DashboardOnboarding } from "./components/dashboard-onboarding"
 import { ChartSkeleton } from "./components/chart-skeleton"
 import { AnalyticsPanel } from "./components/analytics-panel"
-import { CatholicSetupPanel } from "./components/catholic-setup-panel"
+import { SetupChecklist } from "./components/setup-checklist"
 import { PendingPayoutBanner } from "./components/pending-payout-banner"
 import { useReviews } from "../../hooks/api/review"
 
-// Once a vendor has completed all 3 onboarding steps, we don't want to bounce
-// them back to the wizard if a flag flips back to false (e.g. they delete
-// their last product). seller_onboarding has no completed_at column, so we
-// pin completion locally.
-const ONBOARDING_COMPLETED_KEY = "co_vendor_onboarding_completed"
-
+// The dashboard renders a single unified SetupChecklist at the top
+// (driven by GET /vendor/setup). When the checklist is complete it
+// collapses to a slim "setup complete" strip, so the analytics and
+// charts below are always visible. There's no longer a full-page
+// wizard takeover or a separate Catholic-specific setup card — both
+// are folded into SetupChecklist.
 export const Dashboard = () => {
   const [isClient, setIsClient] = useState(false)
   useEffect(() => setIsClient(true), [])
-
-  const { onboarding, isError, error, isPending } = useOnboarding()
 
   const { orders, isPending: isPendingOrders } = useOrders()
   const { reviews, isPending: isPendingReviews } = useReviews()
@@ -32,20 +29,9 @@ export const Dashboard = () => {
   const reviewsToReply =
     reviews?.filter((review: any) => !review?.seller_note).length || 0
 
-  const allFlagsTrue =
-    !!onboarding?.products &&
-    !!onboarding?.locations_shipping &&
-    !!onboarding?.store_information
-
-  useEffect(() => {
-    if (allFlagsTrue && typeof window !== "undefined") {
-      window.localStorage.setItem(ONBOARDING_COMPLETED_KEY, "1")
-    }
-  }, [allFlagsTrue])
-
   if (!isClient) return null
 
-  if (isPending || isPendingOrders || isPendingReviews) {
+  if (isPendingOrders || isPendingReviews) {
     return (
       <div>
         <ChartSkeleton />
@@ -53,32 +39,15 @@ export const Dashboard = () => {
     )
   }
 
-  if (isError) {
-    throw error
-  }
-
-  const onboardingPreviouslyCompleted =
-    typeof window !== "undefined" &&
-    window.localStorage.getItem(ONBOARDING_COMPLETED_KEY) === "1"
-
-  if (!allFlagsTrue && !onboardingPreviouslyCompleted)
-    return (
-      <DashboardOnboarding
-        products={onboarding?.products}
-        locations_shipping={onboarding?.locations_shipping}
-        store_information={onboarding?.store_information}
-      />
-    )
-
   return (
     <div className="flex flex-col gap-4">
+      <SetupChecklist />
+      <PendingPayoutBanner />
       <DashboardCharts
         notFulfilledOrders={notFulfilledOrders}
         fulfilledOrders={fulfilledOrders}
         reviewsToReply={reviewsToReply}
       />
-      <PendingPayoutBanner />
-      <CatholicSetupPanel />
       <AnalyticsPanel />
     </div>
   )
