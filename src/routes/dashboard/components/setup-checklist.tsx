@@ -3,7 +3,7 @@ import { clx, Text } from "@medusajs/ui"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useSetup, SetupResponse } from "../../../hooks/api/setup"
-import { backendUrl } from "../../../lib/client"
+import { backendUrl, publishableApiKey } from "../../../lib/client"
 
 // Unified setup checklist. Replaces the old DashboardOnboarding takeover
 // + the standalone CatholicSetupPanel card. Drives every row from a single
@@ -124,6 +124,10 @@ type Row = {
     label: string
     href: string
     external?: boolean
+    // When set, the row's CTA renders as a button that performs the
+    // reverse-SSO handoff to the storefront, opening href as the
+    // post-login destination.
+    storefrontHandoff?: string
   }
 }
 
@@ -183,7 +187,24 @@ const ChecklistRow = ({ row }: { row: Row }) => {
         </div>
       </div>
       {cta && !done && (
-        cta.external ? (
+        cta.storefrontHandoff ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (disabled) return
+              void navigateWithStorefrontHandoff(cta.storefrontHandoff!)
+            }}
+            className={clx(
+              "min-w-[80px] rounded-lg px-4 py-2 font-poppins text-sm font-medium text-center transition-all",
+              disabled
+                ? "bg-co-text-secondary/20 text-co-text-secondary cursor-not-allowed"
+                : "bg-co-navy text-co-text-on-dark hover:bg-co-navy-light"
+            )}
+            disabled={disabled}
+          >
+            {cta.label}
+          </button>
+        ) : cta.external ? (
           <a
             href={cta.href}
             target="_blank"
@@ -223,13 +244,47 @@ const ChecklistRow = ({ row }: { row: Row }) => {
 
 // ---------------------------------------------------------------------------
 
-// Builds the customer-token reverse-SSO URL so storefront deep-links land
-// the vendor logged in as their customer account. Mirrors the URL the
-// retired CatholicSetupPanel built.
-const buildStorefrontHandoffUrl = (path: string): string => {
-  const base = backendUrl.replace(/\/$/, "")
-  const returnTo = encodeURIComponent(path)
-  return `${base}/store/account/customer-token?return_to=${returnTo}`
+// Reverse-SSO: mint a short-lived customer JWT from the vendor's seller
+// session, then bounce the browser to the storefront's /customer-handoff
+// page with the token in the URL fragment. The storefront exchanges the
+// token for a customer session cookie and forwards to `return_to`.
+//
+// Fragment (not query) keeps the token out of server logs, proxy logs,
+// and Referer headers. We fetch via JS rather than a plain <a href>
+// because /store/* routes require the x-publishable-api-key header,
+// which a regular link navigation can't attach.
+const navigateWithStorefrontHandoff = async (path: string): Promise<void> => {
+  const storefrontUrl =
+    typeof __STOREFRONT_URL__ === "string" ? __STOREFRONT_URL__ : ""
+
+  if (!storefrontUrl) {
+    return
+  }
+
+  try {
+    const bearer = window.localStorage.getItem("medusa_auth_token") || ""
+    const res = await fetch(
+      `${backendUrl.replace(/\/$/, "")}/store/account/customer-token`,
+      {
+        headers: {
+          authorization: `Bearer ${bearer}`,
+          "x-publishable-api-key": publishableApiKey,
+        },
+      }
+    )
+
+    if (res.ok) {
+      const { token } = (await res.json()) as { token: string }
+      const params = new URLSearchParams({ handoff: token, return_to: path })
+      window.location.href = `${storefrontUrl}/customer-handoff#${params.toString()}`
+      return
+    }
+  } catch {
+    // Falls through to the plain redirect — the vendor still lands on
+    // the right page, just without auto-login.
+  }
+
+  window.location.href = `${storefrontUrl}${path}`
 }
 
 const buildRows = (data: SetupResponse): Row[] => {
@@ -298,8 +353,8 @@ const buildRows = (data: SetupResponse): Row[] => {
       done: co.listing_exists,
       cta: {
         label: "Create",
-        href: buildStorefrontHandoffUrl("/user/directory/create"),
-        external: true,
+        href: "/user/directory/create",
+        storefrontHandoff: "/user/directory/create",
       },
     },
     {
@@ -309,8 +364,8 @@ const buildRows = (data: SetupResponse): Row[] => {
       done: co.owner_interview_populated,
       cta: {
         label: "Add",
-        href: buildStorefrontHandoffUrl("/user/directory/edit"),
-        external: true,
+        href: "/user/directory/edit",
+        storefrontHandoff: "/user/directory/edit",
       },
     },
     {
@@ -320,8 +375,8 @@ const buildRows = (data: SetupResponse): Row[] => {
       done: co.parish_affiliated,
       cta: {
         label: "Add",
-        href: buildStorefrontHandoffUrl("/user/directory/edit"),
-        external: true,
+        href: "/user/directory/edit",
+        storefrontHandoff: "/user/directory/edit",
       },
     },
 
