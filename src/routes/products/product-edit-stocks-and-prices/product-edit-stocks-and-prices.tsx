@@ -19,7 +19,6 @@ export const ProductEditStocksAndPrices = () => {
     isRefetching: isStockLocationsRefetching,
     isError: isErrorStockLocations,
     error: errorStockLocations,
-    refetch: refetchStockLocations,
   } = useStockLocations({
     limit: 9999,
   })
@@ -30,7 +29,6 @@ export const ProductEditStocksAndPrices = () => {
     isRefetching: isProductRefetching,
     isError: isProductError,
     error: productError,
-    refetch: refetchProduct,
   } = useProduct(id, {
     fields: "*variants,*variants.inventory_items,*categories",
   })
@@ -54,18 +52,9 @@ export const ProductEditStocksAndPrices = () => {
     isRefetching: isInventoryRefetching,
     isError: isInventoryError,
     error: inventoryError,
-    refetch: refetchInventory,
   } = useMultipleInventoryItemLevels(inventoryItemIds, {
     fields: "*stock_locations",
   })
-
-  const refetchAll = async () => {
-    await Promise.all([
-      refetchProduct(),
-      refetchStockLocations(),
-      refetchInventory(),
-    ])
-  }
 
   const isError = isProductError || isErrorStockLocations || isInventoryError
   const error = productError || errorStockLocations || inventoryError
@@ -89,7 +78,6 @@ export const ProductEditStocksAndPrices = () => {
           stockLocations={stock_locations}
           productId={id!}
           isRefreshing={isRefetching}
-          onRefresh={refetchAll}
         />
       )}
     </RouteFocusModal>
