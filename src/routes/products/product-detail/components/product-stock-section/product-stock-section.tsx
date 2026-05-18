@@ -1,5 +1,5 @@
 import { PencilSquare } from "@medusajs/icons"
-import { Container, Heading, Text } from "@medusajs/ui"
+import { Button, Container, Heading, Text } from "@medusajs/ui"
 import { Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 
@@ -20,13 +20,12 @@ export const ProductStockSection = ({ product }: ProductStockSectionProps) => {
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
         <Heading level="h2">{t("fields.inventory")}</Heading>
-        <Link
-          to="edit-stocks-and-prices"
-          className="bg-ui-button-neutral text-ui-fg-on-color shadow-buttons-neutral hover:bg-ui-button-neutral-hover active:bg-ui-button-neutral-pressed inline-flex items-center gap-x-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-fg"
-        >
-          <PencilSquare className="text-ui-fg-on-color" />
-          <span>Edit stock</span>
-        </Link>
+        <Button size="small" variant="secondary" asChild>
+          <Link to="edit-stocks-and-prices" className="inline-flex items-center gap-x-1.5">
+            <PencilSquare />
+            <span>Edit stock</span>
+          </Link>
+        </Button>
       </div>
 
       {variants.length === 0 ? (
