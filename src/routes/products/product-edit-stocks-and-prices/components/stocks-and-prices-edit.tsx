@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Button, toast } from "@medusajs/ui"
 import { useEffect } from "react"
 import { castNumber } from "../../../../lib/cast-number"
-import { RouteFocusModal } from "../../../../components/modals"
+import { RouteFocusModal, useRouteModal } from "../../../../components/modals"
 import { KeyboundForm } from "../../../../components/utilities/keybound-form"
 import { useForm } from "react-hook-form"
 import { StocksAndPricesEditForm } from "./stocks-and-prices-edit-form.tsx"
@@ -22,7 +22,6 @@ type StocksAndPricesEditProps = {
   stockLocations: HttpTypes.AdminStockLocation[]
   productId: string
   isRefreshing?: boolean
-  onRefresh?: () => Promise<void>
 }
 
 const createFormValues = (
@@ -139,7 +138,6 @@ export const StocksAndPricesEdit = ({
   stockLocations,
   productId,
   isRefreshing,
-  onRefresh,
 }: StocksAndPricesEditProps) => {
   const { t } = useTranslation()
 
@@ -162,6 +160,7 @@ export const StocksAndPricesEdit = ({
 
   const updateVariantsBatch = useUpdateProductVariantsBatch(productId)
   const updateInventoryLocationLevels = useBatchInventoryItemsLocationLevels()
+  const { handleSuccess } = useRouteModal()
 
   const handleSave = form.handleSubmit(async (data) => {
     try {
@@ -177,7 +176,7 @@ export const StocksAndPricesEdit = ({
 
       toast.success(t("products.variants.editStocksAndPrices.successToast"))
 
-      await onRefresh?.()
+      handleSuccess()
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message)
