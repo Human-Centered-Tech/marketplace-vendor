@@ -12,7 +12,7 @@ import {
 import { fetchQuery, sdk } from "../../lib/client"
 import { queryClient } from "../../lib/query-client"
 import { queryKeysFactory } from "../../lib/query-key-factory"
-import { variantsQueryKeys } from "./products"
+import { productsQueryKeys, variantsQueryKeys } from "./products"
 import type {
   InventoryItemLocationLevel,
   InventoryItemWithLevels,
@@ -303,11 +303,23 @@ export const useBatchInventoryItemsLocationLevels = (
         body: payload,
       }),
     onSuccess: (data, variables, context) => {
+      // `inventory_items` and `inventory_item_levels` are separate query
+      // namespaces. The product detail page's stock display reads from
+      // `levels`, the inventory list reads from `items`, the product
+      // query has nested inventory_items eager-loaded. After a batch
+      // location-level mutation we have to invalidate all three or the
+      // UI shows stale "0 available" until a manual refresh.
       queryClient.invalidateQueries({
         queryKey: inventoryItemsQueryKeys.all,
       })
       queryClient.invalidateQueries({
+        queryKey: inventoryItemLevelsQueryKeys.all,
+      })
+      queryClient.invalidateQueries({
         queryKey: variantsQueryKeys.lists(),
+      })
+      queryClient.invalidateQueries({
+        queryKey: productsQueryKeys.all,
       })
       options?.onSuccess?.(data, variables, context)
     },
