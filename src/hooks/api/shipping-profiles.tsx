@@ -101,7 +101,7 @@ export const useShippingProfiles = (
     ...options,
   })
 
-  const shipping_profiles = data?.shipping_profiles.map((sp) =>
+  const shipping_profiles = data?.shipping_profiles?.map((sp) =>
     convertShippingProfileNames(sp)
   )
 

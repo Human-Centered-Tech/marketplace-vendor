@@ -28,7 +28,14 @@ export const ShippingProfileListTable = () => {
   const filters = useShippingProfileTableFilters()
 
   const { table } = useDataTable({
-    data: (shipping_profiles ?? []).map((profile) => profile.shipping_profile),
+    // Upstream MercurJS code accessed `profile.shipping_profile` here on
+    // the assumption that the GET /vendor/shipping-profiles response wraps
+    // each profile in an envelope. The backend returns flat profile rows,
+    // so `.shipping_profile` was always `undefined` and `getRowId` later
+    // crashed with TypeError once the seller had ≥1 profile (and every
+    // seller has at least one: Mercur auto-creates a "Default shipping
+    // profile" on seller creation).
+    data: shipping_profiles ?? [],
     columns,
     count,
     enablePagination: true,
