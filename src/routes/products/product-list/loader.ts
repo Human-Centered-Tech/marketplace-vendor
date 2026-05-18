@@ -17,7 +17,7 @@ const productsListQuery = () => ({
       query: {
         limit: PAGE_SIZE,
         offset: 0,
-        fields: "+thumbnail,*categories,+status",
+        fields: "+thumbnail,*categories,+status,images.url",
       },
     }),
 })
