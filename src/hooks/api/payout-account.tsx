@@ -127,13 +127,14 @@ export const useSyncPayoutAccount = (
 }
 
 // Helper: derive the redirect URLs from the current vendor app origin.
-// refresh_url is hit if the Stripe link expires; return_url is hit when
-// the vendor finishes (or cancels) Stripe-hosted onboarding.
+// refresh_url is hit if the Stripe link expires; return_url lands the
+// vendor back on the dashboard with ?onboarding=done so Dashboard can
+// force a Stripe sync + setup-checklist refetch on arrival.
 export const buildOnboardingUrls = () => {
   const origin =
     typeof window !== "undefined" ? window.location.origin : ""
   return {
     refreshUrl: `${origin}/onboarding/retry`,
-    returnUrl: `${origin}/onboarding/done`,
+    returnUrl: `${origin}/dashboard?onboarding=done`,
   }
 }
