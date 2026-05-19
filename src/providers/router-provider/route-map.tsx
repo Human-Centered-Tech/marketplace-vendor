@@ -44,17 +44,6 @@ export const RouteMap: RouteObject[] = [
             lazy: () => import("../../routes/go-live"),
           },
           {
-            path: "onboarding/done",
-            handle: {
-              breadcrumb: () => "Onboarding",
-            },
-            errorElement: <ErrorBoundary />,
-            lazy: async () => {
-              const { OnboardingDone } = await import("../../routes/onboarding")
-              return { Component: OnboardingDone }
-            },
-          },
-          {
             path: "onboarding/retry",
             handle: {
               breadcrumb: () => "Onboarding",
