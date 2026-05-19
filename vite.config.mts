@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
   const TALK_JS_APP_ID = env.VITE_TALK_JS_APP_ID || ""
   const DISABLE_SELLERS_REGISTRATION =
     env.VITE_DISABLE_SELLERS_REGISTRATION || "false"
+  const PAYMENTS_DISABLED = env.VITE_PAYMENTS_DISABLED || "false"
   const PUBLIC_BASE_URL = env.VITE_PUBLIC_BASE_URL || ""
 
   /**
@@ -40,6 +41,7 @@ export default defineConfig(({ mode }) => {
       __DISABLE_SELLERS_REGISTRATION__: JSON.stringify(
         DISABLE_SELLERS_REGISTRATION
       ),
+      __PAYMENTS_DISABLED__: JSON.stringify(PAYMENTS_DISABLED),
     },
     server: {
       host: true,
