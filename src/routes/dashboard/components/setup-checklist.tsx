@@ -220,8 +220,13 @@ const ChecklistRow = ({ row }: { row: Row }) => {
             {cta.label}
           </a>
         ) : (
+          // ?from=dashboard tells BackToDashboardBar (in Shell) to surface
+          // a "Back to dashboard" return link while the vendor works
+          // through this step. Storefront-handoff CTAs already return to
+          // the dashboard via the storefront's post-save redirect, so
+          // they don't need the param.
           <Link
-            to={cta.href}
+            to={`${cta.href}?from=dashboard`}
             className={clx(
               "min-w-[80px] rounded-lg px-4 py-2 font-poppins text-sm font-medium text-center transition-all",
               disabled
