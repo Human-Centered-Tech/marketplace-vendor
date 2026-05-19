@@ -124,20 +124,39 @@ export const GoLive = () => {
             on the next screen.
           </Text>
         </div>
+        {/* Kill-switch while Terms of Service are being finalized. Backend
+            POST /vendor/store/go-live → /store/directory/subscriptions
+            returns 503 if someone bypasses this; the banner just makes the
+            UX honest. Flip NEXT_PUBLIC_PAYMENTS_DISABLED in Railway when
+            payments reopen. */}
+        {process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === "true" && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5">
+            <Text size="small">
+              Payments are temporarily disabled while we finalize our Terms of
+              Service. You can keep setting up your store — we'll notify you
+              when payment is available.
+            </Text>
+          </div>
+        )}
         <div className="flex items-center gap-3">
           <Button
             variant="primary"
             onClick={handleGoLive}
             isLoading={goLiveMutation.isPending}
-            disabled={!allReady || goLiveMutation.isPending}
+            disabled={
+              !allReady ||
+              goLiveMutation.isPending ||
+              process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === "true"
+            }
           >
             Go live &amp; pay →
           </Button>
-          {!allReady && (
-            <Text size="small" className="text-ui-fg-subtle">
-              Finish the checklist above first.
-            </Text>
-          )}
+          {!allReady &&
+            process.env.NEXT_PUBLIC_PAYMENTS_DISABLED !== "true" && (
+              <Text size="small" className="text-ui-fg-subtle">
+                Finish the checklist above first.
+              </Text>
+            )}
         </div>
       </div>
     </Container>

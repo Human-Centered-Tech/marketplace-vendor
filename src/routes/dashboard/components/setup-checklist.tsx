@@ -306,13 +306,24 @@ const buildRows = (data: SetupResponse): Row[] => {
         ? "Stripe needs additional information before we can deposit your earnings."
         : "Verify your bank account through Stripe so we can deposit your earnings."
 
+  // Kill-switch while Terms of Service are being finalized. When the env
+  // flag is on, the row stays visible but its CTA is disabled and the
+  // hint explains why. Flip NEXT_PUBLIC_PAYMENTS_DISABLED in Railway to
+  // re-enable.
+  const paymentsDisabled =
+    process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === "true"
+
   const goLiveDone = gl.store_status === "ACTIVE"
-  const goLiveBlocked = gl.blockers.length > 0 && !goLiveDone
-  const goLiveHint = goLiveBlocked
-    ? "Finish the steps above first."
-    : gl.subscription_status === "active"
-      ? "All ready — flip the switch and your store goes live to shoppers."
-      : "Pay your annual directory subscription and publish your store."
+  const goLiveBlocked =
+    (gl.blockers.length > 0 && !goLiveDone) || paymentsDisabled
+  const goLiveHint = paymentsDisabled
+    ? "Payments are temporarily disabled while we finalize our Terms of Service. " +
+      "Keep setting up your store — we'll notify you when payment is available."
+    : gl.blockers.length > 0 && !goLiveDone
+      ? "Finish the steps above first."
+      : gl.subscription_status === "active"
+        ? "All ready — flip the switch and your store goes live to shoppers."
+        : "Pay your annual directory subscription and publish your store."
 
   return [
     // --- Store basics ---
