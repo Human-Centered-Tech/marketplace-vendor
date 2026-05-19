@@ -127,9 +127,10 @@ export const GoLive = () => {
         {/* Kill-switch while Terms of Service are being finalized. Backend
             POST /vendor/store/go-live → /store/directory/subscriptions
             returns 503 if someone bypasses this; the banner just makes the
-            UX honest. Flip NEXT_PUBLIC_PAYMENTS_DISABLED in Railway when
-            payments reopen. */}
-        {process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === "true" && (
+            UX honest. Flip VITE_PAYMENTS_DISABLED in Railway when payments
+            reopen (Vite inlines it as __PAYMENTS_DISABLED__ at build
+            time — see vite.config.mts). */}
+        {__PAYMENTS_DISABLED__ === "true" && (
           <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5">
             <Text size="small">
               Payments are temporarily disabled while we finalize our Terms of
@@ -146,7 +147,7 @@ export const GoLive = () => {
             disabled={
               !allReady ||
               goLiveMutation.isPending ||
-              process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === "true"
+              __PAYMENTS_DISABLED__ === "true"
             }
           >
             Go live &amp; pay →

@@ -308,10 +308,10 @@ const buildRows = (data: SetupResponse): Row[] => {
 
   // Kill-switch while Terms of Service are being finalized. When the env
   // flag is on, the row stays visible but its CTA is disabled and the
-  // hint explains why. Flip NEXT_PUBLIC_PAYMENTS_DISABLED in Railway to
-  // re-enable.
-  const paymentsDisabled =
-    process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === "true"
+  // hint explains why. Flip VITE_PAYMENTS_DISABLED in Railway to
+  // re-enable (Vite inlines it as the __PAYMENTS_DISABLED__ global at
+  // build time — see vite.config.mts).
+  const paymentsDisabled = __PAYMENTS_DISABLED__ === "true"
 
   const goLiveDone = gl.store_status === "ACTIVE"
   const goLiveBlocked =
