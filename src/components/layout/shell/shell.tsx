@@ -16,6 +16,7 @@ import { KeybindProvider } from "../../../providers/keybind-provider"
 import { useGlobalShortcuts } from "../../../providers/keybind-provider/hooks"
 import { useSidebar } from "../../../providers/sidebar-provider"
 import { ProgressBar } from "../../common/progress-bar"
+import { BackToDashboardBar } from "../../common/back-to-dashboard-bar"
 import { Notifications } from "../notifications"
 import { AdminChat } from "../admin-chat"
 import { useMe } from "../../../hooks/api"
@@ -51,6 +52,7 @@ export const Shell = ({ children }: PropsWithChildren) => {
               )}
             >
               <Gutter>
+                <BackToDashboardBar />
                 <Outlet />
               </Gutter>
             </main>
