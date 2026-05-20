@@ -80,6 +80,11 @@ export function CreateShippingOptionsForm({
   const { mutateAsync, isPending: isLoading } = useCreateShippingOptions()
 
   const handleSubmit = form.handleSubmit(async (data) => {
+    // Mercur's /vendor/shipping-options validator (in @mercurjs/b2c-core)
+    // uses zod .strict() and requires `rules: []` on every price entry.
+    // Without it, both WithCurrency and WithRegion shapes fail and the
+    // user gets the misleading "Field 'prices, 0, currency_code' is
+    // required" error even when they filled in a region price correctly.
     const currencyPrices = Object.entries(data.currency_prices)
       .map(([code, value]) => {
         if (!value) {
@@ -89,9 +94,12 @@ export function CreateShippingOptionsForm({
         return {
           currency_code: code,
           amount: castNumber(value),
+          rules: [],
         }
       })
-      .filter((p): p is { currency_code: string; amount: number } => !!p)
+      .filter(
+        (p): p is { currency_code: string; amount: number; rules: [] } => !!p
+      )
 
     const regionPrices = Object.entries(data.region_prices)
       .map(([region, value]) => {
@@ -102,9 +110,12 @@ export function CreateShippingOptionsForm({
         return {
           region_id: region,
           amount: castNumber(value),
+          rules: [],
         }
       })
-      .filter((p): p is { region_id: string; amount: number } => !!p)
+      .filter(
+        (p): p is { region_id: string; amount: number; rules: [] } => !!p
+      )
 
     const fulfillmentOptionData = fulfillmentProviderOptions?.find(
       (fo) => fo.id === data.fulfillment_option_id
