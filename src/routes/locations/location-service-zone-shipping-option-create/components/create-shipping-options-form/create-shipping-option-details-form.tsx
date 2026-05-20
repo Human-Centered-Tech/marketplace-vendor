@@ -37,12 +37,17 @@ export const CreateShippingOptionDetailsForm = ({
         method: "GET",
       }),
     queryKey: ["shipping_profiles_create_shipping_option"],
+    // /vendor/shipping-profiles returns a flat array of shipping_profile
+    // objects (id, name, ...), not the wrapper shape this code used to
+    // expect (`{ shipping_profile: { id, name } }`). Accessing the old
+    // shape crashes the entire shipping-option-create form because
+    // `profile.shipping_profile` is undefined.
     getOptions: (data) =>
       (data.shipping_profiles || []).map((profile: any) => ({
-        label: profile.shipping_profile.name.includes(":")
-          ? profile.shipping_profile.name.split(":")[1]
-          : profile.shipping_profile.name,
-        value: profile.shipping_profile.id,
+        label: profile.name?.includes(":")
+          ? profile.name.split(":")[1]
+          : profile.name,
+        value: profile.id,
       })),
   })
 
