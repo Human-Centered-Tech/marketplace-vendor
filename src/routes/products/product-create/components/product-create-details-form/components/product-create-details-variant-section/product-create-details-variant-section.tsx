@@ -19,6 +19,7 @@ import {
   useFieldArray,
   useWatch,
 } from "react-hook-form"
+import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 
 import { Form } from "../../../../../../../components/common/form"
@@ -92,6 +93,52 @@ export const ProductCreateVariantsSection = ({
     name: "variants",
     defaultValue: [],
   })
+
+  // Track previous option titles so we can re-key variant.options when the
+  // user renames an option (e.g. typed value chips before typing "Size",
+  // then went back to fill in the title). Without this, variant.options
+  // ends up keyed by the empty string while the Variants tab reads
+  // variant.options["Size"], producing the blank-Size-column bug at
+  // product create. Indexed by the option's array position so adds and
+  // removes still line up. Stored in a ref so the effect can read the
+  // last-seen titles without re-running on its own writes.
+  const prevOptionTitlesRef = useRef<string[]>([])
+
+  useEffect(() => {
+    const prevTitles = prevOptionTitlesRef.current
+    const renames: Array<{ from: string; to: string }> = []
+
+    watchedOptions.forEach((opt, i) => {
+      const prev = prevTitles[i]
+      const next = opt.title ?? ""
+      if (prev !== undefined && prev !== next) {
+        renames.push({ from: prev, to: next })
+      }
+    })
+
+    prevOptionTitlesRef.current = watchedOptions.map((o) => o.title ?? "")
+
+    if (renames.length === 0) return
+
+    const remapped = watchedVariants.map((variant) => {
+      let touched = false
+      const nextOptions: Record<string, string> = { ...variant.options }
+      for (const { from, to } of renames) {
+        if (from === to) continue
+        if (from in nextOptions) {
+          nextOptions[to] = nextOptions[from]
+          delete nextOptions[from]
+          touched = true
+        }
+      }
+      return touched ? { ...variant, options: nextOptions } : variant
+    })
+
+    const changed = remapped.some((v, i) => v !== watchedVariants[i])
+    if (changed) {
+      form.setValue("variants", remapped)
+    }
+  }, [watchedOptions, watchedVariants, form])
 
   const showInvalidOptionsMessage = !!form.formState.errors.options?.length
   const showInvalidVariantsMessage =
