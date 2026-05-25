@@ -15,9 +15,10 @@ import {
   FileType,
   FileUpload,
 } from "../../../../../components/common/file-upload"
-import { useCallback } from "react"
-import { uploadFilesQuery } from "../../../../../lib/client"
+import { useCallback, useEffect } from "react"
+import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { HttpTypes } from "@medusajs/types"
+import { useQuery } from "@tanstack/react-query"
 
 export const EditStoreSchema = z.object({
   name: z.string().min(1),
@@ -25,6 +26,7 @@ export const EditStoreSchema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   media: z.array(MediaSchema).optional(),
+  cover_media: z.array(MediaSchema).optional(),
 })
 
 const SUPPORTED_FORMATS = [
@@ -56,6 +58,7 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
       phone: seller.phone ?? "",
       email: seller.email ?? "",
       media: [],
+      cover_media: [],
     },
     resolver: zodResolver(EditStoreSchema),
   })
@@ -65,6 +68,36 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
     control: form.control,
     keyName: "field_id",
   })
+
+  const { fields: coverFields } = useFieldArray({
+    name: "cover_media",
+    control: form.control,
+    keyName: "field_id",
+  })
+
+  // Pre-fill the cover preview with the existing storefront cover URL.
+  // Cover lives in a Catholic-Owned companion module (seller_storefront),
+  // not on Mercur's seller row, so we fetch it separately.
+  const { data: storefrontData } = useQuery({
+    queryKey: ["vendor-storefront-cover"],
+    queryFn: () =>
+      fetchQuery("/vendor/store/cover", { method: "GET" }) as Promise<{
+        seller_storefront: { cover_image_url: string | null } | null
+      }>,
+  })
+  const existingCoverUrl = storefrontData?.seller_storefront?.cover_image_url
+  useEffect(() => {
+    if (existingCoverUrl && form.getValues("cover_media")?.length === 0) {
+      form.setValue("cover_media", [
+        {
+          id: "existing-cover",
+          url: existingCoverUrl,
+          file: new File([], "existing-cover"),
+          isThumbnail: false,
+        } as any,
+      ])
+    }
+  }, [existingCoverUrl, form])
 
   const { mutateAsync, isPending } = useUpdateMe()
 
@@ -103,23 +136,51 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
     [form, hasInvalidFiles]
   )
 
+  const onCoverUploaded = useCallback(
+    (files: FileType[]) => {
+      form.clearErrors("cover_media")
+      if (hasInvalidFiles(files)) {
+        return
+      }
+
+      form.setValue("cover_media", [{ ...files[0], isThumbnail: false }])
+    },
+    [form, hasInvalidFiles]
+  )
+
   const handleSubmit = form.handleSubmit(async (values) => {
     let uploadedMedia: (HttpTypes.AdminFile & {
       isThumbnail: boolean
     })[] = []
+    let uploadedCoverMedia: (HttpTypes.AdminFile & {
+      isThumbnail: boolean
+    })[] = []
     try {
-      if (values.media?.length) {
-        const fileReqs = []
-        fileReqs.push(
-          uploadFilesQuery(values.media).then((r: any) =>
-            r.files.map((f: any) => ({
-              ...f,
-              isThumbnail: false,
-            }))
+      // Logo upload — only if the user actually picked a new file (not
+      // the existing-cover placeholder we seed below).
+      const newLogo = values.media?.filter(
+        (m) => m && (m as any).file && (m as any).file.size > 0
+      )
+      if (newLogo?.length) {
+        uploadedMedia = (
+          await uploadFilesQuery(newLogo as any).then((r: any) =>
+            r.files.map((f: any) => ({ ...f, isThumbnail: false }))
           )
-        )
+        ).flat()
+      }
 
-        uploadedMedia = (await Promise.all(fileReqs)).flat()
+      // Cover upload — same posture. The form's cover_media is pre-seeded
+      // with an `existing-cover` placeholder when the seller already has
+      // one (so the FileUpload renders a preview); skip those.
+      const newCover = values.cover_media?.filter(
+        (m) => m && (m as any).file && (m as any).file.size > 0
+      )
+      if (newCover?.length) {
+        uploadedCoverMedia = (
+          await uploadFilesQuery(newCover as any).then((r: any) =>
+            r.files.map((f: any) => ({ ...f, isThumbnail: false }))
+          )
+        ).flat()
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -136,9 +197,31 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
         photo: uploadedMedia[0]?.url || seller.photo || "",
       },
       {
-        onSuccess: () => {
-          toast.success("Store updated")
+        onSuccess: async () => {
+          // Persist cover after the Mercur seller save succeeded. Two
+          // requests intentionally — Mercur's /vendor/sellers/me doesn't
+          // know about our companion module. Skipped if the user didn't
+          // change the cover (no new upload AND no preview to clear).
+          const finalCoverUrl =
+            uploadedCoverMedia[0]?.url ??
+            (values.cover_media?.[0] as any)?.url ??
+            null
+          const coverChanged = finalCoverUrl !== existingCoverUrl
+          if (coverChanged) {
+            try {
+              await fetchQuery("/vendor/store/cover", {
+                method: "POST",
+                body: { cover_image_url: finalCoverUrl },
+              })
+            } catch (err) {
+              if (err instanceof Error) {
+                toast.error(`Cover update failed: ${err.message}`)
+                return
+              }
+            }
+          }
 
+          toast.success("Store updated")
           handleSuccess()
         },
         onError: (error) => {
@@ -165,13 +248,44 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
                       </div>
                       <Form.Control>
                         <FileUpload
-                          uploadedImage={fields[0]?.url || ""}
+                          uploadedImage={fields[0]?.url || seller.photo || ""}
                           multiple={false}
                           label={t("products.media.uploadImagesLabel")}
                           hint={t("products.media.uploadImagesHint")}
                           hasError={!!form.formState.errors.media}
                           formats={SUPPORTED_FORMATS}
                           onUploaded={onUploaded}
+                        />
+                      </Form.Control>
+                      <Form.ErrorMessage />
+                    </div>
+                  </Form.Item>
+                )
+              }}
+            />
+            <Form.Field
+              name="cover_media"
+              control={form.control}
+              render={() => {
+                return (
+                  <Form.Item>
+                    <div className="flex flex-col gap-y-2">
+                      <div className="flex flex-col gap-y-1">
+                        <Form.Label optional>Cover photo</Form.Label>
+                        <span className="text-ui-fg-subtle text-xs">
+                          Hero banner shown at the top of your storefront page.
+                          Wide aspect ratio works best (≥ 1200×400).
+                        </span>
+                      </div>
+                      <Form.Control>
+                        <FileUpload
+                          uploadedImage={coverFields[0]?.url || ""}
+                          multiple={false}
+                          label={t("products.media.uploadImagesLabel")}
+                          hint={t("products.media.uploadImagesHint")}
+                          hasError={!!form.formState.errors.cover_media}
+                          formats={SUPPORTED_FORMATS}
+                          onUploaded={onCoverUploaded}
                         />
                       </Form.Control>
                       <Form.ErrorMessage />
