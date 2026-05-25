@@ -9,4 +9,8 @@ export const CreateShipmentSchema = z.object({
       label_url: z.string().optional(),
     })
   ),
+  // Free-text note shown to the buyer in the shipped email (e.g.
+  // "Mailed via USPS First Class — no tracking"). Stored on the order,
+  // separate from tracking. Optional.
+  shipping_note: z.string().optional(),
 })
