@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslation } from "react-i18next"
 import * as zod from "zod"
 
-import { Button, Heading, Input, toast } from "@medusajs/ui"
+import { Button, Heading, Input, Textarea, toast } from "@medusajs/ui"
 import { useFieldArray, useForm } from "react-hook-form"
 
 import { Form } from "../../../../../components/common/form"
@@ -12,6 +12,7 @@ import {
 } from "../../../../../components/modals"
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
 import { useCreateOrderShipment } from "../../../../../hooks/api"
+import { fetchQuery } from "../../../../../lib/client"
 import {
   ExtendedAdminOrder,
   ExtendedAdminOrderFulfillment,
@@ -44,6 +45,24 @@ export function OrderCreateShipmentForm({
   })
 
   const handleSubmit = form.handleSubmit(async (data) => {
+    // Persist the shipping note FIRST, before creating the shipment.
+    // Creating the shipment emits shipment.created, which triggers the
+    // buyer "order shipped" email — that email reads the note off the
+    // order, so it must already be saved. Order matters here.
+    const note = (data.shipping_note ?? "").trim()
+    try {
+      await fetchQuery(`/vendor/orders/${order.id}/shipping-note`, {
+        method: "POST",
+        body: { shipping_note: note || null },
+      })
+    } catch (e) {
+      // Don't block shipping if the note save fails — the order still
+      // ships, the buyer just won't see the note. Surface it though.
+      if (e instanceof Error) {
+        toast.error(`Couldn't save shipping note: ${e.message}`)
+      }
+    }
+
     await createShipment(
       {
         items:
@@ -130,6 +149,29 @@ export function OrderCreateShipmentForm({
                   >
                     Add tracking URL
                   </Button>
+
+                  <Form.Field
+                    control={form.control}
+                    name="shipping_note"
+                    render={({ field }) => (
+                      <Form.Item className="mt-6">
+                        <Form.Label optional>Shipping comment</Form.Label>
+                        <span className="text-ui-fg-subtle text-xs">
+                          Shown to the buyer in their shipped-order email. Use
+                          this when there's no tracking number — e.g. "Mailed
+                          via USPS First Class."
+                        </span>
+                        <Form.Control>
+                          <Textarea
+                            {...field}
+                            rows={3}
+                            placeholder="Mailed via USPS First Class — no tracking"
+                          />
+                        </Form.Control>
+                        <Form.ErrorMessage />
+                      </Form.Item>
+                    )}
+                  />
                 </div>
               </div>
             </div>
