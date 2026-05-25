@@ -157,15 +157,14 @@ export function OrderCreateShipmentForm({
                       <Form.Item className="mt-6">
                         <Form.Label optional>Shipping comment</Form.Label>
                         <span className="text-ui-fg-subtle text-xs">
-                          Shown to the buyer in their shipped-order email. Use
-                          this when there's no tracking number — e.g. "Mailed
-                          via USPS First Class."
+                          Shown to the buyer in their shipped-order email.
+                          Useful when there's no tracking number.
                         </span>
                         <Form.Control>
                           <Textarea
                             {...field}
                             rows={3}
-                            placeholder="Mailed via USPS First Class — no tracking"
+                            placeholder="Add a shipping note for the buyer (optional)"
                           />
                         </Form.Control>
                         <Form.ErrorMessage />
