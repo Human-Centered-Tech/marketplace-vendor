@@ -318,6 +318,19 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
                           onUploaded={onCoverUploaded}
                         />
                       </Form.Control>
+                      {coverFields[0]?.url && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            form.setValue("cover_media", [], {
+                              shouldDirty: true,
+                            })
+                          }}
+                          className="text-ui-fg-subtle hover:text-ui-fg-base text-xs underline self-start"
+                        >
+                          Remove cover photo
+                        </button>
+                      )}
                       <Form.ErrorMessage />
                     </div>
                   </Form.Item>
