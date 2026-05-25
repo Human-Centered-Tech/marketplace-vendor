@@ -261,7 +261,7 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
   return (
     <RouteDrawer.Form form={form}>
       <KeyboundForm onSubmit={handleSubmit} className="flex h-full flex-col">
-        <RouteDrawer.Body>
+        <RouteDrawer.Body className="flex flex-1 flex-col gap-y-8 overflow-y-auto">
           <div className="flex flex-col gap-y-8">
             <Form.Field
               name="media"
