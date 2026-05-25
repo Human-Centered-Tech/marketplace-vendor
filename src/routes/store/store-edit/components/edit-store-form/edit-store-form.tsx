@@ -27,6 +27,7 @@ export const EditStoreSchema = z.object({
   email: z.string().optional(),
   media: z.array(MediaSchema).optional(),
   cover_media: z.array(MediaSchema).optional(),
+  refund_policy: z.string().optional(),
 })
 
 const SUPPORTED_FORMATS = [
@@ -59,6 +60,7 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
       email: seller.email ?? "",
       media: [],
       cover_media: [],
+      refund_policy: "",
     },
     resolver: zodResolver(EditStoreSchema),
   })
@@ -75,17 +77,24 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
     keyName: "field_id",
   })
 
-  // Pre-fill the cover preview with the existing storefront cover URL.
-  // Cover lives in a Catholic-Owned companion module (seller_storefront),
-  // not on Mercur's seller row, so we fetch it separately.
+  // Pre-fill the cover + refund policy from the existing storefront row.
+  // Both live in the Catholic-Owned seller_storefront companion module,
+  // not on Mercur's seller row, so fetched separately. /vendor/store/cover
+  // and /vendor/store/refund-policy return the same row shape; we read
+  // from the cover endpoint to keep the request count minimal.
   const { data: storefrontData } = useQuery({
-    queryKey: ["vendor-storefront-cover"],
+    queryKey: ["vendor-storefront"],
     queryFn: () =>
       fetchQuery("/vendor/store/cover", { method: "GET" }) as Promise<{
-        seller_storefront: { cover_image_url: string | null } | null
+        seller_storefront: {
+          cover_image_url: string | null
+          refund_policy: string | null
+        } | null
       }>,
   })
   const existingCoverUrl = storefrontData?.seller_storefront?.cover_image_url
+  const existingRefundPolicy =
+    storefrontData?.seller_storefront?.refund_policy ?? ""
   useEffect(() => {
     if (existingCoverUrl && form.getValues("cover_media")?.length === 0) {
       form.setValue("cover_media", [
@@ -98,6 +107,11 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
       ])
     }
   }, [existingCoverUrl, form])
+  useEffect(() => {
+    if (existingRefundPolicy && !form.getValues("refund_policy")) {
+      form.setValue("refund_policy", existingRefundPolicy)
+    }
+  }, [existingRefundPolicy, form])
 
   const { mutateAsync, isPending } = useUpdateMe()
 
@@ -198,26 +212,39 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
       },
       {
         onSuccess: async () => {
-          // Persist cover after the Mercur seller save succeeded. Two
-          // requests intentionally — Mercur's /vendor/sellers/me doesn't
-          // know about our companion module. Skipped if the user didn't
-          // change the cover (no new upload AND no preview to clear).
+          // Persist cover + refund_policy after the Mercur seller save
+          // succeeded. Two requests intentionally — Mercur's
+          // /vendor/sellers/me doesn't know about our companion module.
+          // Each call is skipped if the field didn't actually change so
+          // we don't write empty rows for vendors who only edited their
+          // name or phone.
           const finalCoverUrl =
             uploadedCoverMedia[0]?.url ??
             (values.cover_media?.[0] as any)?.url ??
             null
+          const finalRefundPolicy = (values.refund_policy ?? "").trim() || null
+
           const coverChanged = finalCoverUrl !== existingCoverUrl
-          if (coverChanged) {
-            try {
+          const refundChanged =
+            finalRefundPolicy !== (existingRefundPolicy || null)
+
+          try {
+            if (coverChanged) {
               await fetchQuery("/vendor/store/cover", {
                 method: "POST",
                 body: { cover_image_url: finalCoverUrl },
               })
-            } catch (err) {
-              if (err instanceof Error) {
-                toast.error(`Cover update failed: ${err.message}`)
-                return
-              }
+            }
+            if (refundChanged) {
+              await fetchQuery("/vendor/store/refund-policy", {
+                method: "POST",
+                body: { refund_policy: finalRefundPolicy },
+              })
+            }
+          } catch (err) {
+            if (err instanceof Error) {
+              toast.error(`Storefront update failed: ${err.message}`)
+              return
             }
           }
 
@@ -341,6 +368,23 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
                   <Form.Label>Description</Form.Label>
                   <Form.Control>
                     <Textarea {...field} />
+                  </Form.Control>
+                  <Form.ErrorMessage />
+                </Form.Item>
+              )}
+            />
+            <Form.Field
+              name="refund_policy"
+              control={form.control}
+              render={({ field }) => (
+                <Form.Item>
+                  <Form.Label optional>Refund policy</Form.Label>
+                  <span className="text-ui-fg-subtle text-xs">
+                    Plain text. Shown on your storefront page so buyers know
+                    your terms before they purchase. Line breaks preserved.
+                  </span>
+                  <Form.Control>
+                    <Textarea {...field} rows={6} />
                   </Form.Control>
                   <Form.ErrorMessage />
                 </Form.Item>
