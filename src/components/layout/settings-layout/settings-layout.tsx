@@ -48,6 +48,10 @@ const useSettingRoutes = (): INavItem[] => {
         label: t("stockLocations.domain"),
         to: "/settings/locations",
       },
+      {
+        label: "Directory Listing",
+        to: "/settings/directory-listing",
+      },
     ],
     [t]
   )
