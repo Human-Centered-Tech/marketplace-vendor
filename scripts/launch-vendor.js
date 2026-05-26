@@ -1,6 +1,8 @@
 const { execSync } = require('child_process');
 const https = require('https');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const BACKEND_URL = process.env.VITE_MEDUSA_BACKEND_URL || 'http://localhost:9000';
 
@@ -51,12 +53,39 @@ async function launch() {
     console.log('✓ API key set in environment\n');
   }
   
-  // Run vite
-  console.log('Starting Vite dev server...\n');
+  // Ensure a production build exists. It is normally produced during the image
+  // build (`pnpm build`); build here as a fallback if it's missing.
+  const distDir = path.join(__dirname, '..', 'dist');
+  if (!fs.existsSync(path.join(distDir, 'index.html'))) {
+    console.log('No production build found — running `vite build`...\n');
+    execSync('vite build', { stdio: 'inherit', env: process.env });
+  }
+
+  // Inject runtime config into the static build so the backend URL and the
+  // publishable key fetched above take effect without rebuilding the app.
+  const runtimeConfig = {
+    backendUrl: BACKEND_URL,
+    publishableApiKey: apiKey || '',
+  };
+  fs.writeFileSync(
+    path.join(distDir, 'runtime-config.js'),
+    `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};\n`
+  );
+  console.log('✓ Runtime config written to dist/runtime-config.js\n');
+
+  // Serve the production build (hashed static assets + SPA fallback). This
+  // replaces the previous Vite dev server, which—when used to serve production
+  // traffic—caused slow on-demand module compiles and HMR-driven full-page
+  // reloads (clicking a nav item reloaded the page instead of navigating).
+  const port = process.env.PORT || '4173';
+  console.log(`Serving production build via vite preview on port ${port}...\n`);
   try {
-    execSync('vite', { stdio: 'inherit', env: process.env });
+    execSync(`vite preview --host 0.0.0.0 --port ${port}`, {
+      stdio: 'inherit',
+      env: process.env,
+    });
   } catch (error) {
-    console.error('Error starting Vite:', error.message);
+    console.error('Error starting preview server:', error.message);
     process.exit(1);
   }
 }

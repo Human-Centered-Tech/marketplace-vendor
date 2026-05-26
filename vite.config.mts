@@ -49,6 +49,11 @@ export default defineConfig(({ mode }) => {
       open: false,
       allowedHosts: PUBLIC_BASE_URL ? [PUBLIC_BASE_URL.replace('https://', '').replace('http://', '').split('/')[0]] : [],
     },
+    preview: {
+      host: true,
+      port: parseInt(process.env.PORT || '4173'),
+      allowedHosts: PUBLIC_BASE_URL ? [PUBLIC_BASE_URL.replace('https://', '').replace('http://', '').split('/')[0]] : [],
+    },
     optimizeDeps: {
       entries: [],
       include: ["recharts"],
