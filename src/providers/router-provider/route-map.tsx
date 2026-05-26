@@ -1481,6 +1481,14 @@ export const RouteMap: RouteObject[] = [
             ],
           },
           {
+            path: "directory-listing",
+            errorElement: <ErrorBoundary />,
+            lazy: () => import("../../routes/settings/directory-listing"),
+            handle: {
+              breadcrumb: () => "Directory Listing",
+            },
+          },
+          {
             path: "workflows",
             errorElement: <ErrorBoundary />,
             element: <Outlet />,
