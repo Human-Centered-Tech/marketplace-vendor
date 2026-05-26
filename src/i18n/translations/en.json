@@ -2691,11 +2691,11 @@
   "login": {
     "forgotPassword": "Forgot password? - <0>Reset</0>",
     "title": "Welcome to Catholic Owned",
-    "hint": "Sign in to access your vendor account",
+    "hint": "Sign in to access your merchant account",
     "notSellerYet": "Not a seller yet? - <0>Create an account</0>"
   },
   "register": {
-    "title": "Become a Vendor",
+    "title": "Become a Merchant",
     "hint": "Sign up to start selling to the Catholic community",
     "alreadySeller": "Already have an account? - <0>Sign In</0>"
   },
