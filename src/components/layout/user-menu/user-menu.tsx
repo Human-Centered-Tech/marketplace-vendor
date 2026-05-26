@@ -221,7 +221,19 @@ const Logout = () => {
          * When the user logs out, we want to clear the query cache
          */
         queryClient.clear()
-        navigate("/login")
+
+        // The vendor portal delegates auth to the storefront via SSO, so
+        // clearing only the vendor token (above) isn't enough: the storefront
+        // customer session stays active and the handoff immediately
+        // re-authenticates the user, so logout looks like the page just
+        // reloads. Redirect to the storefront's logout to end the customer
+        // session and break the loop.
+        const storefrontUrl = __STOREFRONT_URL__
+        if (storefrontUrl) {
+          window.location.href = `${storefrontUrl}/api/logout`
+        } else {
+          navigate("/login")
+        }
       },
     })
   }
