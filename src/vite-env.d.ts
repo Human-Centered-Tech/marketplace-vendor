@@ -17,3 +17,10 @@ declare const __PUBLISHABLE_API_KEY__: string | undefined
 declare const __TALK_JS_APP_ID__: string | undefined
 declare const __DISABLE_SELLERS_REGISTRATION__: string | undefined
 declare const __PAYMENTS_DISABLED__: string | undefined
+
+interface Window {
+  __RUNTIME_CONFIG__?: {
+    backendUrl?: string
+    publishableApiKey?: string
+  }
+}

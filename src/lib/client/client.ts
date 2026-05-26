@@ -1,7 +1,15 @@
 import Medusa from "@medusajs/js-sdk"
 
-export const backendUrl = __BACKEND_URL__ ?? "/"
-export const publishableApiKey = __PUBLISHABLE_API_KEY__ ?? ""
+// Runtime config is injected by scripts/launch-vendor.js into /runtime-config.js
+// at container start, so a static production build can still pick up the
+// backend URL and the publishable key that is fetched from the backend at boot.
+// Falls back to the build-time `define` values (used in local dev).
+const runtimeConfig =
+  (typeof window !== "undefined" && window.__RUNTIME_CONFIG__) || {}
+
+export const backendUrl = runtimeConfig.backendUrl || __BACKEND_URL__ || "/"
+export const publishableApiKey =
+  runtimeConfig.publishableApiKey || __PUBLISHABLE_API_KEY__ || ""
 
 export const sdk = new Medusa({
   baseUrl: backendUrl,
