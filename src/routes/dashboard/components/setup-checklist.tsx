@@ -70,7 +70,7 @@ export const SetupChecklist = () => {
           />
         </div>
         <h1 className="font-poppins text-base font-medium text-co-text-on-dark/80">
-          {allDone ? "Setup complete" : "Welcome to the Vendor Portal"}
+          {allDone ? "Setup complete" : "Welcome to the Merchant Portal"}
         </h1>
         <p className="font-poppins mt-1 text-sm text-co-text-on-dark/70">
           {allDone
@@ -101,9 +101,9 @@ export const SetupChecklist = () => {
       <div className="h-[2px] bg-gradient-to-r from-transparent via-co-gold to-transparent" />
 
       <div className="px-4 py-4 space-y-6">
-        <Section title="Store basics" rows={rows.filter((r) => r.section === "store_basics")} />
+        <Section title="Storefront Basics" rows={rows.filter((r) => r.section === "store_basics")} />
         <Section
-          title="Catholic Owned profile"
+          title="Directory Listing"
           rows={rows.filter((r) => r.section === "catholic_owned")}
         />
         <Section title="Go live" rows={rows.filter((r) => r.section === "go_live")} />

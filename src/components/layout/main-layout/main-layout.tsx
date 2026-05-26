@@ -85,7 +85,7 @@ const Header = () => {
           className="mt-0.5 text-co-gold-dark uppercase tracking-[0.15em] font-poppins font-medium"
           style={{ fontSize: '0.6rem' }}
         >
-          Vendor Portal
+          Merchant Portal
         </Text>
       </div>
       {/* Store name */}

@@ -147,7 +147,7 @@ export const Register = () => {
             className="h-16 w-auto object-contain"
           />
           <p className="font-poppins mt-2 text-xs font-medium uppercase tracking-[0.2em] text-co-gold-dark">
-            Vendor Portal
+            Merchant Portal
           </p>
           <div className="co-gold-rule mt-4 w-16" />
         </div>
