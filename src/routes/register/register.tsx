@@ -294,7 +294,7 @@ export const Register = () => {
                 type="submit"
                 disabled={isPending}
               >
-                {isPending ? "Creating account..." : "Create Vendor Account"}
+                {isPending ? "Creating account..." : "Create Merchant Account"}
               </button>
             </form>
           </Form>

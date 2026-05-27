@@ -122,7 +122,7 @@ export function RequestOrderReturn() {
               render={({ field }) => {
                 return (
                   <Form.Item className="mt-4">
-                    <Form.Label>Vendor Reviewer Note</Form.Label>
+                    <Form.Label>Merchant Reviewer Note</Form.Label>
                     <Form.Control>
                       <Textarea {...field} rows={4} />
                     </Form.Control>
