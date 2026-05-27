@@ -2,7 +2,16 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslation } from "react-i18next"
 import * as zod from "zod"
 
-import { Button, Heading, Input, Textarea, toast } from "@medusajs/ui"
+import {
+  Button,
+  Checkbox,
+  Heading,
+  Input,
+  Label,
+  Textarea,
+  toast,
+} from "@medusajs/ui"
+import { useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 
 import { Form } from "../../../../../components/common/form"
@@ -35,7 +44,9 @@ export function OrderCreateShipmentForm({
     useCreateOrderShipment(order.id, fulfillment?.id)
 
   const form = useForm<zod.infer<typeof CreateShipmentSchema>>({
-    defaultValues: {},
+    // Start with one empty tracking-number field so it's always visible —
+    // vendors shouldn't have to click "add" to reveal it.
+    defaultValues: { labels: [{ tracking_number: "" }] },
     resolver: zodResolver(CreateShipmentSchema),
   })
 
@@ -43,6 +54,10 @@ export function OrderCreateShipmentForm({
     name: "labels",
     control: form.control,
   })
+
+  // When the order genuinely has no tracking number, the vendor confirms it
+  // here, which reveals the free-text shipping comment box.
+  const [noTracking, setNoTracking] = useState(false)
 
   const handleSubmit = form.handleSubmit(async (data) => {
     // Persist the shipping note FIRST, before creating the shipment.
@@ -126,12 +141,12 @@ export function OrderCreateShipmentForm({
                         return (
                           <Form.Item className="mb-4">
                             {index === 0 && (
-                              <Form.Label>Tracking URL</Form.Label>
+                              <Form.Label optional>Tracking number</Form.Label>
                             )}
                             <Form.Control>
                               <Input
                                 {...field}
-                                placeholder="https://www.dhl.com/shipment/1234567890"
+                                placeholder="e.g. 9400 1000 0000 0000 0000 00"
                               />
                             </Form.Control>
                             <Form.ErrorMessage />
@@ -147,30 +162,49 @@ export function OrderCreateShipmentForm({
                     className="self-end"
                     variant="secondary"
                   >
-                    Add tracking URL
+                    Add another tracking number
                   </Button>
 
-                  <Form.Field
-                    control={form.control}
-                    name="shipping_note"
-                    render={({ field }) => (
-                      <Form.Item className="mt-6">
-                        <Form.Label optional>Shipping comment</Form.Label>
-                        <span className="text-ui-fg-subtle text-xs">
-                          Shown to the buyer in their shipped-order email.
-                          Useful when there's no tracking number.
-                        </span>
-                        <Form.Control>
-                          <Textarea
-                            {...field}
-                            rows={3}
-                            placeholder="Add a shipping note for the buyer (optional)"
-                          />
-                        </Form.Control>
-                        <Form.ErrorMessage />
-                      </Form.Item>
-                    )}
-                  />
+                  <div className="mt-6 flex items-center gap-x-2">
+                    <Checkbox
+                      id="no-tracking-number"
+                      checked={noTracking}
+                      onCheckedChange={(checked) => {
+                        const value = checked === true
+                        setNoTracking(value)
+                        // Don't submit a stale note if they uncheck it.
+                        if (!value) form.setValue("shipping_note", "")
+                      }}
+                    />
+                    <Label htmlFor="no-tracking-number" weight="plus">
+                      This order has no tracking number
+                    </Label>
+                  </div>
+
+                  {noTracking && (
+                    <Form.Field
+                      control={form.control}
+                      name="shipping_note"
+                      render={({ field }) => (
+                        <Form.Item className="mt-4">
+                          <Form.Label optional>Shipping comment</Form.Label>
+                          <span className="text-ui-fg-subtle text-xs">
+                            Shown to the buyer in their shipped-order email —
+                            explain how it was sent (e.g. &quot;Mailed via USPS
+                            First Class — no tracking&quot;).
+                          </span>
+                          <Form.Control>
+                            <Textarea
+                              {...field}
+                              rows={3}
+                              placeholder="Add a shipping note for the buyer (optional)"
+                            />
+                          </Form.Control>
+                          <Form.ErrorMessage />
+                        </Form.Item>
+                      )}
+                    />
+                  )}
                 </div>
               </div>
             </div>
