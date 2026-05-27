@@ -1874,6 +1874,10 @@ export const RouteMap: RouteObject[] = [
             lazy: () => import("../../routes/login"),
           },
           {
+            path: "/verify-email",
+            lazy: () => import("../../routes/verify-email"),
+          },
+          {
             path: "/register",
             lazy:
               __DISABLE_SELLERS_REGISTRATION__ === "false"
