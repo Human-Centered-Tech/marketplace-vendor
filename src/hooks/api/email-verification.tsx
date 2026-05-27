@@ -23,6 +23,11 @@ export const useEmailVerificationStatus = (
       fetchQuery("/vendor/email-verification-status", { method: "GET" }),
     queryKey: QUERY_KEY,
     staleTime: 0,
+    // The query client disables this globally; turn it back on here so that
+    // when a vendor verifies on the storefront (a different origin, so we
+    // can't be signaled directly) and returns to this tab, the status
+    // refetches on focus — clearing the gate without polling or re-login.
+    refetchOnWindowFocus: true,
     ...options,
   })
 
