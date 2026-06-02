@@ -330,13 +330,6 @@ export const RouteMap: RouteObject[] = [
                           import("../../routes/products/product-organization"),
                       },
                       {
-                        path: "shipping-profile",
-                        lazy: () =>
-                          import(
-                            "../../routes/products/product-shipping-profile"
-                          ),
-                      },
-                      {
                         path: "media",
                         lazy: () =>
                           import("../../routes/products/product-media"),
@@ -1266,59 +1259,6 @@ export const RouteMap: RouteObject[] = [
                 lazy: () => import("../../routes/locations/location-create"),
               },
               {
-                path: "shipping-profiles",
-                element: <Outlet />,
-                handle: {
-                  breadcrumb: () => t("shippingProfile.domain"),
-                },
-                children: [
-                  {
-                    path: "",
-                    lazy: () =>
-                      import(
-                        "../../routes/shipping-profiles/shipping-profiles-list"
-                      ),
-                    children: [
-                      {
-                        path: "create",
-                        lazy: () =>
-                          import(
-                            "../../routes/shipping-profiles/shipping-profile-create"
-                          ),
-                      },
-                    ],
-                  },
-                  {
-                    path: ":shipping_profile_id",
-                    lazy: async () => {
-                      const { Component, Breadcrumb, loader } = await import(
-                        "../../routes/shipping-profiles/shipping-profile-detail"
-                      )
-
-                      return {
-                        Component,
-                        loader,
-                        handle: {
-                          breadcrumb: (
-                            // eslint-disable-next-line max-len
-                            match: UIMatch<HttpTypes.AdminShippingProfileResponse>
-                          ) => <Breadcrumb {...match} />,
-                        },
-                      }
-                    },
-                    children: [
-                      {
-                        path: "metadata/edit",
-                        lazy: () =>
-                          import(
-                            "../../routes/shipping-profiles/shipping-profile-metadata"
-                          ),
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
                 path: ":location_id",
                 lazy: async () => {
                   const { Component, Breadcrumb, loader } = await import(
@@ -1378,37 +1318,6 @@ export const RouteMap: RouteObject[] = [
                               import(
                                 "../../routes/locations/location-service-zone-manage-areas"
                               ),
-                          },
-                          {
-                            path: "shipping-option",
-                            children: [
-                              {
-                                path: "create",
-                                lazy: () =>
-                                  import(
-                                    "../../routes/locations/location-service-zone-shipping-option-create"
-                                  ),
-                              },
-                              {
-                                path: ":so_id",
-                                children: [
-                                  {
-                                    path: "edit",
-                                    lazy: () =>
-                                      import(
-                                        "../../routes/locations/location-service-zone-shipping-option-edit"
-                                      ),
-                                  },
-                                  {
-                                    path: "pricing",
-                                    lazy: () =>
-                                      import(
-                                        "../../routes/locations/location-service-zone-shipping-option-pricing"
-                                      ),
-                                  },
-                                ],
-                              },
-                            ],
                           },
                         ],
                       },

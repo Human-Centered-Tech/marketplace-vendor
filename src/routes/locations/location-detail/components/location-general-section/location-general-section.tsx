@@ -1,37 +1,30 @@
 import {
   ArchiveBox,
-  CurrencyDollar,
   Map,
   PencilSquare,
   Plus,
   Trash,
-  TriangleDownMini,
 } from "@medusajs/icons"
-import { HttpTypes } from "@medusajs/types"
 import {
   Container,
-  Divider,
   Heading,
-  IconButton,
   StatusBadge,
   Text,
   toast,
   usePrompt,
 } from "@medusajs/ui"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { NoRecords } from "../../../../../components/common/empty-table-content"
 import { IconAvatar } from "../../../../../components/common/icon-avatar"
-import { LinkButton } from "../../../../../components/common/link-button"
 import { ListSummary } from "../../../../../components/common/list-summary"
 import {
   useDeleteFulfillmentServiceZone,
   useDeleteFulfillmentSet,
 } from "../../../../../hooks/api/fulfillment-sets"
-import { useDeleteShippingOption } from "../../../../../hooks/api/shipping-options"
 import {
   useCreateStockLocationFulfillmentSet,
   useDeleteStockLocation,
@@ -41,15 +34,8 @@ import {
   StaticCountry,
   countries as staticCountries,
 } from "../../../../../lib/data/countries"
-import { formatProvider } from "../../../../../lib/format-provider"
-import {
-  getShippingProfileName,
-  isReturnOption,
-} from "../../../../../lib/shipping-options"
-import {
-  FulfillmentSetType,
-  ShippingOptionPriceType,
-} from "../../../common/constants"
+import { isReturnOption } from "../../../../../lib/shipping-options"
+import { FulfillmentSetType } from "../../../common/constants"
 import { VendorExtendedAdminStockLocation, VendorExtendedAdminFulfillmentSet, VendorExtendedAdminServiceZone } from "../../../../../types/stock-location"
 
 type LocationGeneralSectionProps = {
@@ -96,174 +82,6 @@ export const LocationGeneralSection = ({
   )
 }
 
-type ShippingOptionProps = {
-  option: HttpTypes.AdminShippingOption
-  fulfillmentSetId: string
-  locationId: string
-}
-
-function ShippingOption({
-  option,
-  fulfillmentSetId,
-  locationId,
-}: ShippingOptionProps) {
-  const prompt = usePrompt()
-  const { t } = useTranslation()
-
-  const { mutateAsync } = useDeleteShippingOption(option.id)
-
-  const handleDelete = async () => {
-    const res = await prompt({
-      title: t("general.areYouSure"),
-      description: t("stockLocations.shippingOptions.delete.confirmation", {
-        name: option.name,
-      }),
-      verificationInstruction: t("general.typeToConfirm"),
-      verificationText: option.name,
-      confirmText: t("actions.delete"),
-      cancelText: t("actions.cancel"),
-    })
-
-    if (!res) {
-      return
-    }
-
-    await mutateAsync(undefined, {
-      onSuccess: () => {
-        toast.success(
-          t("stockLocations.shippingOptions.delete.successToast", {
-            name: option.name,
-          })
-        )
-      },
-      onError: (e) => {
-        toast.error(e.message)
-      },
-    })
-  }
-
-  return (
-    <div className="flex items-center justify-between px-3 py-2">
-      <div className="flex-1">
-        <Text size="small" weight="plus">
-          {option.name} - {getShippingProfileName(option.shipping_profile.name)}{" "}
-          ({formatProvider(option.provider_id)})
-        </Text>
-      </div>
-      <ActionMenu
-        groups={[
-          {
-            actions: [
-              {
-                icon: <PencilSquare />,
-                label: t("stockLocations.shippingOptions.edit.action"),
-                to: `/settings/locations/${locationId}/fulfillment-set/${fulfillmentSetId}/service-zone/${option.service_zone_id}/shipping-option/${option.id}/edit`,
-              },
-              {
-                label: t("stockLocations.shippingOptions.pricing.action"),
-                icon: <CurrencyDollar />,
-                disabled:
-                  option.price_type === ShippingOptionPriceType.Calculated,
-                to: `/settings/locations/${locationId}/fulfillment-set/${fulfillmentSetId}/service-zone/${option.service_zone_id}/shipping-option/${option.id}/pricing`,
-              },
-            ],
-          },
-          {
-            actions: [
-              {
-                label: t("actions.delete"),
-                icon: <Trash />,
-                onClick: handleDelete,
-              },
-            ],
-          },
-        ]}
-      />
-    </div>
-  )
-}
-
-type ServiceZoneOptionsProps = {
-  zone: VendorExtendedAdminServiceZone
-  locationId: string
-  fulfillmentSetId: string
-  type: FulfillmentSetType
-}
-
-function ServiceZoneOptions({
-  zone,
-  locationId,
-  fulfillmentSetId,
-  type,
-}: ServiceZoneOptionsProps) {
-  const { t } = useTranslation()
-
-  const shippingOptions = zone.shipping_options.filter(
-    (o) => !isReturnOption(o)
-  )
-
-  const returnOptions = zone.shipping_options.filter((o) => isReturnOption(o))
-
-  return (
-    <div>
-      <Divider variant="dashed" />
-      <div className="flex flex-col gap-y-4 px-6 py-4">
-        <div className="item-center flex justify-between">
-          <span className="text-ui-fg-subtle txt-small self-center font-medium">
-            {t(`stockLocations.shippingOptions.create.${type}.label`)}
-          </span>
-          <LinkButton
-            to={`/settings/locations/${locationId}/fulfillment-set/${fulfillmentSetId}/service-zone/${zone.id}/shipping-option/create`}
-          >
-            {t("stockLocations.shippingOptions.create.action")}
-          </LinkButton>
-        </div>
-
-        {!!shippingOptions?.length && (
-          <div className="shadow-elevation-card-rest bg-ui-bg-subtle grid divide-y rounded-md">
-            {shippingOptions.map((o) => (
-              <ShippingOption
-                key={o.id}
-                option={o}
-                locationId={locationId}
-                fulfillmentSetId={fulfillmentSetId}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Divider variant="dashed" />
-
-      <div className="flex flex-col gap-y-4 px-6 py-4">
-        <div className="item-center flex justify-between">
-          <span className="text-ui-fg-subtle txt-small self-center font-medium">
-            {t("stockLocations.shippingOptions.create.returns.label")}
-          </span>
-          <LinkButton
-            to={`/settings/locations/${locationId}/fulfillment-set/${fulfillmentSetId}/service-zone/${zone.id}/shipping-option/create?is_return`}
-          >
-            {t("stockLocations.shippingOptions.create.action")}
-          </LinkButton>
-        </div>
-
-        {!!returnOptions?.length && (
-          <div className="shadow-elevation-card-rest bg-ui-bg-subtle grid divide-y rounded-md">
-            {returnOptions.map((o) => (
-              <ShippingOption
-                key={o.id}
-                option={o}
-                locationId={locationId}
-                fulfillmentSetId={fulfillmentSetId}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 type ServiceZoneProps = {
   zone: VendorExtendedAdminServiceZone
   locationId: string
@@ -279,7 +97,6 @@ function ServiceZone({
 }: ServiceZoneProps) {
   const { t } = useTranslation()
   const prompt = usePrompt()
-  const [open, setOpen] = useState(true)
 
   const { mutateAsync: deleteZone } = useDeleteFulfillmentServiceZone(
     fulfillmentSetId,
@@ -382,18 +199,6 @@ function ServiceZone({
         </div>
 
         <div className="flex grow-0 items-center gap-4">
-          <IconButton
-            size="small"
-            onClick={() => setOpen((s) => !s)}
-            variant="transparent"
-          >
-            <TriangleDownMini
-              style={{
-                transform: `rotate(${!open ? 0 : 180}deg)`,
-                transition: ".2s transform ease-in-out",
-              }}
-            />
-          </IconButton>
           <ActionMenu
             groups={[
               {
@@ -423,14 +228,6 @@ function ServiceZone({
           />
         </div>
       </div>
-      {open && (
-        <ServiceZoneOptions
-          fulfillmentSetId={fulfillmentSetId}
-          locationId={locationId}
-          type={type}
-          zone={zone}
-        />
-      )}
     </div>
   )
 }
