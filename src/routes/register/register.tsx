@@ -8,7 +8,10 @@ import * as z from "zod"
 import { Form } from "../../components/common/form"
 import { useSignUpWithEmailPass } from "../../hooks/api"
 import { isFetchError } from "../../lib/is-fetch-error"
+import { MEDUSA_STOREFRONT_URL } from "../../lib/storefront"
 import { useState } from "react"
+
+const MERCHANT_TERMS_URL = `${MEDUSA_STOREFRONT_URL}/us/merchant-terms`
 
 const RegisterSchema = z.object({
   name: z.string().min(2, { message: "Name should be a string" }),
@@ -258,12 +261,12 @@ export const Register = () => {
                         >
                           I agree to the{" "}
                           <a
-                            href="/vendor-agreement.pdf"
+                            href={MERCHANT_TERMS_URL}
                             target="_blank"
                             rel="noreferrer"
                             className="underline font-medium text-co-navy"
                           >
-                            Catholic Owned Vendor Agreement
+                            Catholic Owned Merchant Terms of Service
                           </a>
                           . You'll also accept Stripe's terms when you set
                           up payouts.
