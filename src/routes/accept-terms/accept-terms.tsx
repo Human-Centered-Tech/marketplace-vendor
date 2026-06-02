@@ -1,47 +1,32 @@
 import { Button, Checkbox, Heading, Text, toast } from "@medusajs/ui"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import {
-  useAcceptTerms,
-  useTermsAcceptanceStatus,
-} from "../../hooks/api/terms-acceptance"
+import { useState } from "react"
+import { useAcceptTerms } from "../../hooks/api/terms-acceptance"
 import { MEDUSA_STOREFRONT_URL } from "../../lib/storefront"
 
 const MERCHANT_TERMS_URL = `${MEDUSA_STOREFRONT_URL}/us/merchant-terms`
 
 /**
- * Non-dismissible clickwrap gate shown when an authenticated merchant hasn't
- * accepted the current Merchant Terms version. Lives outside ProtectedRoute so
- * the guard can land here without bouncing to /login. Makes authenticated
- * calls via the stored token. Once accepted, the status query reports
- * requires_acceptance=false and we send them to the dashboard. Fails open: if
- * the status endpoint errors (e.g. backend not yet deployed), we don't trap.
+ * Non-dismissible Merchant Terms clickwrap gate.
+ *
+ * Rendered INLINE by ProtectedRoute (it replaces the dashboard <Outlet/> while
+ * acceptance is required) rather than being a route you navigate to. That's
+ * deliberate: an earlier version redirected to a /accept-terms route, and that
+ * cross-route hop tangled with the vendor SSO handoff / login bounce and could
+ * put the app into a reload loop. Rendering in place means no navigation, no
+ * /login, no handoff — so the loop is structurally impossible.
+ *
+ * On accept, useAcceptTerms writes the fresh status into the shared query
+ * cache, which re-renders ProtectedRoute and drops this overlay.
  */
 export const AcceptTerms = () => {
-  const navigate = useNavigate()
-  const { data, isPending, error } = useTermsAcceptanceStatus()
   const acceptMutation = useAcceptTerms()
   const [agreed, setAgreed] = useState(false)
-
-  useEffect(() => {
-    if (isPending) return
-    // Can't determine status (e.g. backend not reachable) — fail open rather
-    // than lock the merchant out. ProtectedRoute bounces to /login if the
-    // session itself is gone.
-    if (error) {
-      navigate("/dashboard", { replace: true })
-      return
-    }
-    // Already accepted the current version — proceed.
-    if (data && !data.requires_acceptance) {
-      navigate("/dashboard", { replace: true })
-    }
-  }, [isPending, error, data, navigate])
 
   const onAccept = async () => {
     try {
       await acceptMutation.mutateAsync()
-      navigate("/dashboard", { replace: true })
+      // No navigation: the mutation's onSuccess updates the shared status
+      // query, so ProtectedRoute re-renders into the dashboard on its own.
     } catch {
       toast.error("Couldn't record your acceptance. Please try again.")
     }
