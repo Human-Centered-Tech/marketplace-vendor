@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom"
 import { useMe } from "../../../hooks/api/users"
 import { useEmailVerificationStatus } from "../../../hooks/api/email-verification"
 import { useTermsAcceptanceStatus } from "../../../hooks/api/terms-acceptance"
+import { AcceptTerms } from "../../../routes/accept-terms/accept-terms"
 import { SearchProvider } from "../../../providers/search-provider"
 import { SidebarProvider } from "../../../providers/sidebar-provider"
 import { TalkjsProvider } from "../../../providers/talkjs-provider"
@@ -52,7 +53,8 @@ export const ProtectedRoute = () => {
 
   // Same again for the Merchant Terms gate. Fails open: on a status error
   // `terms` is undefined, so we render the dashboard rather than trap the
-  // merchant.
+  // merchant. The gate renders INLINE (not a redirect to a route) so it can't
+  // interact with the SSO handoff / login bounce — see AcceptTerms.
   if (termsPending) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -62,7 +64,7 @@ export const ProtectedRoute = () => {
   }
 
   if (terms?.requires_acceptance) {
-    return <Navigate to="/accept-terms" state={{ from: location }} replace />
+    return <AcceptTerms />
   }
 
   return (
