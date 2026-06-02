@@ -13,10 +13,13 @@ export const ProtectedRoute = () => {
   // Only resolve verification once we know the vendor is authenticated.
   const { data: verification, isPending: verificationPending } =
     useEmailVerificationStatus({ enabled: !!seller })
-  // Likewise for Merchant Terms acceptance.
-  const { data: terms, isPending: termsPending } = useTermsAcceptanceStatus({
-    enabled: !!seller,
-  })
+  // Drives the blocking Merchant Terms overlay below. Deliberately does NOT
+  // gate rendering or redirect: the dashboard always mounts and we render a
+  // full-screen overlay on top when acceptance is required. Keeping the gate
+  // out of the routing/redirect path is what makes it loop-proof — and
+  // server-side only mutations are blocked until accepted, so the read-only
+  // dashboard underneath loads fine. Fails open (no overlay) if status errors.
+  const { data: terms } = useTermsAcceptanceStatus({ enabled: !!seller })
 
   const location = useLocation()
   if (isPending) {
@@ -51,27 +54,12 @@ export const ProtectedRoute = () => {
     return <Navigate to="/verify-email" state={{ from: location }} replace />
   }
 
-  // Same again for the Merchant Terms gate. Fails open: on a status error
-  // `terms` is undefined, so we render the dashboard rather than trap the
-  // merchant. The gate renders INLINE (not a redirect to a route) so it can't
-  // interact with the SSO handoff / login bounce — see AcceptTerms.
-  if (termsPending) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="text-ui-fg-interactive animate-spin" />
-      </div>
-    )
-  }
-
-  if (terms?.requires_acceptance) {
-    return <AcceptTerms />
-  }
-
   return (
     <TalkjsProvider>
       <SidebarProvider>
         <SearchProvider>
           <Outlet />
+          {terms?.requires_acceptance && <AcceptTerms />}
         </SearchProvider>
       </SidebarProvider>
     </TalkjsProvider>

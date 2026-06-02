@@ -8,12 +8,12 @@ const MERCHANT_TERMS_URL = `${MEDUSA_STOREFRONT_URL}/us/merchant-terms`
 /**
  * Non-dismissible Merchant Terms clickwrap gate.
  *
- * Rendered INLINE by ProtectedRoute (it replaces the dashboard <Outlet/> while
- * acceptance is required) rather than being a route you navigate to. That's
- * deliberate: an earlier version redirected to a /accept-terms route, and that
- * cross-route hop tangled with the vendor SSO handoff / login bounce and could
- * put the app into a reload loop. Rendering in place means no navigation, no
- * /login, no handoff — so the loop is structurally impossible.
+ * Rendered by ProtectedRoute as a FULL-SCREEN OVERLAY on top of the dashboard
+ * (not a route, not a redirect, no navigation). This keeps the gate entirely
+ * out of the routing / SSO-handoff / login path, which is what caused reload
+ * loops in earlier route- and redirect-based versions. The dashboard mounts
+ * underneath but is fully covered and read-only (the backend blocks mutations
+ * until accepted), so there is nothing to interact with until acceptance.
  *
  * On accept, useAcceptTerms writes the fresh status into the shared query
  * cache, which re-renders ProtectedRoute and drops this overlay.
@@ -33,7 +33,7 @@ export const AcceptTerms = () => {
   }
 
   return (
-    <div className="bg-ui-bg-subtle flex min-h-screen items-center justify-center p-4">
+    <div className="bg-ui-bg-subtle fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="bg-ui-bg-base shadow-elevation-card-rest w-full max-w-lg rounded-lg border p-8">
         <Text
           size="small"
