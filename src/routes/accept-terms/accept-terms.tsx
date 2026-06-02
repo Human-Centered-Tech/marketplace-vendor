@@ -85,7 +85,7 @@ export const AcceptTerms = () => {
         </Button>
 
         <Text size="xsmall" className="text-ui-fg-muted mt-4 text-center">
-          Effective May 28, 2026 · Questions? merchants@catholicowned.com
+          Effective May 28, 2026
         </Text>
       </div>
     </div>
