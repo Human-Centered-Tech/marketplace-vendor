@@ -2,6 +2,7 @@ import { Spinner } from "@medusajs/icons"
 import { Navigate, Outlet, useLocation } from "react-router-dom"
 import { useMe } from "../../../hooks/api/users"
 import { useEmailVerificationStatus } from "../../../hooks/api/email-verification"
+import { useTermsAcceptanceStatus } from "../../../hooks/api/terms-acceptance"
 import { SearchProvider } from "../../../providers/search-provider"
 import { SidebarProvider } from "../../../providers/sidebar-provider"
 import { TalkjsProvider } from "../../../providers/talkjs-provider"
@@ -11,6 +12,10 @@ export const ProtectedRoute = () => {
   // Only resolve verification once we know the vendor is authenticated.
   const { data: verification, isPending: verificationPending } =
     useEmailVerificationStatus({ enabled: !!seller })
+  // Likewise for Merchant Terms acceptance.
+  const { data: terms, isPending: termsPending } = useTermsAcceptanceStatus({
+    enabled: !!seller,
+  })
 
   const location = useLocation()
   if (isPending) {
@@ -43,6 +48,21 @@ export const ProtectedRoute = () => {
 
   if (verification?.requires_verification) {
     return <Navigate to="/verify-email" state={{ from: location }} replace />
+  }
+
+  // Same again for the Merchant Terms gate. Fails open: on a status error
+  // `terms` is undefined, so we render the dashboard rather than trap the
+  // merchant.
+  if (termsPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner className="text-ui-fg-interactive animate-spin" />
+      </div>
+    )
+  }
+
+  if (terms?.requires_acceptance) {
+    return <Navigate to="/accept-terms" state={{ from: location }} replace />
   }
 
   return (
