@@ -1,6 +1,3 @@
-import { ShoppingBag } from "@medusajs/icons"
-import { Container, Heading } from "@medusajs/ui"
-import { useTranslation } from "react-i18next"
 import { useLoaderData } from "react-router-dom"
 
 import { useStockLocations } from "../../../hooks/api/stock-locations"
@@ -11,7 +8,6 @@ import { shippingListLoader } from "./loader"
 import { TwoColumnPage } from "../../../components/layout/pages"
 import { useDashboardExtension } from "../../../extensions"
 import { LocationListHeader } from "./components/location-list-header"
-import { SidebarLink } from "../../../components/common/sidebar-link/sidebar-link"
 
 export function LocationList() {
   const initialData = useLoaderData() as Awaited<
@@ -53,29 +49,8 @@ export function LocationList() {
         </div>
       </TwoColumnPage.Main>
       <TwoColumnPage.Sidebar>
-        <LinksSection />
+        <></>
       </TwoColumnPage.Sidebar>
     </TwoColumnPage>
-  )
-}
-
-const LinksSection = () => {
-  const { t } = useTranslation()
-
-  return (
-    <Container className="p-0">
-      <div className="flex items-center justify-between px-6 py-4">
-        <Heading level="h2">{t("stockLocations.sidebar.header")}</Heading>
-      </div>
-
-      <SidebarLink
-        to="/settings/locations/shipping-profiles"
-        labelKey={t("stockLocations.sidebar.shippingProfiles.label")}
-        descriptionKey={t(
-          "stockLocations.sidebar.shippingProfiles.description"
-        )}
-        icon={<ShoppingBag />}
-      />
-    </Container>
   )
 }
