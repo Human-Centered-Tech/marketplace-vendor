@@ -8,6 +8,12 @@ export type SetupResponse = {
     name: string | null
     handle: string | null
   }
+  // "service" businesses (consultants, nonprofits, trades) don't sell
+  // products — their onboarding skips products/shipping/payouts and they
+  // only pay for + publish their directory listing. Derived backend-side
+  // from the onboarding tier. is_service is a convenience mirror.
+  business_type: "product" | "service"
+  is_service: boolean
   store_basics: {
     store_information: boolean
     locations_shipping: boolean

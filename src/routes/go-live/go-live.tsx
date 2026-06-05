@@ -31,13 +31,17 @@ export const GoLive = () => {
     )
   }
 
-  const { store_basics, catholic_owned, go_live } = data
+  const { store_basics, catholic_owned, go_live, is_service: isService } = data
   const payoutsReady = store_basics.payouts === "active"
   const hasPublishedProduct = store_basics.products.published_count > 0
   const hasListing = catholic_owned.listing_exists
   const isAlreadyLive = go_live.store_status === "ACTIVE"
-  const allReady =
-    payoutsReady && hasPublishedProduct && hasListing && !isAlreadyLive
+  // Service businesses only need a directory listing to go live — they
+  // don't sell products, so payouts and a published product aren't
+  // required. Product merchants still need all three.
+  const allReady = isService
+    ? hasListing && !isAlreadyLive
+    : payoutsReady && hasPublishedProduct && hasListing && !isAlreadyLive
 
   const handleGoLive = async () => {
     try {
@@ -64,8 +68,9 @@ export const GoLive = () => {
         <div className="px-6 py-6 flex flex-col gap-4 max-w-2xl">
           <Heading>✅ You're live</Heading>
           <Text className="text-ui-fg-subtle" size="small">
-            Your store is visible to shoppers on Catholic Owned. New products
-            you publish will appear on your storefront page automatically.
+            {isService
+              ? "Your business is listed in the Catholic Owned directory and visible to the community. You can update your listing at any time."
+              : "Your store is visible to shoppers on Catholic Owned. New products you publish will appear on your storefront page automatically."}
           </Text>
           <div>
             <Link to="/">
@@ -81,31 +86,36 @@ export const GoLive = () => {
     <Container className="divide-y p-0">
       <div className="px-6 py-5 flex items-start justify-between gap-4">
         <div>
-          <Heading>Go live</Heading>
+          <Heading>{isService ? "Activate your listing" : "Go live"}</Heading>
           <Text className="text-ui-fg-subtle" size="small">
-            Once you've set everything up, take your store live so shoppers
-            can find and buy from you.
+            {isService
+              ? "Once your directory listing is ready, activate it so the community can find your business."
+              : "Once you've set everything up, take your store live so shoppers can find and buy from you."}
           </Text>
         </div>
         <Badge color="orange">Draft</Badge>
       </div>
 
       <div className="px-6 py-6 flex flex-col gap-3 max-w-2xl">
-        <Text weight="plus">Before going live</Text>
-        <ChecklistItem
-          done={payoutsReady}
-          title="Set up payouts"
-          subtitle="Verify your bank account through Stripe so we can deposit your earnings."
-          ctaTo="/payouts"
-          ctaLabel="Set up payouts"
-        />
-        <ChecklistItem
-          done={hasPublishedProduct}
-          title="Publish at least one product"
-          subtitle="You can add more — or edit this one — at any time after going live."
-          ctaTo="/products"
-          ctaLabel="Add a product"
-        />
+        <Text weight="plus">{isService ? "Before activating" : "Before going live"}</Text>
+        {!isService && (
+          <>
+            <ChecklistItem
+              done={payoutsReady}
+              title="Set up payouts"
+              subtitle="Verify your bank account through Stripe so we can deposit your earnings."
+              ctaTo="/payouts"
+              ctaLabel="Set up payouts"
+            />
+            <ChecklistItem
+              done={hasPublishedProduct}
+              title="Publish at least one product"
+              subtitle="You can add more — or edit this one — at any time after going live."
+              ctaTo="/products"
+              ctaLabel="Add a product"
+            />
+          </>
+        )}
         <ChecklistItem
           done={hasListing}
           title="Create your directory listing"
@@ -150,7 +160,7 @@ export const GoLive = () => {
               __PAYMENTS_DISABLED__ === "true"
             }
           >
-            Go live &amp; pay →
+            {isService ? "Activate & pay →" : "Go live & pay →"}
           </Button>
           {!allReady &&
             process.env.NEXT_PUBLIC_PAYMENTS_DISABLED !== "true" && (

@@ -297,6 +297,12 @@ const buildRows = (data: SetupResponse): Row[] => {
   const co = data.catholic_owned
   const gl = data.go_live
 
+  // Service businesses don't sell products through the marketplace — they
+  // only complete + pay for a directory listing. Hide the product /
+  // shipping / payout rows entirely and relabel the go-live step so it
+  // reads as activating the listing rather than launching a storefront.
+  const isService = data.is_service
+
   const payoutsDone = sb.payouts === "active"
   const payoutsLabel =
     sb.payouts === "pending"
@@ -323,15 +329,23 @@ const buildRows = (data: SetupResponse): Row[] => {
     (gl.blockers.length > 0 && !goLiveDone) || paymentsDisabled
   const goLiveHint = paymentsDisabled
     ? "Payments are temporarily disabled while we finalize our Terms of Service. " +
-      "Keep setting up your store — we'll notify you when payment is available."
+      (isService
+        ? "Keep setting up your listing — we'll notify you when payment is available."
+        : "Keep setting up your store — we'll notify you when payment is available.")
     : gl.blockers.length > 0 && !goLiveDone
       ? "Finish the steps above first."
       : gl.subscription_status === "active"
-        ? "All ready — flip the switch and your store goes live to shoppers."
-        : "Pay your annual directory subscription and publish your store."
+        ? isService
+          ? "All ready — flip the switch and your listing goes live in the directory."
+          : "All ready — flip the switch and your store goes live to shoppers."
+        : isService
+          ? "Pay your annual directory subscription and publish your listing."
+          : "Pay your annual directory subscription and publish your store."
 
-  return [
-    // --- Store basics ---
+  // Storefront-only rows: products, shipping, and payouts. Service
+  // businesses skip these entirely (see buildRows comment above). Product
+  // merchants keep all of them.
+  const storeBasicsRows: Row[] = [
     {
       section: "store_basics",
       label: "Complete your store information",
@@ -339,27 +353,36 @@ const buildRows = (data: SetupResponse): Row[] => {
       done: sb.store_information,
       cta: { label: "Manage", href: "/settings/store" },
     },
-    {
-      section: "store_basics",
-      label: "Set up locations & shipping",
-      hint: "Tell us where you ship from and your shipping rates.",
-      done: sb.locations_shipping,
-      cta: { label: "Set up", href: "/settings/locations" },
-    },
-    {
-      section: "store_basics",
-      label: payoutsLabel,
-      hint: payoutsHint,
-      done: payoutsDone,
-      cta: { label: payoutsDone ? "Manage" : "Set up", href: "/payouts" },
-    },
-    {
-      section: "store_basics",
-      label: "Add your first product",
-      hint: "List a product and start selling to the Catholic community.",
-      done: sb.products.published_count >= 1,
-      cta: { label: "Add", href: "/products" },
-    },
+  ]
+  if (!isService) {
+    storeBasicsRows.push(
+      {
+        section: "store_basics",
+        label: "Set up locations & shipping",
+        hint: "Tell us where you ship from and your shipping rates.",
+        done: sb.locations_shipping,
+        cta: { label: "Set up", href: "/settings/locations" },
+      },
+      {
+        section: "store_basics",
+        label: payoutsLabel,
+        hint: payoutsHint,
+        done: payoutsDone,
+        cta: { label: payoutsDone ? "Manage" : "Set up", href: "/payouts" },
+      },
+      {
+        section: "store_basics",
+        label: "Add your first product",
+        hint: "List a product and start selling to the Catholic community.",
+        done: sb.products.published_count >= 1,
+        cta: { label: "Add", href: "/products" },
+      }
+    )
+  }
+
+  return [
+    // --- Store basics ---
+    ...storeBasicsRows,
 
     // --- Catholic Owned profile ---
     {
@@ -399,11 +422,13 @@ const buildRows = (data: SetupResponse): Row[] => {
     // --- Go live ---
     {
       section: "go_live",
-      label: "Go live & pay your annual subscription",
+      label: isService
+        ? "Activate your listing & pay your annual subscription"
+        : "Go live & pay your annual subscription",
       hint: goLiveHint,
       done: goLiveDone,
       disabled: goLiveBlocked,
-      cta: { label: "Go live", href: "/go-live" },
+      cta: { label: isService ? "Activate" : "Go live", href: "/go-live" },
     },
   ]
 }
