@@ -44,6 +44,14 @@ export const RouteMap: RouteObject[] = [
             lazy: () => import("../../routes/go-live"),
           },
           {
+            path: "imports",
+            handle: {
+              breadcrumb: () => "Import from Shopify",
+            },
+            errorElement: <ErrorBoundary />,
+            lazy: () => import("../../routes/imports"),
+          },
+          {
             path: "onboarding/retry",
             handle: {
               breadcrumb: () => "Onboarding",
