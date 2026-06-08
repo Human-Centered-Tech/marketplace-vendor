@@ -1,5 +1,6 @@
-import { Button, Heading, Tabs } from "@medusajs/ui"
+import { Button, Heading, Tabs, Text } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
 
 import { RouteDrawer } from "../../../components/modals"
 import { EtsyImportTab } from "./components/etsy-import-tab"
@@ -7,6 +8,7 @@ import { MercurImportTab } from "./components/mercur-import-tab"
 
 export const ProductImport = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   return (
     <RouteDrawer>
@@ -27,12 +29,31 @@ export const ProductImport = () => {
             <Tabs.Trigger value="etsy">
               {t("products.import.tabs.etsy")}
             </Tabs.Trigger>
+            <Tabs.Trigger value="shopify">Shopify</Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="mercur">
             <MercurImportTab />
           </Tabs.Content>
           <Tabs.Content value="etsy">
             <EtsyImportTab />
+          </Tabs.Content>
+          <Tabs.Content value="shopify">
+            <div className="flex flex-col gap-4 py-2">
+              <Text size="small" className="text-ui-fg-subtle">
+                Connect your Shopify store and import your catalog directly over
+                the Shopify API — no CSV export needed. Products come in as
+                drafts for you to review, and re-running won&apos;t create
+                duplicates.
+              </Text>
+              <div>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate("/imports")}
+                >
+                  Go to Shopify import
+                </Button>
+              </div>
+            </div>
           </Tabs.Content>
         </Tabs>
       </RouteDrawer.Body>
