@@ -139,6 +139,12 @@ export const Imports = () => {
                   Connect
                 </Button>
               </div>
+              <Text size="xsmall" className="text-ui-fg-subtle">
+                Use your full <code>.myshopify.com</code> address — for example{" "}
+                <code>my-catholic-shop.myshopify.com</code> (not your custom
+                domain like <code>myshop.com</code>). You can find it in Shopify
+                under Settings → Domains.
+              </Text>
             </div>
           )}
         </div>
