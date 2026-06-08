@@ -79,6 +79,15 @@ const StoreStatusBanner = ({
 }) => {
   if (!status) return null
 
+  // Storefront origin comes from the build-time __STOREFRONT_URL__ define
+  // (same source user-menu.tsx uses). The previous code read
+  // import.meta.env.VITE_STOREFRONT_URL — a var that doesn't exist and
+  // isn't present in the static prod build — so it always fell back to
+  // localhost, breaking "Preview as public" / "View public page" in prod.
+  const storefrontUrl =
+    (typeof __STOREFRONT_URL__ === "string" && __STOREFRONT_URL__) ||
+    "http://localhost:8000"
+
   if (status === "SUSPENDED") {
     return (
       <div className="w-full bg-red-600 text-white p-1 text-center text-sm">
@@ -88,9 +97,6 @@ const StoreStatusBanner = ({
   }
 
   if (status === "INACTIVE") {
-    const storefrontUrl =
-      (import.meta as any).env?.VITE_STOREFRONT_URL ||
-      "http://localhost:3000"
     return (
       <div className="w-full bg-amber-50 border-b border-amber-300 text-amber-900 px-4 py-2 flex items-center justify-center gap-x-4 text-sm">
         <span>
@@ -124,10 +130,7 @@ const StoreStatusBanner = ({
         <span>✅ Your store is live</span>
         {handle && (
           <a
-            href={`${
-              (import.meta as any).env?.VITE_STOREFRONT_URL ||
-              "http://localhost:3000"
-            }/sellers/${handle}`}
+            href={`${storefrontUrl}/sellers/${handle}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:no-underline font-medium"
