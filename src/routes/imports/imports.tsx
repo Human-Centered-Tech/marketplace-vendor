@@ -20,13 +20,6 @@ import {
   useShopifyStatus,
 } from "../../hooks/api/imports"
 
-const TERMINAL: ImportJobStatus[] = [
-  "completed",
-  "partial",
-  "failed",
-  "cancelled",
-]
-
 const statusColor = (
   s: ImportJobStatus
 ): "green" | "orange" | "red" | "grey" => {
@@ -98,8 +91,6 @@ export const Imports = () => {
     [activeJob]
   )
 
-  const activeDone = activeJob && TERMINAL.includes(activeJob.status)
-  const activeIsDryRun = activeJob?.mode === "dry_run"
 
   return (
     <Container className="flex flex-col gap-y-6 p-0">
@@ -156,25 +147,19 @@ export const Imports = () => {
       {/* Run import */}
       {connected && (
         <div className="px-6 pb-2">
-          <Text weight="plus">Run an import</Text>
+          <Text weight="plus">Import your products</Text>
           <Text size="small" className="text-ui-fg-subtle mt-1">
-            Start with a preview (no changes), then commit when it looks right.
-            Re-running won&apos;t duplicate products you&apos;ve already imported.
+            We&apos;ll bring your Shopify products in as drafts so you can
+            review them before publishing. Re-running won&apos;t duplicate
+            products you&apos;ve already imported.
           </Text>
           <div className="flex items-center gap-3 mt-3">
             <Button
-              variant="secondary"
-              onClick={() => startJob("dry_run")}
-              isLoading={createJob.isPending}
-            >
-              Preview (dry run)
-            </Button>
-            <Button
               variant="primary"
               onClick={() => startJob("commit")}
-              disabled={createJob.isPending}
+              isLoading={createJob.isPending}
             >
-              Run import
+              Import products
             </Button>
           </div>
         </div>
@@ -188,7 +173,6 @@ export const Imports = () => {
               {activeJob.status}
             </Badge>
             <Text size="small">
-              {activeIsDryRun ? "Preview" : "Import"} ·{" "}
               {activeJob.processed_count} processed · {activeJob.succeeded_count}{" "}
               ok · {activeJob.skipped_count} skipped · {activeJob.failed_count}{" "}
               failed
@@ -199,19 +183,6 @@ export const Imports = () => {
             <Text size="small" className="text-ui-fg-error mt-2">
               {activeJob.error}
             </Text>
-          )}
-
-          {/* Dry-run preview → offer commit */}
-          {activeIsDryRun && activeDone && (
-            <div className="mt-3">
-              <Button
-                variant="primary"
-                onClick={() => startJob("commit")}
-                isLoading={createJob.isPending}
-              >
-                Looks good — commit import
-              </Button>
-            </div>
           )}
 
           {previewItems.length > 0 && (
@@ -254,7 +225,6 @@ export const Imports = () => {
                   {job.status}
                 </Badge>
                 <span className="capitalize">{job.source}</span>
-                <span className="text-ui-fg-subtle">({job.mode})</span>
               </span>
               <span className="text-ui-fg-subtle">
                 {job.succeeded_count}/{job.total_count}
