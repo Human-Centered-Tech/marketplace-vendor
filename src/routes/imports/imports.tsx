@@ -150,8 +150,15 @@ export const Imports = () => {
           <Text weight="plus">Import your products</Text>
           <Text size="small" className="text-ui-fg-subtle mt-1">
             We&apos;ll bring your Shopify products in as drafts so you can
-            review them before publishing. Re-running won&apos;t duplicate
-            products you&apos;ve already imported.
+            review them before publishing.
+          </Text>
+          <Text size="small" className="text-ui-fg-subtle mt-2">
+            You can run this as often as you like — it&apos;s also how you keep
+            things up to date. The first run imports your products; running it
+            again updates the ones you&apos;ve already imported (price,
+            description, images, inventory, and more) and adds any new products
+            from Shopify, without ever creating duplicates. So if you change a
+            price or add a product in Shopify, just run the import again.
           </Text>
           <div className="flex items-center gap-3 mt-3">
             <Button
