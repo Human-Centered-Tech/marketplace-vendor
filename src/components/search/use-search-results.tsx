@@ -10,7 +10,6 @@ import {
   useInventoryItems,
   useOrders,
   usePriceLists,
-  useProductCategories,
   useProducts,
   useProductTags,
   useProductTypes,
@@ -132,18 +131,6 @@ const useDynamicSearchResults = (
   //   }
   // );
 
-  const categoryResponse = useProductCategories(
-    {
-      // TODO: Remove the OR condition once the list endpoint does not throw when q equals an empty string
-      q: debouncedSearch || undefined,
-      limit,
-      fields: "id,name",
-    },
-    {
-      enabled: isAreaEnabled(currentArea, "category"),
-      placeholderData: keepPreviousData,
-    }
-  )
 
 
   const customerResponse = useCustomers(
@@ -358,7 +345,6 @@ const useDynamicSearchResults = (
       order: orderResponse,
       product: productResponse,
       // productVariant: productVariantResponse,
-      category: categoryResponse,
       inventory: inventoryResponse,
       customer: customerResponse,
       customerGroup: customerGroupResponse,
@@ -382,7 +368,6 @@ const useDynamicSearchResults = (
       productResponse,
       // productVariantResponse,
       inventoryResponse,
-      categoryResponse,
       customerResponse,
       customerGroupResponse,
       promotionResponse,
@@ -517,15 +502,6 @@ const transformMap: TransformMap = {
       subtitle: variant.sku ?? undefined,
       to: `/products/${variant.product_id}/variants/${variant.id}`,
       value: `variant:${variant.id}`,
-    }),
-  },
-  category: {
-    dataKey: "product_categories",
-    transform: (category: HttpTypes.AdminProductCategory) => ({
-      id: category.id,
-      title: category.name,
-      to: `/categories/${category.id}`,
-      value: `category:${category.id}`,
     }),
   },
   inventory: {

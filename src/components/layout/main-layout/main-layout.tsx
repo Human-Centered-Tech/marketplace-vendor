@@ -143,17 +143,6 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       icon: <Tag />,
       label: t("products.domain"),
       to: "/products",
-      items: [
-        {
-          label: t("categories.domain"),
-          to: "/categories",
-        },
-        // TODO: Enable when domin is introduced
-        // {
-        //   label: t("giftCards.domain"),
-        //   to: "/gift-cards",
-        // },
-      ],
     },
     {
       icon: <Buildings />,
