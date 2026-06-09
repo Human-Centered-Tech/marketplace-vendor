@@ -15,17 +15,12 @@ export const Requests = () => {
     requests?.filter(
       ({ type }: { type: string }) => type === "product_category"
     ) ?? []
-  const collectionRequests =
-    requests?.filter(
-      ({ type }: { type: string }) => type === "product_collection"
-    ) ?? []
   const reviewRequests =
     requests?.filter(
       ({ type }: { type: string }) => type === "review_remove"
     ) ?? []
 
   const categoryRequestCount = categoryRequests.length
-  const collectionRequestCount = collectionRequests.length
   const reviewRequestCount = reviewRequests.length
   const ordersRequestsCount = count
 
@@ -50,15 +45,6 @@ export const Requests = () => {
           </div>
         </div>
         <div className="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/requests/collections">
-            <Button variant="secondary" className="w-full justify-between py-4">
-              <div className="flex gap-4 items-center">
-                <Badge>{collectionRequestCount}</Badge>
-                Collections requests
-              </div>
-              <TriangleRightMini color="grey" />
-            </Button>
-          </Link>
           <Link to="/requests/categories">
             <Button variant="secondary" className="w-full justify-between py-4">
               <div className="flex gap-4 items-center">

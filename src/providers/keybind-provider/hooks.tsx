@@ -129,14 +129,6 @@ export const useGlobalShortcuts = () => {
     },
     {
       keys: {
-        Mac: ["G", "C"],
-      },
-      label: t("app.keyboardShortcuts.navigation.goToCollections"),
-      type: "pageShortcut",
-      to: "/collections",
-    },
-    {
-      keys: {
         Mac: ["G", "A"],
       },
       label: t("app.keyboardShortcuts.navigation.goToCategories"),

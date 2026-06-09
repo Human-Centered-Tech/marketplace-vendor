@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   useCampaigns,
-  useCollections,
   useCustomerGroups,
   useCustomers,
   useInventoryItems,
@@ -146,17 +145,6 @@ const useDynamicSearchResults = (
     }
   )
 
-  const collectionResponse = useCollections(
-    {
-      q: debouncedSearch,
-      limit,
-      fields: "id,title",
-    },
-    {
-      enabled: isAreaEnabled(currentArea, "collection"),
-      placeholderData: keepPreviousData,
-    }
-  )
 
   const customerResponse = useCustomers(
     {
@@ -370,7 +358,6 @@ const useDynamicSearchResults = (
       order: orderResponse,
       product: productResponse,
       // productVariant: productVariantResponse,
-      collection: collectionResponse,
       category: categoryResponse,
       inventory: inventoryResponse,
       customer: customerResponse,
@@ -396,7 +383,6 @@ const useDynamicSearchResults = (
       // productVariantResponse,
       inventoryResponse,
       categoryResponse,
-      collectionResponse,
       customerResponse,
       customerGroupResponse,
       promotionResponse,
@@ -574,15 +560,6 @@ const transformMap: TransformMap = {
       title: customerGroup.name!,
       to: `/customer-groups/${customerGroup.id}`,
       value: `customerGroup:${customerGroup.id}`,
-    }),
-  },
-  collection: {
-    dataKey: "collections",
-    transform: (collection: HttpTypes.AdminCollection) => ({
-      id: collection.id,
-      title: collection.title,
-      to: `/collections/${collection.id}`,
-      value: `collection:${collection.id}`,
     }),
   },
   promotion: {

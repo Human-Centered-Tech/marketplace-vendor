@@ -113,33 +113,6 @@ export const RouteMap: RouteObject[] = [
                 ],
               },
               {
-                path: "collections",
-                handle: {
-                  breadcrumb: () => "Collection requests",
-                },
-                lazy: async () => {
-                  const { RequestsCollectionsList } = await import(
-                    "../../routes/requests/requests-list"
-                  )
-
-                  return {
-                    Component: RequestsCollectionsList,
-                  }
-                },
-                children: [
-                  {
-                    path: "create",
-                    lazy: () =>
-                      import("../../routes/collections/collection-create"),
-                  },
-                  {
-                    path: ":id/edit",
-                    lazy: () =>
-                      import("../../routes/collections/collection-edit"),
-                  },
-                ],
-              },
-              {
                 path: "reviews",
                 handle: {
                   breadcrumb: () => "Reviews requests",
@@ -650,63 +623,6 @@ export const RouteMap: RouteObject[] = [
                     path: "add-promotions",
                     lazy: () =>
                       import("../../routes/campaigns/add-campaign-promotions"),
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            path: "/collections",
-            errorElement: <ErrorBoundary />,
-            handle: {
-              breadcrumb: () => t("collections.domain"),
-            },
-            children: [
-              {
-                path: "",
-                lazy: () => import("../../routes/collections/collection-list"),
-                children: [
-                  {
-                    path: "create",
-                    lazy: () =>
-                      import("../../routes/collections/collection-create"),
-                  },
-                ],
-              },
-              {
-                path: ":id",
-                lazy: async () => {
-                  const { Component, Breadcrumb, loader } = await import(
-                    "../../routes/collections/collection-detail"
-                  )
-
-                  return {
-                    Component,
-                    loader,
-                    handle: {
-                      breadcrumb: (
-                        match: UIMatch<HttpTypes.AdminCollectionResponse>
-                      ) => <Breadcrumb {...match} />,
-                    },
-                  }
-                },
-                children: [
-                  {
-                    path: "edit",
-                    lazy: () =>
-                      import("../../routes/collections/collection-edit"),
-                  },
-                  {
-                    path: "products",
-                    lazy: () =>
-                      import(
-                        "../../routes/collections/collection-add-products"
-                      ),
-                  },
-                  {
-                    path: "metadata/edit",
-                    lazy: () =>
-                      import("../../routes/collections/collection-metadata"),
                   },
                 ],
               },

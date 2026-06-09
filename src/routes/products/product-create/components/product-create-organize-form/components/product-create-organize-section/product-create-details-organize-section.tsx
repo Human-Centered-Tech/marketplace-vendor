@@ -21,20 +21,6 @@ export const ProductCreateOrganizationSection = ({
 }: ProductCreateOrganizationSectionProps) => {
   const { t } = useTranslation()
 
-  const collections = useComboboxData({
-    queryKey: ["product_collections"],
-    queryFn: (params) =>
-      fetchQuery("/vendor/product-collections", {
-        method: "GET",
-        query: params,
-      }),
-    getOptions: (data) =>
-      data.product_collections.map((collection: any) => ({
-        label: collection.title!,
-        value: collection.id!,
-      })),
-  })
-
   const types = useComboboxData({
     queryKey: ["product_types", "creating"],
     queryFn: (params) =>
@@ -114,29 +100,6 @@ export const ProductCreateOrganizationSection = ({
                     searchValue={types.searchValue}
                     onSearchValueChange={types.onSearchValueChange}
                     fetchNextPage={types.fetchNextPage}
-                  />
-                </Form.Control>
-                <Form.ErrorMessage />
-              </Form.Item>
-            )
-          }}
-        />
-        <Form.Field
-          control={form.control}
-          name="collection_id"
-          render={({ field }) => {
-            return (
-              <Form.Item>
-                <Form.Label optional>
-                  {t("products.fields.collection.label")}
-                </Form.Label>
-                <Form.Control>
-                  <Combobox
-                    {...field}
-                    options={collections.options}
-                    searchValue={collections.searchValue}
-                    onSearchValueChange={collections.onSearchValueChange}
-                    fetchNextPage={collections.fetchNextPage}
                   />
                 </Form.Control>
                 <Form.ErrorMessage />
