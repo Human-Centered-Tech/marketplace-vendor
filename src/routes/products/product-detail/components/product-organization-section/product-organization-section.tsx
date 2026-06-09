@@ -69,11 +69,7 @@ export const ProductOrganizationSection = ({
         value={
           product.categories?.length
             ? product.categories.map((pcat) => (
-                <OrganizationTag
-                  key={pcat.id}
-                  label={pcat.name}
-                  to={`/categories/${pcat.id}`}
-                />
+                <OrganizationTag key={pcat.id} label={pcat.name} />
               ))
             : undefined
         }
@@ -86,11 +82,11 @@ export const ProductOrganizationSection = ({
   )
 }
 
-const OrganizationTag = ({ label, to }: { label: string; to: string }) => {
+const OrganizationTag = ({ label, to }: { label: string; to?: string }) => {
   return (
     <Tooltip content={label}>
-      <Badge size="2xsmall" className="block w-fit truncate" asChild>
-        <Link to={to}>{label}</Link>
+      <Badge size="2xsmall" className="block w-fit truncate" asChild={!!to}>
+        {to ? <Link to={to}>{label}</Link> : <span>{label}</span>}
       </Badge>
     </Tooltip>
   )
