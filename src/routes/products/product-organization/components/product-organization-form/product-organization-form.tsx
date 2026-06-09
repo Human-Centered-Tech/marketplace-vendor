@@ -28,7 +28,6 @@ type ProductOrganizationFormProps = {
 
 const ProductOrganizationSchema = zod.object({
   type_id: zod.string().nullable(),
-  collection_id: zod.string().nullable(),
   category_ids: zod.string().nullable(),
   // category_ids: zod.array(zod.string()),
   tag_ids: zod.array(zod.string()),
@@ -55,20 +54,6 @@ export const ProductOrganizationForm = ({
       data.product_categories.map((category: any) => ({
         label: category.name!,
         value: category.id!,
-      })),
-  })
-
-  const collections = useComboboxData({
-    queryKey: ["product_collections"],
-    queryFn: (params) =>
-      fetchQuery("/vendor/product-collections", {
-        method: "GET",
-        query: params as Record<string, string | number>,
-      }),
-    getOptions: (data) =>
-      data.product_collections.map((collection: any) => ({
-        label: collection.title!,
-        value: collection.id!,
       })),
   })
 
@@ -105,7 +90,6 @@ export const ProductOrganizationForm = ({
   const form = useExtendableForm({
     defaultValues: {
       type_id: product.type_id ?? "",
-      collection_id: product.collection_id ?? "",
       category_ids: product.categories?.[0]?.id || "",
       tag_ids: productVendorTags?.map((t) => t.id) || [],
     },
@@ -158,8 +142,6 @@ export const ProductOrganizationForm = ({
     const dirty = form.formState.dirtyFields
     const productPayload: Record<string, any> = {}
     if (dirty.type_id) productPayload.type_id = data.type_id || null
-    if (dirty.collection_id)
-      productPayload.collection_id = data.collection_id || null
     if (dirty.category_ids) {
       productPayload.categories = data.category_ids
         ? [{ id: data.category_ids }]
@@ -215,29 +197,6 @@ export const ProductOrganizationForm = ({
                         searchValue={types.searchValue}
                         onSearchValueChange={types.onSearchValueChange}
                         fetchNextPage={types.fetchNextPage}
-                      />
-                    </Form.Control>
-                    <Form.ErrorMessage />
-                  </Form.Item>
-                )
-              }}
-            />
-            <Form.Field
-              control={form.control}
-              name="collection_id"
-              render={({ field }) => {
-                return (
-                  <Form.Item>
-                    <Form.Label optional>
-                      {t("products.fields.collection.label")}
-                    </Form.Label>
-                    <Form.Control>
-                      <Combobox
-                        {...field}
-                        multiple={false}
-                        options={collections.options}
-                        onSearchValueChange={collections.onSearchValueChange}
-                        searchValue={collections.searchValue}
                       />
                     </Form.Control>
                     <Form.ErrorMessage />

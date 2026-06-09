@@ -3,7 +3,6 @@ export const SEARCH_AREAS = [
   "order",
   "product",
   "productVariant",
-  "collection",
   "category",
   "inventory",
   "customer",

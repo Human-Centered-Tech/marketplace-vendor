@@ -145,10 +145,6 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       to: "/products",
       items: [
         {
-          label: t("collections.domain"),
-          to: "/collections",
-        },
-        {
           label: t("categories.domain"),
           to: "/categories",
         },
@@ -212,10 +208,6 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       label: "Requests",
       to: "/requests",
       items: [
-        {
-          label: "Collections",
-          to: "/requests/collections",
-        },
         {
           label: "Categories",
           to: "/requests/categories",
