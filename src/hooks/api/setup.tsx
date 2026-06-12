@@ -35,6 +35,10 @@ export type SetupResponse = {
       | null
     subscription_tier: string | null
     store_status: "ACTIVE" | "INACTIVE" | "SUSPENDED"
+    // True when the vendor paused their live shop (vacation mode) — vs a
+    // never-launched draft, which is also store_status INACTIVE. Drives
+    // the "Reopen shop" vs "Go Live" affordances.
+    is_on_vacation: boolean
     blockers: Array<{ code: string; message: string }>
   }
 }

@@ -20,11 +20,17 @@ import { BackToDashboardBar } from "../../common/back-to-dashboard-bar"
 import { Notifications } from "../notifications"
 import { AdminChat } from "../admin-chat"
 import { useMe } from "../../../hooks/api"
+import { useSetup } from "../../../hooks/api/setup"
+import { ReopenShopButton } from "../../store-status/store-status-actions"
 
 export const Shell = ({ children }: PropsWithChildren) => {
   const globalShortcuts = useGlobalShortcuts()
   const navigation = useNavigation()
   const { seller } = useMe()
+  // store_status alone can't tell a paused (vacation) shop from a
+  // never-launched draft — both are INACTIVE. /vendor/setup carries the
+  // is_on_vacation flag, so the banner shows the right message + action.
+  const { data: setup } = useSetup()
 
   const loading = navigation.state === "loading"
 
@@ -34,6 +40,7 @@ export const Shell = ({ children }: PropsWithChildren) => {
         <StoreStatusBanner
           status={seller?.store_status}
           handle={seller?.handle}
+          isOnVacation={Boolean(setup?.go_live?.is_on_vacation)}
         />
         <div className="relative flex flex-1 h-full items-start overflow-hidden lg:flex-row">
           <NavigationBar loading={loading} />
@@ -73,9 +80,11 @@ export const Shell = ({ children }: PropsWithChildren) => {
 const StoreStatusBanner = ({
   status,
   handle,
+  isOnVacation,
 }: {
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED" | string
   handle?: string
+  isOnVacation?: boolean
 }) => {
   if (!status) return null
 
@@ -92,6 +101,18 @@ const StoreStatusBanner = ({
     return (
       <div className="w-full bg-red-600 text-white p-1 text-center text-sm">
         Your store is <b>suspended</b>. Please contact support.
+      </div>
+    )
+  }
+
+  if (status === "INACTIVE" && isOnVacation) {
+    return (
+      <div className="w-full bg-amber-50 border-b border-amber-300 text-amber-900 px-4 py-2 flex items-center justify-center gap-x-4 text-sm">
+        <span>
+          🌿 Your shop is <b>paused</b> for vacation — products are hidden and
+          new orders are off.
+        </span>
+        <ReopenShopButton size="small" variant="primary" />
       </div>
     )
   }
