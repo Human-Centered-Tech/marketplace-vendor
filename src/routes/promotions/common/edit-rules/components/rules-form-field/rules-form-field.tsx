@@ -143,13 +143,18 @@ export const RulesFormField = ({
 
                     const existingAttributes =
                       fields?.map((field: any) => field.attribute) || []
+                    // "country" is intentionally excluded: this is a
+                    // US-only marketplace, so country eligibility is
+                    // meaningless, and the value list was effectively broken
+                    // (the options endpoint returns only the first 100
+                    // countries by ISO code with no search, so "United
+                    // States" never appeared). Limiting promos by shopper
+                    // country isn't supported here.
                     const attributeOptions =
                       attributes
                         ?.filter(
                           ({ id }) =>
-                            id === "customer_group" ||
-                            id === "country" ||
-                            id === "product"
+                            id === "customer_group" || id === "product"
                         )
                         ?.filter((attr) => {
                           if (attr.value === fieldRule.attribute) {
@@ -167,6 +172,9 @@ export const RulesFormField = ({
 
                       update(index, {
                         ...fieldRule,
+                        // Operator is fixed to "in" — we no longer expose the
+                        // In/Equals/Not In choice to merchants.
+                        operator: "in",
                         values: [],
                         disguised: currentAttributeOption?.disguised || false,
                       })
@@ -231,80 +239,21 @@ export const RulesFormField = ({
                   }}
                 />
 
-                <div className="flex gap-2">
-                  <Form.Field
-                    name={`${scope}.${index}.operator`}
-                    render={({ field }) => {
-                      const { onChange, ref, ...fieldProps } = field
-
-                      const currentAttributeOption = attributes?.find(
-                        (attr) => attr.value === fieldRule.attribute
-                      )
-
-                      const options =
-                        currentAttributeOption?.operators?.map((o, idx) => ({
-                          label: o.label,
-                          value: o.value,
-                          key: `${identifier}-operator-option-${idx}`,
-                        })) || []
-
-                      const disabled =
-                        !!fieldRule.attribute && options?.length <= 1
-
-                      return (
-                        <Form.Item className="basis-1/2">
-                          <Form.Control>
-                            {!disabled ? (
-                              <Select
-                                {...fieldProps}
-                                disabled={!fieldRule.attribute}
-                                onValueChange={onChange}
-                              >
-                                <Select.Trigger
-                                  ref={ref}
-                                  className="bg-ui-bg-base"
-                                >
-                                  <Select.Value placeholder="Select Operator" />
-                                </Select.Trigger>
-
-                                <Select.Content>
-                                  {options?.map((c) => (
-                                    <Select.Item key={c.key} value={c.value}>
-                                      <span className="text-ui-fg-subtle">
-                                        {c.label}
-                                      </span>
-                                    </Select.Item>
-                                  ))}
-                                </Select.Content>
-                              </Select>
-                            ) : (
-                              <DisabledField
-                                label={
-                                  options.find(
-                                    (o) => o.value === fieldProps.value
-                                  )?.label || ""
-                                }
-                                field={field}
-                              />
-                            )}
-                          </Form.Control>
-                          <Form.ErrorMessage />
-                        </Form.Item>
-                      )
-                    }}
-                  />
-
-                  <RuleValueFormField
-                    form={form}
-                    identifier={identifier}
-                    scope={scope}
-                    name={`${scope}.${index}.values`}
-                    operator={`${scope}.${index}.operator`}
-                    fieldRule={fieldRule}
-                    attributes={attributes || []}
-                    ruleType={ruleType}
-                  />
-                </div>
+                {/* The operator is fixed to "in" (set on add + on attribute
+                    select), so we don't render the In/Equals/Not In dropdown.
+                    It confused merchants — "In" and "Equals" behave the same
+                    for a single value, and "Not In" silently inverts the
+                    condition. The merchant just selects which values apply. */}
+                <RuleValueFormField
+                  form={form}
+                  identifier={identifier}
+                  scope={scope}
+                  name={`${scope}.${index}.values`}
+                  operator={`${scope}.${index}.operator`}
+                  fieldRule={fieldRule}
+                  attributes={attributes || []}
+                  ruleType={ruleType}
+                />
               </div>
 
               <div className="size-7 flex-none self-center">
@@ -350,7 +299,8 @@ export const RulesFormField = ({
           onClick={() => {
             append({
               attribute: "",
-              operator: "",
+              // Operator is fixed to "in"; the dropdown is no longer shown.
+              operator: "in",
               values: [],
               required: false,
             } as any)
