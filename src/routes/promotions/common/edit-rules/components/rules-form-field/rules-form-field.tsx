@@ -143,13 +143,18 @@ export const RulesFormField = ({
 
                     const existingAttributes =
                       fields?.map((field: any) => field.attribute) || []
+                    // "country" is intentionally excluded: this is a
+                    // US-only marketplace, so country eligibility is
+                    // meaningless, and the value list was effectively broken
+                    // (the options endpoint returns only the first 100
+                    // countries by ISO code with no search, so "United
+                    // States" never appeared). Limiting promos by shopper
+                    // country isn't supported here.
                     const attributeOptions =
                       attributes
                         ?.filter(
                           ({ id }) =>
-                            id === "customer_group" ||
-                            id === "country" ||
-                            id === "product"
+                            id === "customer_group" || id === "product"
                         )
                         ?.filter((attr) => {
                           if (attr.value === fieldRule.attribute) {
