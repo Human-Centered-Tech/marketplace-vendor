@@ -263,6 +263,56 @@ export const useUpdatePromotion = (
   })
 }
 
+// "First-time buyers only" flag — stored as promotion.metadata.first_time_only
+// and read/written via a dedicated backend route (Mercur's promotion
+// create/update validators are strict and reject metadata).
+type PromotionFirstTimeResponse = { id: string; first_time_only: boolean }
+
+export const usePromotionFirstTime = (
+  id: string,
+  options?: Omit<
+    UseQueryOptions<
+      PromotionFirstTimeResponse,
+      FetchError,
+      PromotionFirstTimeResponse,
+      QueryKey
+    >,
+    "queryFn" | "queryKey"
+  >
+) => {
+  const { data, ...rest } = useQuery({
+    queryKey: [...promotionsQueryKeys.detail(id), "first-time"],
+    queryFn: async () =>
+      fetchQuery(`/vendor/promotions/${id}/first-time`, { method: "GET" }),
+    ...options,
+  })
+
+  return { ...data, ...rest }
+}
+
+export const useSetPromotionFirstTime = (
+  id: string,
+  options?: UseMutationOptions<PromotionFirstTimeResponse, FetchError, boolean>
+) => {
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      fetchQuery(`/vendor/promotions/${id}/first-time`, {
+        method: "POST",
+        body: { enabled },
+      }),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: [...promotionsQueryKeys.detail(id), "first-time"],
+      })
+      queryClient.invalidateQueries({
+        queryKey: promotionsQueryKeys.detail(id),
+      })
+      options?.onSuccess?.(data, variables, context)
+    },
+    ...options,
+  })
+}
+
 export const usePromotionAddRules = (
   id: string,
   ruleType: string,
