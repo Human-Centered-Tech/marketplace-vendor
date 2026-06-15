@@ -1,9 +1,9 @@
 import { ArrowUturnLeft, MinusMini } from "@medusajs/icons"
 import { clx, Divider, IconButton, Text } from "@medusajs/ui"
 import { Collapsible as RadixCollapsible } from "radix-ui"
-import { Fragment, useEffect, useMemo, useState } from "react"
+import { Fragment, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useLocation } from "react-router-dom"
+import { Link } from "react-router-dom"
 
 import { INavItem, NavItem } from "../nav-item"
 import { Shell } from "../shell"
@@ -71,18 +71,6 @@ const useMyAccountRoutes = (): INavItem[] => {
   )
 }
 
-/**
- * Ensure that the `from` prop is not another settings route, to avoid
- * the user getting stuck in a navigation loop.
- */
-const getSafeFromValue = (from: string) => {
-  if (from.startsWith("/settings")) {
-    return "/orders"
-  }
-
-  return from
-}
-
 const SettingsSidebar = () => {
   const { getMenu } = useDashboardExtension()
 
@@ -141,22 +129,18 @@ const SettingsSidebar = () => {
   )
 }
 
+// The settings area is always exited back to the dashboard (the portal's
+// home — "/" redirects there too). Using a fixed target keeps the label and
+// destination in sync: previously this read location.state.from, so a back
+// arrow labeled "Settings" could navigate anywhere the user happened to
+// enter from (and "Settings" next to a back arrow read as "go to settings").
 const Header = () => {
-  const [from, setFrom] = useState("/orders")
-
   const { t } = useTranslation()
-  const location = useLocation()
-
-  useEffect(() => {
-    if (location.state?.from) {
-      setFrom(getSafeFromValue(location.state.from))
-    }
-  }, [location])
 
   return (
     <div className="bg-ui-bg-subtle p-3">
       <Link
-        to={from}
+        to="/dashboard"
         replace
         className={clx(
           "bg-ui-bg-subtle transition-fg flex items-center rounded-md outline-none",
@@ -169,7 +153,7 @@ const Header = () => {
             <ArrowUturnLeft className="text-ui-fg-subtle" />
           </div>
           <Text leading="compact" weight="plus" size="small">
-            {t("app.nav.settings.header")}
+            {t("app.nav.settings.backToDashboard")}
           </Text>
         </div>
       </Link>

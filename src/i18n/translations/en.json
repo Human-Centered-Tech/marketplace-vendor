@@ -255,6 +255,7 @@
       },
       "settings": {
         "header": "Settings",
+        "backToDashboard": "Dashboard",
         "general": "General",
         "developer": "Developer",
         "myAccount": "My Account"
