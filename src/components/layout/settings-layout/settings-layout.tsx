@@ -1,7 +1,7 @@
 import { ArrowUturnLeft, MinusMini } from "@medusajs/icons"
 import { clx, Divider, IconButton, Text } from "@medusajs/ui"
 import { Collapsible as RadixCollapsible } from "radix-ui"
-import { Fragment, useEffect, useMemo, useState } from "react"
+import { Fragment, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useLocation } from "react-router-dom"
 
@@ -71,18 +71,6 @@ const useMyAccountRoutes = (): INavItem[] => {
   )
 }
 
-/**
- * Ensure that the `from` prop is not another settings route, to avoid
- * the user getting stuck in a navigation loop.
- */
-const getSafeFromValue = (from: string) => {
-  if (from.startsWith("/settings")) {
-    return "/orders"
-  }
-
-  return from
-}
-
 const SettingsSidebar = () => {
   const { getMenu } = useDashboardExtension()
 
@@ -141,22 +129,53 @@ const SettingsSidebar = () => {
   )
 }
 
-const Header = () => {
-  const [from, setFrom] = useState("/orders")
-
+// Resolve where the back arrow goes and what it's labeled, from the
+// originating route (the page the user was on, recorded by the main-nav
+// gear in location.state.from). The arrow returns the user to the exact
+// page they came from and the label names that page's section (e.g.
+// "← Orders"), so the two always agree — unlike the old static "Settings"
+// label, which read as if it pointed at Settings. A settings-internal
+// origin (loop) or a missing/unknown origin (e.g. a direct page load)
+// falls back to the dashboard, the portal home that "/" also redirects to.
+const useBackTarget = () => {
   const { t } = useTranslation()
   const location = useLocation()
+  const from = location.state?.from as string | undefined
 
-  useEffect(() => {
-    if (location.state?.from) {
-      setFrom(getSafeFromValue(location.state.from))
-    }
-  }, [location])
+  if (!from || from.startsWith("/settings")) {
+    return { to: "/dashboard", label: t("app.nav.settings.backToDashboard") }
+  }
+
+  // Mirrors the main-nav sections. Ordered so more specific prefixes win
+  // (e.g. /customer-groups before /customers). Sections the main nav labels
+  // with a plain string keep that literal; the rest reuse domain keys.
+  const sections: Array<{ prefix: string; label: string }> = [
+    { prefix: "/dashboard", label: t("app.nav.settings.backToDashboard") },
+    { prefix: "/orders", label: t("orders.domain") },
+    { prefix: "/products", label: t("products.domain") },
+    { prefix: "/inventory", label: t("inventory.domain") },
+    { prefix: "/customer-groups", label: t("customerGroups.domain") },
+    { prefix: "/customers", label: t("customers.domain") },
+    { prefix: "/promotions", label: t("promotions.domain") },
+    { prefix: "/campaigns", label: t("campaigns.domain") },
+    { prefix: "/price-lists", label: t("priceLists.domain") },
+    { prefix: "/reviews", label: "Reviews" },
+    { prefix: "/messages", label: "Messages" },
+    { prefix: "/requests", label: "Requests" },
+    { prefix: "/payouts", label: "Payouts" },
+  ]
+
+  const match = sections.find((s) => from.startsWith(s.prefix))
+  return { to: from, label: match ? match.label : t("actions.back") }
+}
+
+const Header = () => {
+  const { to, label } = useBackTarget()
 
   return (
     <div className="bg-ui-bg-subtle p-3">
       <Link
-        to={from}
+        to={to}
         replace
         className={clx(
           "bg-ui-bg-subtle transition-fg flex items-center rounded-md outline-none",
@@ -169,7 +188,7 @@ const Header = () => {
             <ArrowUturnLeft className="text-ui-fg-subtle" />
           </div>
           <Text leading="compact" weight="plus" size="small">
-            {t("app.nav.settings.header")}
+            {label}
           </Text>
         </div>
       </Link>
