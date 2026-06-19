@@ -18,7 +18,6 @@ import { useSidebar } from "../../../providers/sidebar-provider"
 import { ProgressBar } from "../../common/progress-bar"
 import { BackToDashboardBar } from "../../common/back-to-dashboard-bar"
 import { Notifications } from "../notifications"
-import { AdminChat } from "../admin-chat"
 import { useMe } from "../../../hooks/api"
 import { useSetup } from "../../../hooks/api/setup"
 import { ReopenShopButton } from "../../store-status/store-status-actions"
@@ -313,7 +312,6 @@ const Topbar = () => {
         <Breadcrumbs />
       </div>
       <div className="flex items-center justify-end gap-x-3">
-        <AdminChat />
         <Notifications />
       </div>
     </div>

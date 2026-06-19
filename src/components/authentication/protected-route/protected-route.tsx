@@ -6,7 +6,6 @@ import { useTermsAcceptanceStatus } from "../../../hooks/api/terms-acceptance"
 import { AcceptTerms } from "../../../routes/accept-terms/accept-terms"
 import { SearchProvider } from "../../../providers/search-provider"
 import { SidebarProvider } from "../../../providers/sidebar-provider"
-import { TalkjsProvider } from "../../../providers/talkjs-provider"
 
 export const ProtectedRoute = () => {
   const { seller, isPending, error } = useMe()
@@ -55,13 +54,11 @@ export const ProtectedRoute = () => {
   }
 
   return (
-    <TalkjsProvider>
-      <SidebarProvider>
-        <SearchProvider>
-          <Outlet />
-          {terms?.requires_acceptance && <AcceptTerms />}
-        </SearchProvider>
-      </SidebarProvider>
-    </TalkjsProvider>
+    <SidebarProvider>
+      <SearchProvider>
+        <Outlet />
+        {terms?.requires_acceptance && <AcceptTerms />}
+      </SearchProvider>
+    </SidebarProvider>
   )
 }
