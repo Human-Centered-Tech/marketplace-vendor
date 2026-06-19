@@ -88,7 +88,7 @@ export const Messages = () => {
     t === "product"
       ? "Product inquiry"
       : t === "barter_listing"
-        ? "Barter"
+        ? "Trade"
         : t === "storefront"
           ? "Storefront"
           : "Conversation"
