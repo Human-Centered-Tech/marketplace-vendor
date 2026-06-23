@@ -1,4 +1,5 @@
-import { Input, Textarea } from "@medusajs/ui"
+import { Input } from "@medusajs/ui"
+import { RichTextEditor } from "../../../../../../../components/common/rich-text-editor/rich-text-editor"
 import { UseFormReturn } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
@@ -80,7 +81,12 @@ export const ProductCreateGeneralSection = ({
                 {t("products.fields.description.label")}
               </Form.Label>
               <Form.Control>
-                <Textarea {...field} placeholder="A warm and cozy jacket" />
+                <RichTextEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  placeholder="A warm and cozy jacket"
+                />
               </Form.Control>
             </Form.Item>
           )

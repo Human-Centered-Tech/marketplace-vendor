@@ -59,6 +59,14 @@ export const CreateCategoryNesting = ({
     return insertCategoryTreeItem(product_categories ?? [], temp)
   }, [product_categories, watchedName, parentCategoryId, watchedRank])
 
+  // Only top-level categories are valid parents — enforces one sub-level
+  // (parent -> child) and blocks any deeper nesting. product_categories is
+  // fetched with parent_category_id: "null", so these ARE the roots.
+  const topLevelIds = useMemo(
+    () => new Set((product_categories ?? []).map((c: { id: string }) => c.id)),
+    [product_categories]
+  )
+
   const handleChange = (
     {
       parentId,
@@ -70,6 +78,10 @@ export const CreateCategoryNesting = ({
     },
     list: CategoryTreeItem[]
   ) => {
+    // Reject a drop that would create a third level (grandchild).
+    if (parentId && !topLevelIds.has(parentId as string)) {
+      return
+    }
     form.setValue("parent_category_id", parentId as string | null, {
       shouldDirty: true,
       shouldTouch: true,

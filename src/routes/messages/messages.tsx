@@ -1,6 +1,7 @@
 import { Button, Container, Heading, Text, Textarea } from "@medusajs/ui"
 import { useEffect, useRef, useState } from "react"
 import { queryClient } from "../../lib/query-client"
+import { uploadFilesQuery } from "../../lib/client/client"
 import {
   messagingKeys,
   notifyVendorTyping,
@@ -9,12 +10,25 @@ import {
   useVendorConversation,
   useVendorConversations,
   useVendorMessagingStream,
+  type VMessageAttachment,
 } from "../../hooks/api/messaging"
+
+const ATTACH_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "application/pdf",
+]
 
 export const Messages = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState("")
   const [typing, setTyping] = useState(false)
+  const [pendingAttachments, setPendingAttachments] = useState<VMessageAttachment[]>([])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastTyping = useRef(0)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -75,10 +89,45 @@ export const Messages = () => {
     }
   }
 
+  const onAttachFiles = async (fileList: FileList | null) => {
+    if (!fileList?.length) return
+    const files = Array.from(fileList)
+      .filter((f) => ATTACH_TYPES.includes(f.type))
+      .slice(0, 5)
+    if (!files.length) return
+    setUploading(true)
+    try {
+      const res: any = await uploadFilesQuery(files.map((file) => ({ file })))
+      const uploaded: any[] = Array.isArray(res) ? res : res?.files ?? []
+      const atts = files
+        .map((f, i) => ({
+          url: uploaded[i]?.url as string,
+          type: f.type,
+          name: f.name,
+          size: f.size,
+        }))
+        .filter((a) => a.url)
+      setPendingAttachments((prev) => [...prev, ...atts])
+    } catch {
+      // swallow — merchant can retry
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedId || !draft.trim()) return
-    sendMut.mutate(draft.trim(), { onSuccess: () => setDraft("") })
+    if (!selectedId || (!draft.trim() && pendingAttachments.length === 0)) return
+    sendMut.mutate(
+      { body: draft.trim(), attachments: pendingAttachments },
+      {
+        onSuccess: () => {
+          setDraft("")
+          setPendingAttachments([])
+        },
+      }
+    )
   }
 
   const otherId = (c: { participant_a_id: string; participant_b_id: string }) =>
@@ -251,20 +300,68 @@ export const Messages = () => {
                 )}
               </div>
 
-              <form onSubmit={handleSend} className="border-t p-3 flex gap-2">
-                <Textarea
-                  value={draft}
-                  onChange={(e) => onDraft(e.target.value)}
-                  placeholder="Type a message…"
-                  rows={1}
-                  className="flex-1"
-                />
-                <Button
-                  type="submit"
-                  disabled={sendMut.isPending || !draft.trim()}
-                >
-                  Send
-                </Button>
+              <form onSubmit={handleSend} className="border-t p-3 flex flex-col gap-2">
+                {pendingAttachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {pendingAttachments.map((a, i) => (
+                      <span
+                        key={i}
+                        className="flex items-center gap-1 bg-ui-bg-component rounded px-2 py-1 text-xs"
+                      >
+                        {a.type === "application/pdf" ? "📄" : "🖼️"}
+                        <span className="max-w-[120px] truncate">
+                          {a.name || "attachment"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPendingAttachments((prev) =>
+                              prev.filter((_, idx) => idx !== i)
+                            )
+                          }
+                          className="text-ui-fg-error"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => onAttachFiles(e.target.files)}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={uploading || sendMut.isPending}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? "…" : "Attach"}
+                  </Button>
+                  <Textarea
+                    value={draft}
+                    onChange={(e) => onDraft(e.target.value)}
+                    placeholder="Type a message…"
+                    rows={1}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={
+                      sendMut.isPending ||
+                      uploading ||
+                      (!draft.trim() && pendingAttachments.length === 0)
+                    }
+                  >
+                    Send
+                  </Button>
+                </div>
               </form>
             </>
           )}

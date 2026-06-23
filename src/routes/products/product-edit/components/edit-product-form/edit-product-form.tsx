@@ -1,4 +1,5 @@
-import { Button, Input, Text, Textarea, toast } from "@medusajs/ui"
+import { Button, Input, Text, toast } from "@medusajs/ui"
+import { RichTextEditor } from "../../../../../components/common/rich-text-editor/rich-text-editor"
 import { useTranslation } from "react-i18next"
 import * as zod from "zod"
 
@@ -204,7 +205,11 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
                         {t("fields.description")}
                       </Form.Label>
                       <Form.Control>
-                        <Textarea {...field} />
+                        <RichTextEditor
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
                       </Form.Control>
                       <Form.ErrorMessage />
                     </Form.Item>

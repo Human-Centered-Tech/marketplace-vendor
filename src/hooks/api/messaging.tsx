@@ -74,10 +74,13 @@ export const useVendorUnreadCount = () =>
 
 export const useSendVendorMessage = (id: string) =>
   useMutation({
-    mutationFn: async (body: string) =>
+    mutationFn: async (payload: {
+      body: string
+      attachments?: VMessageAttachment[]
+    }) =>
       await fetchQuery(`/vendor/messaging/conversations/${id}/messages`, {
         method: "POST",
-        body: { body },
+        body: { body: payload.body, attachments: payload.attachments },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: messagingKeys.detail(id) })
