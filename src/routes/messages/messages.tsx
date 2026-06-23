@@ -182,14 +182,46 @@ export const Messages = () => {
                             : "bg-ui-bg-component"
                         }`}
                       >
-                        <Text
-                          size="small"
-                          className={`whitespace-pre-wrap ${
-                            mine ? "text-ui-fg-on-color" : ""
-                          }`}
-                        >
-                          {m.body}
-                        </Text>
+                        {m.body && (
+                          <Text
+                            size="small"
+                            className={`whitespace-pre-wrap ${
+                              mine ? "text-ui-fg-on-color" : ""
+                            }`}
+                          >
+                            {m.body}
+                          </Text>
+                        )}
+                        {m.attachments && m.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-2">
+                            {m.attachments.map((a, i) =>
+                              a.type === "application/pdf" ? (
+                                <a
+                                  key={i}
+                                  href={a.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs underline"
+                                >
+                                  📄 {a.name || "Attachment.pdf"}
+                                </a>
+                              ) : (
+                                <a
+                                  key={i}
+                                  href={a.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <img
+                                    src={a.url}
+                                    alt={a.name || "attachment"}
+                                    className="max-w-[220px] max-h-[220px] rounded-md"
+                                  />
+                                </a>
+                              )
+                            )}
+                          </div>
+                        )}
                         <Text
                           size="xsmall"
                           className={

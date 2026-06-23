@@ -19,11 +19,19 @@ export type VConversation = {
   updated_at: string
 }
 
+export type VMessageAttachment = {
+  url: string
+  type: string
+  name?: string
+  size?: number
+}
+
 export type VMessage = {
   id: string
   conversation_id: string
   sender_id: string
   body: string
+  attachments?: VMessageAttachment[] | null
   read_at: string | null
   created_at: string
 }
