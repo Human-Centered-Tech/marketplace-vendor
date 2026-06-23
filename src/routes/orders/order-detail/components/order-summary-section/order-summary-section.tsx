@@ -319,6 +319,15 @@ const Item = ({
             <Text size="small">
               {item.variant?.options?.map((o) => o.value).join(" · ")}
             </Text>
+            {(item.metadata as Record<string, unknown> | null)
+              ?.personalization ? (
+              <Text size="small" className="text-ui-fg-subtle mt-1">
+                ✎{" "}
+                {String(
+                  (item.metadata as Record<string, unknown>).personalization
+                )}
+              </Text>
+            ) : null}
           </div>
         </div>
 
