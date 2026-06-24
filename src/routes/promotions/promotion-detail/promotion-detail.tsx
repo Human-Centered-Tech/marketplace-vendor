@@ -6,6 +6,7 @@ import { useDashboardExtension } from "../../../extensions"
 import { usePromotion, usePromotionRules } from "../../../hooks/api/promotions"
 import { CampaignSection } from "./components/campaign-section"
 import { PromotionConditionsSection } from "./components/promotion-conditions-section"
+import { PromotionFirstTimeSection } from "./components/promotion-first-time-section"
 import { PromotionGeneralSection } from "./components/promotion-general-section"
 import { promotionLoader } from "./loader"
 
@@ -66,6 +67,7 @@ export const PromotionDetail = () => {
       </TwoColumnPage.Main>
       <TwoColumnPage.Sidebar>
         <CampaignSection campaign={promotion.campaign!} />
+        <PromotionFirstTimeSection />
       </TwoColumnPage.Sidebar>
     </TwoColumnPage>
   )
