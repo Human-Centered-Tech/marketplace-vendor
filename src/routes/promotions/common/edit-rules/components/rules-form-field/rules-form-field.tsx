@@ -49,6 +49,20 @@ export const RulesFormField = ({
     keyName: scope,
   })
 
+  // Each rule section exposes exactly one selectable attribute — Customer Group
+  // for eligibility conditions ("rules"), Product for the "applies to" target/
+  // buy rules (the customer_group/product filter below removes everything else).
+  // Since there's only ever one choice, we auto-select it and render it as a
+  // fixed label rather than making merchants pick it from a single-item
+  // dropdown (the "select attribute" step that confused them).
+  const selectableAttributes = (attributes || []).filter(
+    ({ id }) => id === "customer_group" || id === "product"
+  )
+  const usedAttributeValues = fields?.map((f: any) => f.attribute) || []
+  const nextAttribute = selectableAttributes.find(
+    (attr) => !usedAttributeValues.includes(attr.value)
+  )
+
   const promotionType = useWatch({
     control: form.control,
     name: "type",
@@ -84,27 +98,29 @@ export const RulesFormField = ({
 
     if (ruleType === "rules" && !fields.length) {
       form.resetField("rules")
-      
+
       const formRules = generateRuleAttributes(rules)
       replace(formRules)
     }
 
     if (ruleType === "buy-rules" && !fields.length) {
       form.resetField("application_method.buy_rules")
-      const apiRules = promotion?.id || promotionType === "standard"
-        ? rules || []
-        : [...(rules || []), requiredProductRule]
-      
+      const apiRules =
+        promotion?.id || promotionType === "standard"
+          ? rules || []
+          : [...(rules || []), requiredProductRule]
+
       const formRules = generateRuleAttributes(apiRules)
       replace(formRules)
     }
 
     if (ruleType === "target-rules" && !fields.length) {
       form.resetField("application_method.target_rules")
-      const apiRules = promotion?.id || promotionType === "standard"
-        ? rules || []
-        : [...(rules || []), requiredProductRule]
-      
+      const apiRules =
+        promotion?.id || promotionType === "standard"
+          ? rules || []
+          : [...(rules || []), requiredProductRule]
+
       const formRules = generateRuleAttributes(apiRules)
       replace(formRules)
     }
@@ -164,7 +180,11 @@ export const RulesFormField = ({
                           return !existingAttributes.includes(attr.value)
                         }) || []
 
-                    const disabled = !!fieldRule.required
+                    // With only one possible attribute per section, show it as
+                    // a fixed label (skipping the redundant dropdown) just like
+                    // a required rule.
+                    const disabled =
+                      !!fieldRule.required || attributeOptions.length === 1
                     const onValueChange = (e: string) => {
                       const currentAttributeOption = attributeOptions.find(
                         (ao) => ao.id === e
@@ -292,22 +312,30 @@ export const RulesFormField = ({
       })}
 
       <div className={fields.length ? "mt-6" : ""}>
-        <Button
-          type="button"
-          variant="secondary"
-          className="inline-block"
-          onClick={() => {
-            append({
-              attribute: "",
-              // Operator is fixed to "in"; the dropdown is no longer shown.
-              operator: "in",
-              values: [],
-              required: false,
-            } as any)
-          }}
-        >
-          {t("promotions.fields.addCondition")}
-        </Button>
+        {/* Only show "Add" while there is still an unused attribute to add.
+            Each section has a single attribute (Customer Group / Product), so
+            once one row exists there is nothing more to add. */}
+        {nextAttribute && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="inline-block"
+            onClick={() => {
+              append({
+                // Auto-select the lone attribute for this section so merchants
+                // skip the single-item "select attribute" dropdown.
+                attribute: nextAttribute.value,
+                // Operator is fixed to "in"; the dropdown is no longer shown.
+                operator: "in",
+                values: [],
+                required: false,
+                disguised: nextAttribute.disguised || false,
+              } as any)
+            }}
+          >
+            {t("promotions.fields.addCondition")}
+          </Button>
+        )}
 
         {!!fields.length && (
           <Button
@@ -335,12 +363,30 @@ export const RulesFormField = ({
 type DisabledAttributeProps = {
   label: string
   field:
-    | ControllerRenderProps<CreatePromotionSchemaType, `rules.${number}.attribute`>
-    | ControllerRenderProps<CreatePromotionSchemaType, `rules.${number}.operator`>
-    | ControllerRenderProps<CreatePromotionSchemaType, `application_method.buy_rules.${number}.attribute`>
-    | ControllerRenderProps<CreatePromotionSchemaType, `application_method.buy_rules.${number}.operator`>
-    | ControllerRenderProps<CreatePromotionSchemaType, `application_method.target_rules.${number}.attribute`>
-    | ControllerRenderProps<CreatePromotionSchemaType, `application_method.target_rules.${number}.operator`>
+    | ControllerRenderProps<
+        CreatePromotionSchemaType,
+        `rules.${number}.attribute`
+      >
+    | ControllerRenderProps<
+        CreatePromotionSchemaType,
+        `rules.${number}.operator`
+      >
+    | ControllerRenderProps<
+        CreatePromotionSchemaType,
+        `application_method.buy_rules.${number}.attribute`
+      >
+    | ControllerRenderProps<
+        CreatePromotionSchemaType,
+        `application_method.buy_rules.${number}.operator`
+      >
+    | ControllerRenderProps<
+        CreatePromotionSchemaType,
+        `application_method.target_rules.${number}.attribute`
+      >
+    | ControllerRenderProps<
+        CreatePromotionSchemaType,
+        `application_method.target_rules.${number}.operator`
+      >
 }
 
 /**
