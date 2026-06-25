@@ -57,7 +57,7 @@ export const EditRulesWrapper = ({
       // up, abstract this away.
       for (const rule of disguisedRules) {
         const ruleValue = getRuleValue(rule)
-        applicationMethodData[rule.attribute!] = Array.isArray(ruleValue) 
+        applicationMethodData[rule.attribute!] = Array.isArray(ruleValue)
           ? ruleValue[0]?.value || null
           : ruleValue
       }
@@ -67,14 +67,29 @@ export const EditRulesWrapper = ({
       }
 
       const rulesData = allRules.filter((rule) => !rule.disguised)
-      
+
+      const isEmptyRuleValue = (value: any) =>
+        value === undefined ||
+        value === null ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+
       const rulesToCreate: CreatePromotionRuleDTO[] = []
       const rulesToUpdate: ExtendedPromotionRule[] = []
-      
+      // Existing rules whose values were cleared (e.g. an optional Customer
+      // Group condition emptied out) are removed rather than saved empty.
+      const emptiedRuleIds: string[] = []
+
       for (const rule of rulesData) {
+        const isEmpty = !rule.required && isEmptyRuleValue(rule.values)
+
         if ("id" in rule && typeof rule.id === "string") {
-          rulesToUpdate.push(rule)
-        } else {
+          if (isEmpty) {
+            emptiedRuleIds.push(rule.id)
+          } else {
+            rulesToUpdate.push(rule)
+          }
+        } else if (!isEmpty) {
           rulesToCreate.push({
             attribute: rule.attribute!,
             operator: rule.operator!,
@@ -82,6 +97,12 @@ export const EditRulesWrapper = ({
           })
         }
       }
+
+      const idsToRemove = [
+        ...((rulesToRemove?.map((r) => r.id).filter(Boolean) as string[]) ||
+          []),
+        ...emptiedRuleIds,
+      ]
 
       if (Object.keys(applicationMethodData).length) {
         await updatePromotion({
@@ -95,9 +116,9 @@ export const EditRulesWrapper = ({
         })
       }
 
-      if (rulesToRemove?.length) {
+      if (idsToRemove.length) {
         await removePromotionRules({
-          rules: rulesToRemove.map((r) => r.id).filter(Boolean) as string[],
+          rules: idsToRemove,
         } as any)
       }
 

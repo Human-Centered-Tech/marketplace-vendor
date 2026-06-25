@@ -101,21 +101,33 @@ export const CreatePromotionForm = () => {
             : rule.values
       }
 
+      const isEmptyRuleValue = (value: any) =>
+        value === undefined ||
+        value === null ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+
       const buildRulesData = (
         rules: {
           operator: string
           attribute: string
-          values: any[] | any
+          values?: any[] | any
           disguised?: boolean
+          required?: boolean
         }[]
       ) => {
-        return rules
-          .filter((r) => !r.disguised)
-          .map((rule) => ({
-            operator: rule.operator as PromotionRuleOperatorValues,
-            attribute: rule.attribute,
-            values: rule.values,
-          }))
+        return (
+          rules
+            .filter((r) => !r.disguised)
+            // Drop optional rules left empty (e.g. an untouched Customer Group /
+            // Product picker) — empty means "no restriction", not "matches none".
+            .filter((r) => r.required || !isEmptyRuleValue(r.values))
+            .map((rule) => ({
+              operator: rule.operator as PromotionRuleOperatorValues,
+              attribute: rule.attribute,
+              values: rule.values,
+            }))
+        )
       }
 
       createPromotion(

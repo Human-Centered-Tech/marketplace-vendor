@@ -1,13 +1,8 @@
 import { XMarkMini } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import { Badge, Button, Heading, IconButton, Select, Text } from "@medusajs/ui"
-import { forwardRef, Fragment, useEffect } from "react"
-import {
-  ControllerRenderProps,
-  useFieldArray,
-  UseFormReturn,
-  useWatch,
-} from "react-hook-form"
+import { Fragment, useEffect } from "react"
+import { useFieldArray, UseFormReturn, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { Form } from "../../../../../../components/common/form"
 import {
@@ -29,6 +24,32 @@ type RulesFormFieldType = {
     | "application_method.buy_rules"
     | "rules"
     | "application_method.target_rules"
+}
+
+// Each section exposes a single selectable attribute (Customer Group for
+// conditions, Product for the "applies to" rules). When a section has no rules
+// yet, seed one empty row for that attribute so its value picker is visible
+// immediately — merchants no longer have to click "Add condition" to reveal it.
+// Left empty, the row means "no restriction" and is dropped before submit.
+const buildSeedRow = (attributes?: HttpTypes.AdminRuleAttributeOption[]) => {
+  const attr = (attributes || []).find(
+    (a) => a.id === "customer_group" || a.id === "product"
+  )
+
+  if (!attr) {
+    return []
+  }
+
+  return [
+    {
+      required: false,
+      field_type: attr.field_type,
+      disguised: attr.disguised || false,
+      attribute: attr.value,
+      operator: "in",
+      values: [],
+    },
+  ]
 }
 
 export const RulesFormField = ({
@@ -100,7 +121,7 @@ export const RulesFormField = ({
       form.resetField("rules")
 
       const formRules = generateRuleAttributes(rules)
-      replace(formRules)
+      replace(formRules.length ? formRules : buildSeedRow(attributes))
     }
 
     if (ruleType === "buy-rules" && !fields.length) {
@@ -111,7 +132,7 @@ export const RulesFormField = ({
           : [...(rules || []), requiredProductRule]
 
       const formRules = generateRuleAttributes(apiRules)
-      replace(formRules)
+      replace(formRules.length ? formRules : buildSeedRow(attributes))
     }
 
     if (ruleType === "target-rules" && !fields.length) {
@@ -122,7 +143,7 @@ export const RulesFormField = ({
           : [...(rules || []), requiredProductRule]
 
       const formRules = generateRuleAttributes(apiRules)
-      replace(formRules)
+      replace(formRules.length ? formRules : buildSeedRow(attributes))
     }
   }, [
     promotionType,
@@ -133,6 +154,9 @@ export const RulesFormField = ({
     replace,
     rules,
     promotion?.id,
+    // Re-run once the attribute options load so the default row can be seeded
+    // with the section's lone attribute.
+    attributes,
   ])
 
   return (
@@ -181,10 +205,21 @@ export const RulesFormField = ({
                         }) || []
 
                     // With only one possible attribute per section, show it as
-                    // a fixed label (skipping the redundant dropdown) just like
+                    // a plain label (skipping the redundant dropdown) just like
                     // a required rule.
                     const disabled =
                       !!fieldRule.required || attributeOptions.length === 1
+
+                    // The label doubles as the prompt for the value picker
+                    // below it ("Select customer group" / "Select product").
+                    const selectLabel =
+                      fieldRule.attribute === "customer.groups.id"
+                        ? t("promotions.form.selectCustomerGroup")
+                        : fieldRule.attribute === "items.product.id"
+                          ? t("promotions.form.selectProduct")
+                          : attributeOptions.find(
+                              (ao) => ao.value === fieldRule.attribute
+                            )?.label || t("promotions.form.selectAttribute")
                     const onValueChange = (e: string) => {
                       const currentAttributeOption = attributeOptions.find(
                         (ao) => ao.id === e
@@ -243,14 +278,20 @@ export const RulesFormField = ({
                               </Select.Content>
                             </Select>
                           ) : (
-                            <DisabledField
-                              label={
-                                attributeOptions?.find(
-                                  (ao) => ao.value === fieldRule.attribute
-                                )?.label || ""
-                              }
-                              field={field}
-                            />
+                            // Single fixed attribute: render it as a plain
+                            // label (no boxed field) that prompts the value
+                            // picker below. The hidden input keeps the
+                            // attribute registered in the form.
+                            <>
+                              <Text
+                                size="small"
+                                weight="plus"
+                                className="text-ui-fg-base px-2"
+                              >
+                                {selectLabel}
+                              </Text>
+                              <input type="hidden" {...fieldProps} />
+                            </>
                           )}
                         </Form.Control>
                         <Form.ErrorMessage />
@@ -277,7 +318,10 @@ export const RulesFormField = ({
               </div>
 
               <div className="size-7 flex-none self-center">
-                {!fieldRule.required && (
+                {/* No remove button for single-attribute sections: the lone row
+                    is always shown. Clearing its values means "no restriction".
+                    The X only applies to legacy multi-attribute setups. */}
+                {!fieldRule.required && selectableAttributes.length > 1 && (
                   <IconButton
                     size="small"
                     variant="transparent"
@@ -337,7 +381,7 @@ export const RulesFormField = ({
           </Button>
         )}
 
-        {!!fields.length && (
+        {!!fields.length && selectableAttributes.length > 1 && (
           <Button
             type="button"
             variant="transparent"
@@ -359,51 +403,3 @@ export const RulesFormField = ({
     </div>
   )
 }
-
-type DisabledAttributeProps = {
-  label: string
-  field:
-    | ControllerRenderProps<
-        CreatePromotionSchemaType,
-        `rules.${number}.attribute`
-      >
-    | ControllerRenderProps<
-        CreatePromotionSchemaType,
-        `rules.${number}.operator`
-      >
-    | ControllerRenderProps<
-        CreatePromotionSchemaType,
-        `application_method.buy_rules.${number}.attribute`
-      >
-    | ControllerRenderProps<
-        CreatePromotionSchemaType,
-        `application_method.buy_rules.${number}.operator`
-      >
-    | ControllerRenderProps<
-        CreatePromotionSchemaType,
-        `application_method.target_rules.${number}.attribute`
-      >
-    | ControllerRenderProps<
-        CreatePromotionSchemaType,
-        `application_method.target_rules.${number}.operator`
-      >
-}
-
-/**
- * Render this if an attribute is disabled, or
- * if there is only one option available.
- */
-const DisabledField = forwardRef<HTMLInputElement, DisabledAttributeProps>(
-  ({ label, field }, ref) => {
-    return (
-      <div>
-        <div className="txt-compact-small bg-ui-bg-component shadow-borders-base text-ui-fg-base h-8 rounded-md px-2 py-1.5">
-          {label}
-        </div>
-        <input {...field} ref={ref} disabled hidden />
-      </div>
-    )
-  }
-)
-
-DisabledField.displayName = "DisabledField"

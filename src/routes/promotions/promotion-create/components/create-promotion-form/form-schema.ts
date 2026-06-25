@@ -1,20 +1,37 @@
 import { z } from "zod"
 import { CreateCampaignSchema } from "../../../../campaigns/campaign-create/components/create-campaign-form"
 
+const isEmptyRuleValue = (value: unknown) =>
+  value === undefined ||
+  value === null ||
+  value === "" ||
+  (Array.isArray(value) && value.length === 0) ||
+  (typeof value === "number" && value < 1)
+
 const RuleSchema = z.array(
-  z.object({
-    id: z.string().optional(),
-    attribute: z.string().min(1, { message: "Required field" }),
-    operator: z.string().min(1, { message: "Required field" }),
-    values: z.union([
-      z.number().min(1, { message: "Required field" }),
-      z.string().min(1, { message: "Required field" }),
-      z.array(z.string()).min(1, { message: "Required field" }),
-    ]),
-    required: z.boolean().optional(),
-    disguised: z.boolean().optional(),
-    field_type: z.string().optional(),
-  })
+  z
+    .object({
+      id: z.string().optional(),
+      attribute: z.string().min(1, { message: "Required field" }),
+      operator: z.string().min(1, { message: "Required field" }),
+      // Values are optional at the schema level: only *required* rules (e.g. the
+      // Buy X / Get Y quantities) must have a value. Optional conditions such as
+      // Customer Group or Product may be left empty — that just means "no
+      // restriction" and the empty rule is dropped before submit.
+      values: z.union([z.number(), z.string(), z.array(z.string())]).optional(),
+      required: z.boolean().optional(),
+      disguised: z.boolean().optional(),
+      field_type: z.string().optional(),
+    })
+    .superRefine((rule, ctx) => {
+      if (rule.required && isEmptyRuleValue(rule.values)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["values"],
+          message: "Required field",
+        })
+      }
+    })
 )
 
 export const CreatePromotionSchema = z

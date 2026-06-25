@@ -2042,6 +2042,8 @@
       "required": "Required",
       "and": "AND",
       "selectAttribute": "Select Attribute",
+      "selectCustomerGroup": "Select customer group",
+      "selectProduct": "Select product",
       "campaign": {
         "existing": {
           "title": "Existing Campaign",
