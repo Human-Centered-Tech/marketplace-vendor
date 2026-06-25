@@ -58,7 +58,9 @@ export const RouteMap: RouteObject[] = [
             },
             errorElement: <ErrorBoundary />,
             lazy: async () => {
-              const { OnboardingRetry } = await import("../../routes/onboarding")
+              const { OnboardingRetry } = await import(
+                "../../routes/onboarding"
+              )
               return { Component: OnboardingRetry }
             },
           },
@@ -319,6 +321,11 @@ export const RouteMap: RouteObject[] = [
                         path: "prices",
                         lazy: () =>
                           import("../../routes/products/product-prices"),
+                      },
+                      {
+                        path: "pricing",
+                        lazy: () =>
+                          import("../../routes/products/product-pricing"),
                       },
                       {
                         path: "options/create",

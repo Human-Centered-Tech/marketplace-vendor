@@ -7,6 +7,7 @@ import { ProductGeneralSection } from "./components/product-general-section"
 import { ProductMediaSection } from "./components/product-media-section"
 import { ProductOptionSection } from "./components/product-option-section"
 import { ProductOrganizationSection } from "./components/product-organization-section"
+import { ProductPricingSection } from "./components/product-pricing-section"
 import { ProductStockSection } from "./components/product-stock-section"
 import { ProductVariantSection } from "./components/product-variant-section"
 
@@ -17,7 +18,7 @@ export const ProductDetail = () => {
   const { id } = useParams()
   const { product, isLoading, isError, error } = useProduct(id!, {
     fields:
-      "*variants.inventory_items,*categories,attribute_values.*,attribute_values.attribute.*",
+      "*variants.inventory_items,*variants.prices,*categories,attribute_values.*,attribute_values.attribute.*",
   })
 
   const { getWidgets } = useDashboardExtension()
@@ -50,6 +51,7 @@ export const ProductDetail = () => {
         <ProductMediaSection product={product} />
         <ProductOptionSection product={product} />
         <ProductVariantSection product={product} />
+        <ProductPricingSection product={product} />
         <ProductStockSection product={product} />
       </TwoColumnPage.Main>
       <TwoColumnPage.Sidebar>
