@@ -411,7 +411,7 @@
       "header": "General",
       "tabs": {
         "details": "Details",
-        "organize": "Organize",
+        "organize": "Categories & Tags",
         "variants": "Variants",
         "inventory": "Inventory kits"
       },
@@ -707,11 +707,11 @@
       "deleteWarning": "You are about to delete the product option: {{title}}. This action cannot be undone."
     },
     "organization": {
-      "header": "Organize",
+      "header": "Categories & Tags",
       "edit": {
-        "header": "Edit Organization",
+        "header": "Edit Categories & Tags",
         "toasts": {
-          "success": "Successfully updated the organization of {{title}}."
+          "success": "Successfully updated the categories & tags of {{title}}."
         }
       }
     },
