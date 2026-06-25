@@ -302,6 +302,8 @@ const buildRows = (data: SetupResponse): Row[] => {
   // shipping / payout rows entirely and relabel the go-live step so it
   // reads as activating the listing rather than launching a storefront.
   const isService = data.is_service
+  const tier = data.go_live?.subscription_tier
+  const isFeatured = tier === "featured" || tier === "enterprise"
 
   const payoutsDone = sb.payouts === "active"
   const payoutsLabel =
@@ -396,17 +398,23 @@ const buildRows = (data: SetupResponse): Row[] => {
         storefrontHandoff: "/user/directory/create",
       },
     },
-    {
-      section: "catholic_owned",
-      label: "Add your owner interview",
-      hint: "A few words about you and your faith — customers love this.",
-      done: co.owner_interview_populated,
-      cta: {
-        label: "Add",
-        href: "/user/directory/edit",
-        storefrontHandoff: "/user/directory/edit",
-      },
-    },
+    // Owner interview only displays on Featured/Enterprise listings, so only
+    // surface the checklist step for those tiers (matches the form + display).
+    ...(isFeatured
+      ? [
+          {
+            section: "catholic_owned",
+            label: "Add your owner interview",
+            hint: "A few words about you and your faith — customers love this.",
+            done: co.owner_interview_populated,
+            cta: {
+              label: "Add",
+              href: "/user/directory/edit",
+              storefrontHandoff: "/user/directory/edit",
+            },
+          } as Row,
+        ]
+      : []),
     {
       section: "catholic_owned",
       label: "Connect your parish",
