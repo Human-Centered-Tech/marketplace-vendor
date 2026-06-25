@@ -4,7 +4,6 @@ import { TwoColumnPageSkeleton } from "../../../components/common/skeleton"
 import { TwoColumnPage } from "../../../components/layout/pages"
 import { useDashboardExtension } from "../../../extensions"
 import { usePromotion, usePromotionRules } from "../../../hooks/api/promotions"
-import { CampaignSection } from "./components/campaign-section"
 import { PromotionConditionsSection } from "./components/promotion-conditions-section"
 import { PromotionGeneralSection } from "./components/promotion-general-section"
 import { promotionLoader } from "./loader"
@@ -49,10 +48,7 @@ export const PromotionDetail = () => {
     >
       <TwoColumnPage.Main>
         <PromotionGeneralSection promotion={promotion} />
-        <PromotionConditionsSection 
-          rules={rules || []} 
-          ruleType="rules" 
-        />
+        <PromotionConditionsSection rules={rules || []} ruleType="rules" />
         <PromotionConditionsSection
           rules={targetRules || []}
           ruleType="target-rules"
@@ -64,9 +60,9 @@ export const PromotionDetail = () => {
           />
         )}
       </TwoColumnPage.Main>
-      <TwoColumnPage.Sidebar>
-        <CampaignSection campaign={promotion.campaign!} />
-      </TwoColumnPage.Sidebar>
+      {/* Campaigns are not exposed to merchants; sidebar kept empty to satisfy
+          TwoColumnPage's two-child requirement and host any side widgets. */}
+      <TwoColumnPage.Sidebar>{null}</TwoColumnPage.Sidebar>
     </TwoColumnPage>
   )
 }
