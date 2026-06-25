@@ -46,6 +46,10 @@ export const ItemLocationListTable = ({
       isLoading={isLoading}
       pagination
       queryObject={raw}
+      // Make each location row clickable to open the per-location stock editor
+      // (same destination as the row's ⋯ → Edit), so merchants can edit stock
+      // directly from the inventory item page.
+      navigateTo={(row) => `locations/${row.original.location_id}`}
     />
   )
 }
