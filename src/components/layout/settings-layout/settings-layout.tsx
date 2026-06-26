@@ -10,6 +10,7 @@ import { Shell } from "../shell"
 
 import { useDashboardExtension } from "../../../extensions"
 import { UserMenu } from "../user-menu"
+import { useSetup } from "../../../hooks/api/setup"
 
 export const SettingsLayout = () => {
   return (
@@ -19,11 +20,22 @@ export const SettingsLayout = () => {
   )
 }
 
+// Service / directory-only businesses don't sell products — hide the
+// shop-only settings from them (Brooke 6/26).
+const SERVICE_HIDDEN_SETTINGS = new Set([
+  "/settings/product-types",
+  "/settings/product-tags",
+  "/settings/shop-collections",
+  "/settings/locations",
+])
+
 const useSettingRoutes = (): INavItem[] => {
   const { t } = useTranslation()
+  const { data: setup } = useSetup()
+  const isService = setup?.is_service === true
 
-  return useMemo(
-    () => [
+  return useMemo(() => {
+    const routes: INavItem[] = [
       {
         label: t("store.domain"),
         to: "/settings/store",
@@ -52,9 +64,11 @@ const useSettingRoutes = (): INavItem[] => {
         label: "Directory Listing",
         to: "/settings/directory-listing",
       },
-    ],
-    [t]
-  )
+    ]
+    return isService
+      ? routes.filter((r) => !SERVICE_HIDDEN_SETTINGS.has(r.to))
+      : routes
+  }, [t, isService])
 }
 
 const useMyAccountRoutes = (): INavItem[] => {

@@ -30,6 +30,7 @@ import { UserMenu } from "../user-menu"
 import { StripeIcon } from "../../../assets/icons/Stripe"
 import { ImageAvatar } from "../../common/image-avatar"
 import { useUnreadMessages } from "../../../hooks/api/messaging"
+import { useSetup } from "../../../hooks/api/setup"
 
 export const MainLayout = () => {
   return (
@@ -116,12 +117,26 @@ const Header = () => {
   )
 }
 
+// Service / directory-only businesses don't sell products, so these
+// merchant/shop nav surfaces are hidden from them (Brooke 6/26). The backend
+// already gates the underlying actions; this just removes the dead links.
+const SERVICE_HIDDEN_ROUTES = new Set([
+  "/orders",
+  "/products",
+  "/inventory",
+  "/customers",
+  "/price-lists",
+  "/payouts",
+])
+
 const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
   const { t } = useTranslation()
 
   const unreadCount = useUnreadMessages()
+  const { data: setup } = useSetup()
+  const isService = setup?.is_service === true
 
-  return [
+  const routes: Omit<INavItem, "pathname">[] = [
     {
       icon: <Component />,
       label: "Dashboard",
@@ -206,16 +221,27 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       ],
     },
   ]
+
+  return isService
+    ? routes.filter((r) => !SERVICE_HIDDEN_ROUTES.has(r.to as string))
+    : routes
 }
 
 const useExtensionRoutes = (): Omit<INavItem, "pathname">[] => {
-  return [
+  const { data: setup } = useSetup()
+  const isService = setup?.is_service === true
+
+  const routes: Omit<INavItem, "pathname">[] = [
     {
       icon: <StripeIcon />,
       label: "Payouts",
       to: "/payouts",
     },
   ]
+
+  return isService
+    ? routes.filter((r) => !SERVICE_HIDDEN_ROUTES.has(r.to as string))
+    : routes
 }
 
 const Searchbar = () => {
