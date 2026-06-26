@@ -1,4 +1,4 @@
-import { Spinner, Trash } from "@medusajs/icons"
+import { CurrencyDollar, Spinner, Trash } from "@medusajs/icons"
 import {
   Button,
   Container,
@@ -15,7 +15,7 @@ import {
 } from "@tanstack/react-table"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, Outlet } from "react-router-dom"
+import { Link, Outlet, useNavigate } from "react-router-dom"
 
 import { ExtendedAdminProduct } from "../../../../../types/products"
 import { ActionMenu } from "../../../../../components/common/action-menu"
@@ -55,10 +55,8 @@ export const ProductListTable = () => {
     placeholderData: keepPreviousData,
   }
 
-  const { products, count, isLoading, isFetching, isError, error } = useProducts(
-    searchParams,
-    options
-  )
+  const { products, count, isLoading, isFetching, isError, error } =
+    useProducts(searchParams, options)
 
   const filters = useProductTableFilters()
   const columns = useColumns()
@@ -80,6 +78,25 @@ export const ProductListTable = () => {
   const { mutateAsync } = useBulkDeleteProducts()
   const { mutateAsync: bulkUpdate } = useBulkUpdateProducts()
   const prompt = usePrompt()
+  const navigate = useNavigate()
+
+  // Pricing is edited per product (all of its variants at once), so this opens
+  // the selected product's pricing editor. The combined editor doesn't support
+  // editing many products in one go, so require a single selection.
+  const handleEditPrice = async (selection: Record<string, boolean>) => {
+    const keys = Object.keys(selection)
+
+    if (keys.length === 0) {
+      return
+    }
+
+    if (keys.length > 1) {
+      toast.info("Select a single product to edit its pricing.")
+      return
+    }
+
+    navigate(`/products/${keys[0]}/pricing`)
+  }
 
   const handleBulkPublish = async () => {
     const keys = Object.keys(rowSelection)
@@ -87,7 +104,9 @@ export const ProductListTable = () => {
 
     const res = await prompt({
       title: t("products.bulkPublish.title"),
-      description: t("products.bulkPublish.description", { count: keys.length }),
+      description: t("products.bulkPublish.description", {
+        count: keys.length,
+      }),
       confirmText: t("products.bulkPublish.confirm"),
       cancelText: t("actions.cancel"),
       variant: "confirmation",
@@ -100,7 +119,7 @@ export const ProductListTable = () => {
         onSuccess: () => {
           setRowSelection({})
           toast.success(
-            t("products.bulkPublish.success", { count: keys.length }),
+            t("products.bulkPublish.success", { count: keys.length })
           )
         },
         onError: (error) => {
@@ -108,7 +127,7 @@ export const ProductListTable = () => {
             description: error.message,
           })
         },
-      },
+      }
     )
   }
 
@@ -148,7 +167,7 @@ export const ProductListTable = () => {
       },
     })
   }
-  
+
   if (isError) {
     throw error
   }
@@ -197,6 +216,11 @@ export const ProductListTable = () => {
           },
         ]}
         commands={[
+          {
+            action: handleEditPrice,
+            label: "Edit price",
+            shortcut: "e",
+          },
           {
             action: handleBulkPublish,
             label: t("products.bulkPublish.action"),
@@ -260,6 +284,15 @@ const ProductActions = ({ product }: { product: ExtendedAdminProduct }) => {
   return (
     <ActionMenu
       groups={[
+        {
+          actions: [
+            {
+              icon: <CurrencyDollar />,
+              label: "Edit price",
+              to: `/products/${product.id}/pricing`,
+            },
+          ],
+        },
         {
           actions: [
             {
