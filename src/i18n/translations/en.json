@@ -544,7 +544,7 @@
       "editHint": "Add media to the product to showcase it in your storefront.",
       "makeThumbnail": "Make thumbnail",
       "uploadImagesLabel": "Upload images",
-      "uploadImagesHint": "Drag and drop images here or click to upload.",
+      "uploadImagesHint": "Drag and drop images here or click to upload. For best results use portrait 4:5 photos, ~1200×1500px (min 800×1000), under 5MB, in JPG, PNG, or WebP.",
       "invalidFileType": "'{{name}}' is not a supported file type. Supported file types are: {{types}}.",
       "failedToUpload": "Failed to upload the added media. Please try again.",
       "deleteWarning_one": "You are about to delete {{count}} image. This action cannot be undone.",

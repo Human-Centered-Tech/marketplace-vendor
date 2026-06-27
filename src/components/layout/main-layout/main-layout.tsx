@@ -1,5 +1,6 @@
 import {
   Buildings,
+  BuildingStorefront,
   ChevronDownMini,
   CogSixTooth,
   CurrencyDollar,
@@ -125,6 +126,7 @@ const SERVICE_HIDDEN_ROUTES = new Set([
   "/products",
   "/inventory",
   "/customers",
+  "/promotions",
   "/price-lists",
   "/payouts",
 ])
@@ -141,6 +143,15 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       icon: <Component />,
       label: "Dashboard",
       to: "/dashboard",
+    },
+    {
+      // Public directory profile — reverse-SSO handoff to the storefront edit
+      // form lives at this route. Shown to service/directory-only sellers too
+      // (intentionally NOT in SERVICE_HIDDEN_ROUTES), since the listing is
+      // often their primary surface.
+      icon: <BuildingStorefront />,
+      label: "Directory Listing",
+      to: "/settings/directory-listing",
     },
     {
       icon: <ShoppingCart />,
