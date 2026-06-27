@@ -45,7 +45,9 @@ export const SetupChecklist = () => {
         <div className="flex items-center gap-2">
           <span className="text-green-700">✅</span>
           <Text size="small" className="text-green-900">
-            Setup complete — your store is fully configured.
+            {data.is_service
+              ? "Setup complete — your listing is fully configured."
+              : "Setup complete — your store is fully configured."}
           </Text>
         </div>
         <button
@@ -70,12 +72,20 @@ export const SetupChecklist = () => {
           />
         </div>
         <h1 className="font-poppins text-base font-medium text-co-text-on-dark/80">
-          {allDone ? "Setup complete" : "Welcome to the Merchant Portal"}
+          {allDone
+            ? "Setup complete"
+            : data.is_service
+              ? "Welcome to the Business Portal"
+              : "Welcome to the Merchant Portal"}
         </h1>
         <p className="font-poppins mt-1 text-sm text-co-text-on-dark/70">
           {allDone
-            ? "Your store is fully configured. You can update any of these any time."
-            : "Complete these steps to start selling on the marketplace."}
+            ? data.is_service
+              ? "Your listing is fully configured. You can update any of these any time."
+              : "Your store is fully configured. You can update any of these any time."
+            : data.is_service
+              ? "Complete these steps to set up your listing on the platform."
+              : "Complete these steps to start selling on the marketplace."}
         </p>
         <div className="mt-4 flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
@@ -101,7 +111,10 @@ export const SetupChecklist = () => {
       <div className="h-[2px] bg-gradient-to-r from-transparent via-co-gold to-transparent" />
 
       <div className="px-4 py-4 space-y-6">
-        <Section title="Storefront Basics" rows={rows.filter((r) => r.section === "store_basics")} />
+        <Section
+          title={data.is_service ? "Company Basics" : "Storefront Basics"}
+          rows={rows.filter((r) => r.section === "store_basics")}
+        />
         <Section
           title="Directory Listing"
           rows={rows.filter((r) => r.section === "catholic_owned")}

@@ -91,7 +91,7 @@ export const UserMenu = () => {
               <DropdownMenu.Separator />
               <DropdownMenu.Item onClick={handleSwitchToStorefront}>
                 <BuildingStorefront className="text-ui-fg-subtle mr-2" />
-                Switch to Storefront
+                Exit Dashboard
               </DropdownMenu.Item>
             </>
           )}

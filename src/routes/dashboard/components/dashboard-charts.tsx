@@ -86,10 +86,12 @@ export const DashboardCharts = ({
   notFulfilledOrders,
   fulfilledOrders,
   reviewsToReply,
+  isService,
 }: {
   notFulfilledOrders: number
   fulfilledOrders: number
   reviewsToReply: any[]
+  isService?: boolean
 }) => {
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -151,30 +153,34 @@ export const DashboardCharts = ({
           </div>
         </div>
         <div className="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/orders?order_status=not_fulfilled">
-            <Button
-              variant="secondary"
-              className="w-full justify-between py-4 h-full"
-            >
-              <div className="flex gap-4 items-center">
-                <Badge>{notFulfilledOrders}</Badge>
-                Orders to be fulfilled
-              </div>
-              <TriangleRightMini color="grey" />
-            </Button>
-          </Link>
-          <Link to="/orders?order_status=fulfilled">
-            <Button
-              variant="secondary"
-              className="w-full justify-between py-4 h-full"
-            >
-              <div className="flex gap-4 items-center">
-                <Badge>{fulfilledOrders}</Badge>
-                Orders to be shipped
-              </div>
-              <TriangleRightMini color="grey" />
-            </Button>
-          </Link>
+          {!isService && (
+            <>
+              <Link to="/orders?order_status=not_fulfilled">
+                <Button
+                  variant="secondary"
+                  className="w-full justify-between py-4 h-full"
+                >
+                  <div className="flex gap-4 items-center">
+                    <Badge>{notFulfilledOrders}</Badge>
+                    Orders to be fulfilled
+                  </div>
+                  <TriangleRightMini color="grey" />
+                </Button>
+              </Link>
+              <Link to="/orders?order_status=fulfilled">
+                <Button
+                  variant="secondary"
+                  className="w-full justify-between py-4 h-full"
+                >
+                  <div className="flex gap-4 items-center">
+                    <Badge>{fulfilledOrders}</Badge>
+                    Orders to be shipped
+                  </div>
+                  <TriangleRightMini color="grey" />
+                </Button>
+              </Link>
+            </>
+          )}
           <Link to="/reviews?seller_note=false">
             <Button
               variant="secondary"

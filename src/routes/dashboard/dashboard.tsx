@@ -9,6 +9,7 @@ import { SetupChecklist } from "./components/setup-checklist"
 import { PendingPayoutBanner } from "./components/pending-payout-banner"
 import { useReviews } from "../../hooks/api/review"
 import { useSyncPayoutAccount } from "../../hooks/api/payout-account"
+import { useSetup } from "../../hooks/api/setup"
 
 // The dashboard renders a single unified SetupChecklist at the top
 // (driven by GET /vendor/setup). When the checklist is complete it
@@ -53,6 +54,10 @@ export const Dashboard = () => {
 
   const { orders, isPending: isPendingOrders } = useOrders()
   const { reviews, isPending: isPendingReviews } = useReviews()
+  // Service businesses don't sell products, so they have no payouts or
+  // order pipeline — hide the payout banner + order counters for them.
+  const { data: setup } = useSetup()
+  const isService = Boolean(setup?.is_service)
 
   const notFulfilledOrders =
     orders?.filter((order) => order.fulfillment_status === "not_fulfilled")
@@ -76,11 +81,12 @@ export const Dashboard = () => {
   return (
     <div className="flex flex-col gap-4">
       <SetupChecklist />
-      <PendingPayoutBanner />
+      {!isService && <PendingPayoutBanner />}
       <DashboardCharts
         notFulfilledOrders={notFulfilledOrders}
         fulfilledOrders={fulfilledOrders}
         reviewsToReply={reviewsToReply}
+        isService={isService}
       />
       <AnalyticsPanel />
     </div>

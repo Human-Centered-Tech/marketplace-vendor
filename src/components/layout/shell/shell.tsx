@@ -40,6 +40,8 @@ export const Shell = ({ children }: PropsWithChildren) => {
           status={seller?.store_status}
           handle={seller?.handle}
           isOnVacation={Boolean(setup?.go_live?.is_on_vacation)}
+          isService={Boolean(setup?.is_service)}
+          listingId={setup?.catholic_owned?.listing_id ?? undefined}
         />
         <div className="relative flex flex-1 h-full items-start overflow-hidden lg:flex-row">
           <NavigationBar loading={loading} />
@@ -80,10 +82,14 @@ const StoreStatusBanner = ({
   status,
   handle,
   isOnVacation,
+  isService,
+  listingId,
 }: {
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED" | string
   handle?: string
   isOnVacation?: boolean
+  isService?: boolean
+  listingId?: string
 }) => {
   if (!status) return null
 
@@ -95,6 +101,26 @@ const StoreStatusBanner = ({
   const storefrontUrl =
     (typeof __STOREFRONT_URL__ === "string" && __STOREFRONT_URL__) ||
     "http://localhost:8000"
+
+  // Service listings live in the public directory, not on a /sellers
+  // storefront page — so a service business's "preview" / "view public"
+  // links must point at its directory listing. (This is what fixes the
+  // bug where going live showed a storefront preview for a service
+  // listing.) Product merchants keep the storefront seller page.
+  const draftPreviewHref = isService
+    ? listingId
+      ? `${storefrontUrl}/directory/${listingId}`
+      : null
+    : handle
+      ? `${storefrontUrl}/sellers/${handle}?preview=1`
+      : null
+  const livePublicHref = isService
+    ? listingId
+      ? `${storefrontUrl}/directory/${listingId}`
+      : null
+    : handle
+      ? `${storefrontUrl}/sellers/${handle}`
+      : null
 
   if (status === "SUSPENDED") {
     return (
@@ -120,12 +146,13 @@ const StoreStatusBanner = ({
     return (
       <div className="w-full bg-amber-50 border-b border-amber-300 text-amber-900 px-4 py-2 flex items-center justify-center gap-x-4 text-sm">
         <span>
-          🚧 Your store is in <b>draft mode</b> — shoppers can't see it yet.
+          🚧 Your {isService ? "listing" : "store"} is in <b>draft mode</b> —
+          shoppers can't see it yet.
         </span>
         <div className="flex items-center gap-x-3">
-          {handle && (
+          {draftPreviewHref && (
             <a
-              href={`${storefrontUrl}/sellers/${handle}?preview=1`}
+              href={draftPreviewHref}
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:no-underline font-medium"
@@ -147,10 +174,10 @@ const StoreStatusBanner = ({
   if (status === "ACTIVE") {
     return (
       <div className="w-full bg-emerald-50 border-b border-emerald-200 text-emerald-900 px-4 py-1 flex items-center justify-center gap-x-4 text-xs">
-        <span>✅ Your store is live</span>
-        {handle && (
+        <span>✅ Your {isService ? "listing" : "store"} is live</span>
+        {livePublicHref && (
           <a
-            href={`${storefrontUrl}/sellers/${handle}`}
+            href={livePublicHref}
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:no-underline font-medium"
