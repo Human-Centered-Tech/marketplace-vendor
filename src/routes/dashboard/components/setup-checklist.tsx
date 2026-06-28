@@ -363,7 +363,9 @@ const buildRows = (data: SetupResponse): Row[] => {
   const storeBasicsRows: Row[] = [
     {
       section: "store_basics",
-      label: "Complete your store information",
+      label: isService
+        ? "Complete your business information"
+        : "Complete your store information",
       hint: "Add your business name, branding, and company address.",
       done: sb.store_information,
       cta: { label: "Manage", href: "/settings/store" },
