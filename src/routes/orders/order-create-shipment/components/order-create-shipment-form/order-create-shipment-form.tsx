@@ -8,6 +8,7 @@ import {
   Heading,
   Input,
   Label,
+  Select,
   Textarea,
   toast,
 } from "@medusajs/ui"
@@ -26,7 +27,7 @@ import {
   ExtendedAdminOrder,
   ExtendedAdminOrderFulfillment,
 } from "../../../../../types/order"
-import { CreateShipmentSchema } from "./constants"
+import { CreateShipmentSchema, SHIPMENT_CARRIERS } from "./constants"
 
 type OrderCreateFulfillmentFormProps = {
   order: ExtendedAdminOrder
@@ -68,7 +69,7 @@ export function OrderCreateShipmentForm({
     try {
       await fetchQuery(`/vendor/orders/${order.id}/shipping-note`, {
         method: "POST",
-        body: { shipping_note: note || null },
+        body: { shipping_note: note || null, carrier: data.carrier || null },
       })
     } catch (e) {
       // Don't block shipping if the note save fails — the order still
@@ -131,6 +132,31 @@ export function OrderCreateShipmentForm({
                   <Heading className="mb-4">
                     {t("orders.shipment.title")}
                   </Heading>
+
+                  <Form.Field
+                    control={form.control}
+                    name="carrier"
+                    render={({ field: { onChange, ref, ...field } }) => (
+                      <Form.Item className="mb-4">
+                        <Form.Label optional>Carrier</Form.Label>
+                        <Form.Control>
+                          <Select onValueChange={onChange} {...field}>
+                            <Select.Trigger ref={ref}>
+                              <Select.Value placeholder="Select a carrier" />
+                            </Select.Trigger>
+                            <Select.Content>
+                              {SHIPMENT_CARRIERS.map((c) => (
+                                <Select.Item key={c.value} value={c.value}>
+                                  {c.label}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select>
+                        </Form.Control>
+                        <Form.ErrorMessage />
+                      </Form.Item>
+                    )}
+                  />
 
                   {labels.map((label, index) => (
                     <Form.Field
