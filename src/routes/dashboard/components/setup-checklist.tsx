@@ -298,11 +298,17 @@ const navigateWithStorefrontHandoff = async (path: string): Promise<void> => {
       return
     }
   } catch {
-    // Falls through to the plain redirect — the vendor still lands on
-    // the right page, just without auto-login.
+    // Falls through to the login handoff below.
   }
 
-  window.location.href = `${storefrontUrl}${path}`
+  // Mint failed (e.g. a freshly-issued / stale seller token). Don't bare-
+  // redirect to `path` — that lands on the storefront with NO customer session
+  // and dead-ends the directory edit on "no listing found". Route through login
+  // with return_to so the storefront re-establishes the session and bounces
+  // them straight back to `path`.
+  window.location.href = `${storefrontUrl}/us/user?return_to=${encodeURIComponent(
+    path
+  )}`
 }
 
 const buildRows = (data: SetupResponse): Row[] => {

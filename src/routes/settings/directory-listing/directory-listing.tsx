@@ -36,10 +36,17 @@ const editDirectoryListing = async () => {
       return
     }
   } catch {
-    // fall through to the plain redirect
+    // fall through to the login handoff below
   }
 
-  window.location.href = `${MEDUSA_STOREFRONT_URL}${returnTo}`
+  // Mint failed (e.g. a freshly-issued / stale seller token). Don't bare-
+  // redirect to returnTo — that lands on the storefront with NO customer
+  // session and dead-ends the directory edit on "no listing found". Route
+  // through login with return_to so the storefront re-establishes the session
+  // and bounces them straight to the edit form.
+  window.location.href = `${MEDUSA_STOREFRONT_URL}/us/user?return_to=${encodeURIComponent(
+    returnTo
+  )}`
 }
 
 export const DirectoryListing = () => {
