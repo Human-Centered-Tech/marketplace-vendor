@@ -27,7 +27,11 @@ import {
   ExtendedAdminOrder,
   ExtendedAdminOrderFulfillment,
 } from "../../../../../types/order"
-import { CreateShipmentSchema, SHIPMENT_CARRIERS } from "./constants"
+import {
+  buildTrackingUrl,
+  CreateShipmentSchema,
+  SHIPMENT_CARRIERS,
+} from "./constants"
 
 type OrderCreateFulfillmentFormProps = {
   order: ExtendedAdminOrder
@@ -89,9 +93,11 @@ export function OrderCreateShipmentForm({
           .filter((l) => !!l.tracking_number)
           .map((l) => ({
             tracking_number: l.tracking_number,
-            tracking_url: "#",
-            label_url: "#"
-            ,
+            // Store the carrier deep-link (falls back to "#" for "Other"/unknown)
+            // so the buyer's on-page track link works, not just the email.
+            tracking_url:
+              buildTrackingUrl(data.carrier, l.tracking_number) || "#",
+            label_url: "#",
           })),
       },
       {

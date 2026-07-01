@@ -13,6 +13,31 @@ export const SHIPMENT_CARRIERS = [
   { value: "other", label: "Other" },
 ] as const
 
+// Build the carrier tracking-page URL so we can store it as the fulfillment's
+// tracking_url (instead of "#") — that's what makes the buyer's on-page "Track
+// package" link work, not just the shipped email. Mirrors the backend +
+// storefront builders; returns null for "other"/unknown or an empty number.
+export function buildTrackingUrl(
+  carrier: string | null | undefined,
+  trackingNumber: string | null | undefined
+): string | null {
+  const number = (trackingNumber || "").trim().replace(/\s+/g, "")
+  if (!number) return null
+  const n = encodeURIComponent(number)
+  switch ((carrier || "").trim().toLowerCase()) {
+    case "usps":
+      return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${n}`
+    case "ups":
+      return `https://www.ups.com/track?tracknum=${n}`
+    case "fedex":
+      return `https://www.fedex.com/fedextrack/?trknbr=${n}`
+    case "dhl":
+      return `https://www.dhl.com/us-en/home/tracking.html?tracking-id=${n}`
+    default:
+      return null
+  }
+}
+
 export const CreateShipmentSchema = z.object({
   labels: z.array(
     z.object({
