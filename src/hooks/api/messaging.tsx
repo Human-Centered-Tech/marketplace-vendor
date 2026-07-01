@@ -17,6 +17,15 @@ export type VConversation = {
   last_message_preview: string | null
   created_at: string
   updated_at: string
+  // Display enrichment — OPTIONAL because the backend messaging API does not
+  // send these yet. Today /vendor/messaging/conversations[/:id] only returns
+  // participant *ids* and context_id, so the inbox has no name/title to show.
+  // BACKEND TODO: populate `counterparty_name` (the other participant's
+  // customer name) and `context_title` (the related product / trade-listing /
+  // store title) on these endpoints. Until then the UI falls back to a
+  // client-side product lookup (for product inquiries) and a role label.
+  counterparty_name?: string | null
+  context_title?: string | null
 }
 
 export type VMessageAttachment = {

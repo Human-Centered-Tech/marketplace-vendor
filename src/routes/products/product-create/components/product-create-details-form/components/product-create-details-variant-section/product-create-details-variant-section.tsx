@@ -359,6 +359,20 @@ export const ProductCreateVariantsSection = ({
             }
           }}
         />
+        <InlineTip label="Products vs. variants">
+          A product is one listing (for example, “Lip Balm”). Variants are the
+          options of that same product — like scents, sizes, or colors — each
+          with its own SKU, price, and stock. Turn this on to sell one “Lip
+          Balm” product with a variant for each scent, instead of creating a
+          separate product for every scent. Leave it off if the item has no
+          options.
+        </InlineTip>
+        <InlineTip label="Tracking inventory">
+          Stock is tracked automatically for each variant. After you create the
+          product, open its Inventory tab to set the quantity on hand — Catholic
+          Owned counts it down as orders come in and marks a variant sold out
+          when it reaches zero.
+        </InlineTip>
       </div>
       {watchedAreVariantsEnabled && (
         <>

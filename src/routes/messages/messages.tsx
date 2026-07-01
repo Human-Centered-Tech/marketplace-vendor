@@ -2,6 +2,7 @@ import { Button, Container, Heading, Text, Textarea } from "@medusajs/ui"
 import { useEffect, useRef, useState } from "react"
 import { queryClient } from "../../lib/query-client"
 import { uploadFilesQuery } from "../../lib/client/client"
+import { useProduct } from "../../hooks/api/products"
 import {
   messagingKeys,
   notifyVendorTyping,
@@ -10,6 +11,7 @@ import {
   useVendorConversation,
   useVendorConversations,
   useVendorMessagingStream,
+  type VConversation,
   type VMessageAttachment,
 } from "../../hooks/api/messaging"
 
@@ -21,6 +23,90 @@ const ATTACH_TYPES = [
   "image/avif",
   "application/pdf",
 ]
+
+const contextLabel = (t: string) =>
+  t === "product"
+    ? "Product inquiry"
+    : t === "barter_listing"
+      ? "Trade"
+      : t === "storefront"
+        ? "Storefront"
+        : "Conversation"
+
+// Friendly name for the person on the other side of the conversation. The
+// messaging API doesn't return the other participant's name yet — only their
+// customer id — so prefer a backend-provided `counterparty_name` when present
+// and otherwise fall back to a role label rather than showing a raw id.
+const counterpartyName = (c: VConversation) => {
+  const name = c.counterparty_name?.trim()
+  if (name) {
+    return name
+  }
+  return c.context_type === "barter_listing" ? "Trade partner" : "Customer"
+}
+
+// Resolve the related product's title for a product-inquiry conversation.
+// These are the vendor's own products, so /vendor/products/:id is authorized.
+// Prefers a backend-provided `context_title` if/when the API starts sending it.
+const useContextTitle = (c?: VConversation) => {
+  const isProduct = c?.context_type === "product" && !!c?.context_id
+  const { product } = useProduct(
+    c?.context_id || "",
+    { fields: "id,title" },
+    { enabled: isProduct, retry: false, staleTime: 5 * 60 * 1000 }
+  )
+  return c?.context_title?.trim() || (isProduct ? product?.title : undefined)
+}
+
+const ConversationRow = ({
+  c,
+  selected,
+  onSelect,
+}: {
+  c: VConversation
+  selected: boolean
+  onSelect: () => void
+}) => {
+  const productTitle = useContextTitle(c)
+  return (
+    <li>
+      <button
+        onClick={onSelect}
+        className={`w-full text-left px-4 py-3 border-b hover:bg-ui-bg-base-hover ${
+          selected ? "bg-ui-bg-base-hover" : ""
+        }`}
+      >
+        <div className="flex justify-between items-center mb-1">
+          <Text
+            size="xsmall"
+            weight="plus"
+            className="uppercase text-ui-fg-muted"
+          >
+            {contextLabel(c.context_type)}
+          </Text>
+          {c.last_message_at && (
+            <Text size="xsmall" className="text-ui-fg-subtle">
+              {new Date(c.last_message_at).toLocaleDateString()}
+            </Text>
+          )}
+        </div>
+        <Text size="small" weight="plus" className="truncate">
+          {counterpartyName(c)}
+        </Text>
+        {productTitle && (
+          <Text size="xsmall" className="text-ui-fg-subtle truncate">
+            Re: {productTitle}
+          </Text>
+        )}
+        {c.last_message_preview && (
+          <Text size="xsmall" className="text-ui-fg-subtle truncate">
+            {c.last_message_preview}
+          </Text>
+        )}
+      </button>
+    </li>
+  )
+}
 
 export const Messages = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -130,17 +216,8 @@ export const Messages = () => {
     )
   }
 
-  const otherId = (c: { participant_a_id: string; participant_b_id: string }) =>
-    c.participant_a_id === viewer ? c.participant_b_id : c.participant_a_id
-
-  const contextLabel = (t: string) =>
-    t === "product"
-      ? "Product inquiry"
-      : t === "barter_listing"
-        ? "Trade"
-        : t === "storefront"
-          ? "Storefront"
-          : "Conversation"
+  const selectedConversation = detail?.conversation
+  const headerProductTitle = useContextTitle(selectedConversation)
 
   return (
     <Container className="divide-y p-0 min-h-[700px]">
@@ -166,40 +243,12 @@ export const Messages = () => {
           ) : (
             <ul>
               {conversations.map((c) => (
-                <li key={c.id}>
-                  <button
-                    onClick={() => setSelectedId(c.id)}
-                    className={`w-full text-left px-4 py-3 border-b hover:bg-ui-bg-base-hover ${
-                      selectedId === c.id ? "bg-ui-bg-base-hover" : ""
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <Text
-                        size="xsmall"
-                        weight="plus"
-                        className="uppercase text-ui-fg-muted"
-                      >
-                        {contextLabel(c.context_type)}
-                      </Text>
-                      {c.last_message_at && (
-                        <Text size="xsmall" className="text-ui-fg-subtle">
-                          {new Date(c.last_message_at).toLocaleDateString()}
-                        </Text>
-                      )}
-                    </div>
-                    <Text size="small" weight="plus" className="truncate">
-                      {otherId(c).slice(0, 18)}…
-                    </Text>
-                    {c.last_message_preview && (
-                      <Text
-                        size="xsmall"
-                        className="text-ui-fg-subtle truncate"
-                      >
-                        {c.last_message_preview}
-                      </Text>
-                    )}
-                  </button>
-                </li>
+                <ConversationRow
+                  key={c.id}
+                  c={c}
+                  selected={selectedId === c.id}
+                  onSelect={() => setSelectedId(c.id)}
+                />
               ))}
             </ul>
           )}
@@ -213,6 +262,27 @@ export const Messages = () => {
             </div>
           ) : (
             <>
+              <div className="border-b px-4 py-3">
+                {selectedConversation && (
+                  <Text
+                    size="xsmall"
+                    weight="plus"
+                    className="uppercase text-ui-fg-muted"
+                  >
+                    {contextLabel(selectedConversation.context_type)}
+                  </Text>
+                )}
+                <Heading level="h3" className="truncate">
+                  {selectedConversation
+                    ? counterpartyName(selectedConversation)
+                    : ""}
+                </Heading>
+                {headerProductTitle && (
+                  <Text size="small" className="text-ui-fg-subtle truncate">
+                    Re: {headerProductTitle}
+                  </Text>
+                )}
+              </div>
               <div
                 ref={scrollRef}
                 className="flex-1 overflow-y-auto p-4 space-y-3"
