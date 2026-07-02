@@ -1,4 +1,4 @@
-import { Button, Input, Text, toast } from "@medusajs/ui"
+import { Button, Input, Text, Textarea, toast } from "@medusajs/ui"
 import { RichTextEditor } from "../../../../../components/common/rich-text-editor/rich-text-editor"
 import { useTranslation } from "react-i18next"
 import * as zod from "zod"
@@ -9,6 +9,7 @@ import { SwitchBox } from "../../../../../components/common/switch-box"
 import { RouteDrawer, useRouteModal } from "../../../../../components/modals"
 import { useExtendableForm } from "../../../../../extensions/forms/hooks"
 import { useUpdateProduct } from "../../../../../hooks/api/products"
+import { fetchQuery } from "../../../../../lib/client"
 
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
 import {
@@ -25,6 +26,7 @@ const EditProductSchema = zod.object({
   handle: zod.string().min(1),
   description: zod.string().optional(),
   discountable: zod.boolean(),
+  shipping_return_policy: zod.string().optional(),
 })
 
 export const EditProductForm = ({ product }: EditProductFormProps) => {
@@ -35,12 +37,16 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
   const fields = getFormFields("product", "edit")
   const configs = getFormConfigs("product", "edit")
 
+  const existingPolicy =
+    ((product as any).metadata?.shipping_return_policy as string) || ""
+
   const form = useExtendableForm({
     defaultValues: {
       title: product.title,
       handle: product.handle || "",
       description: product.description || "",
       discountable: product.discountable,
+      shipping_return_policy: existingPolicy,
     },
     schema: EditProductSchema,
     configs: configs,
@@ -50,7 +56,11 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
   const { mutateAsync, isPending } = useUpdateProduct(product.id)
 
   const handleSubmit = form.handleSubmit(async (data) => {
-    const { description, discountable, handle, title } = data
+    const { description, discountable, handle, title, shipping_return_policy } =
+      data
+
+    const finalPolicy = (shipping_return_policy ?? "").trim()
+    const policyChanged = finalPolicy !== existingPolicy.trim()
 
     await mutateAsync(
       {
@@ -60,7 +70,27 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
         title,
       },
       {
-        onSuccess: ({ product }) => {
+        onSuccess: async ({ product }) => {
+          // Per-product policy override saves via a dedicated route — Mercur's
+          // product update doesn't reliably carry our custom metadata.
+          if (policyChanged) {
+            try {
+              await fetchQuery(
+                `/vendor/products/${product.id}/shipping-return-policy`,
+                {
+                  method: "POST",
+                  body: { shipping_return_policy: finalPolicy || null },
+                }
+              )
+            } catch (err) {
+              toast.error(
+                `Product saved, but the per-product policy didn't: ${
+                  err instanceof Error ? err.message : "unknown error"
+                }`
+              )
+              return
+            }
+          }
           toast.success(
             t("products.edit.successToast", {
               title: product.title,
@@ -211,6 +241,28 @@ export const EditProductForm = ({ product }: EditProductFormProps) => {
                           onBlur={field.onBlur}
                         />
                       </Form.Control>
+                      <Form.ErrorMessage />
+                    </Form.Item>
+                  )
+                }}
+              />
+              <Form.Field
+                control={form.control}
+                name="shipping_return_policy"
+                render={({ field }) => {
+                  return (
+                    <Form.Item>
+                      <Form.Label optional>
+                        Shipping & return policy for this product
+                      </Form.Label>
+                      <Form.Control>
+                        <Textarea {...field} rows={4} />
+                      </Form.Control>
+                      <Text size="small" className="text-ui-fg-subtle mt-1">
+                        Overrides your store-wide policy for this item only —
+                        e.g. a made-to-order piece with a longer lead time. Leave
+                        blank to use your store default.
+                      </Text>
                       <Form.ErrorMessage />
                     </Form.Item>
                   )
