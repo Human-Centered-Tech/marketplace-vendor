@@ -394,10 +394,13 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
               control={form.control}
               render={({ field }) => (
                 <Form.Item>
-                  <Form.Label optional>Refund policy</Form.Label>
+                  <Form.Label optional>Shipping & return policy</Form.Label>
                   <span className="text-ui-fg-subtle text-xs">
-                    Plain text. Shown on your storefront page so buyers know
-                    your terms before they purchase. Line breaks preserved.
+                    Plain text, shown on your storefront and product pages so
+                    buyers know your terms before they purchase. Include BOTH
+                    your shipping timeline (how long orders take to ship and
+                    arrive) and your return terms (whether you accept returns,
+                    the window, and any conditions). Line breaks preserved.
                   </span>
                   <Form.Control>
                     <Textarea {...field} rows={6} />
