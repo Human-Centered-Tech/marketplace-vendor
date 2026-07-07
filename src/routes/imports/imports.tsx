@@ -6,7 +6,6 @@ import {
   Container,
   Heading,
   Input,
-  Label,
   Text,
   toast,
 } from "@medusajs/ui"
@@ -17,17 +16,23 @@ import {
   useCreateImportJob,
   useImportJob,
   useImports,
-  useShopifyConnectUrl,
+  useShopifyClaim,
   useShopifyCsvImport,
   useShopifyStatus,
 } from "../../hooks/api/imports"
 
-// Direct OAuth connect is hidden while the Shopify Partner app awaits App
-// Store review — Shopify refuses to install unreviewed public apps on real
-// merchant stores, so the connect flow dead-ends at Shopify's authorize
-// page. Flip to true when the app is approved. Stores that already
-// completed the connection keep their working import flow either way.
+// Direct Shopify connect is hidden while the Partner app awaits App Store
+// review — Shopify refuses to install unreviewed public apps on real
+// merchant stores. Flip to true when the app is approved, and fill in the
+// listing URL below. Stores that already completed the connection keep
+// their working import flow either way — and the ?claim= install flow
+// (merchant installs from Shopify's side) works regardless of this flag.
 const SHOPIFY_CONNECT_ENABLED = false
+// The app's Shopify App Store page. Shopify supplies the shop context
+// there, so merchants never type their .myshopify.com domain by hand
+// (App Store requirement 2.3.1). TODO: fill in once the listing is live.
+const SHOPIFY_APP_STORE_URL =
+  "https://apps.shopify.com/catholic-owned-store-import"
 
 const statusColor = (
   s: ImportJobStatus
@@ -44,12 +49,10 @@ const statusColor = (
 export const Imports = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: status, isLoading: statusLoading } = useShopifyStatus()
-  const connectUrl = useShopifyConnectUrl()
+  const claim = useShopifyClaim()
   const createJob = useCreateImportJob()
   const { data: jobsData } = useImports()
 
-  const [shop, setShop] = useState("")
-  const [reconnecting, setReconnecting] = useState(false)
   const [activeJobId, setActiveJobId] = useState<string | undefined>()
 
   const csvImport = useShopifyCsvImport()
@@ -72,21 +75,32 @@ export const Imports = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const connected = Boolean(status?.connected)
+  // Shopify-initiated install (App Store flow): the OAuth callback parked
+  // the connection as pending and sent the merchant here with a single-use
+  // claim token. We're behind vendor auth, so by the time this runs the
+  // merchant has logged in — redeem the token to attach the store to their
+  // seller account.
+  useEffect(() => {
+    const claimToken = searchParams.get("claim")
+    if (!claimToken) return
+    searchParams.delete("claim")
+    searchParams.delete("shop")
+    setSearchParams(searchParams, { replace: true })
+    claim
+      .mutateAsync(claimToken)
+      .then(({ shop }) => {
+        toast.success(`Shopify store ${shop} connected.`)
+      })
+      .catch((e: any) => {
+        toast.error(
+          e?.message ||
+            "Could not link the Shopify store. Reinstall the app from Shopify to try again."
+        )
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const handleConnect = async () => {
-    const handle = shop.trim().toLowerCase()
-    if (!handle) {
-      toast.error("Enter your myshopify.com store handle.")
-      return
-    }
-    try {
-      const { url } = await connectUrl.mutateAsync(handle)
-      window.location.assign(url)
-    } catch (e: any) {
-      toast.error(e?.message || "Could not start Shopify connect.")
-    }
-  }
+  const connected = Boolean(status?.connected)
 
   const startJob = async (mode: "dry_run" | "commit") => {
     try {
@@ -144,47 +158,37 @@ export const Imports = () => {
         </Text>
 
         <div className="mt-4">
-          {statusLoading ? (
+          {statusLoading || claim.isPending ? (
             <Text size="small" className="text-ui-fg-subtle">
-              Checking connection…
+              {claim.isPending ? "Linking your Shopify store…" : "Checking connection…"}
             </Text>
-          ) : connected && !reconnecting ? (
+          ) : connected ? (
             <div className="flex items-center gap-3">
               <Badge color="green">Connected</Badge>
               <Text size="small">{status?.shop}</Text>
-              <Button
-                size="small"
-                variant="transparent"
-                onClick={() => setReconnecting(true)}
-              >
-                Change store
-              </Button>
             </div>
           ) : SHOPIFY_CONNECT_ENABLED ? (
+            // No manual .myshopify.com entry (App Store requirement 2.3.1):
+            // the merchant installs from the app's App Store page, where
+            // Shopify knows which store they're signed into. The install
+            // redirects back here with a claim token (handled above).
             <div className="flex flex-col gap-2 max-w-md">
-              <Label size="small" htmlFor="shop">
-                Your Shopify store handle
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="shop"
-                  placeholder="your-store.myshopify.com"
-                  value={shop}
-                  onChange={(e) => setShop(e.target.value)}
-                />
-                <Button
-                  variant="primary"
-                  onClick={handleConnect}
-                  isLoading={connectUrl.isPending}
-                >
-                  Connect
+              <div>
+                <Button variant="primary" asChild>
+                  <a
+                    href={SHOPIFY_APP_STORE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Connect via the Shopify App Store
+                  </a>
                 </Button>
               </div>
               <Text size="xsmall" className="text-ui-fg-subtle">
-                Use your full <code>.myshopify.com</code> address — for example{" "}
-                <code>my-catholic-shop.myshopify.com</code> (not your custom
-                domain like <code>myshop.com</code>). You can find it in Shopify
-                under Settings → Domains.
+                Install the Catholic Owned Store Import app on your Shopify
+                store — you&apos;ll be sent right back here with your store
+                connected. To switch to a different store, install the app on
+                that store instead.
               </Text>
             </div>
           ) : (

@@ -137,6 +137,24 @@ export const useShopifyConnectUrl = () =>
       }),
   })
 
+// POST /vendor/imports/shopify/claim — second half of a Shopify-initiated
+// install (App Store flow): the OAuth callback parked the connection as
+// pending and redirected here with a single-use claim token; this attaches
+// it to the logged-in seller.
+export const useShopifyClaim = () =>
+  useMutation<{ connected: boolean; shop: string }, FetchError, string>({
+    mutationFn: (claimToken) =>
+      fetchQuery("/vendor/imports/shopify/claim", {
+        method: "POST",
+        body: { claim_token: claimToken },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: importsQueryKeys.shopifyStatus(),
+      })
+    },
+  })
+
 export type ShopifyCsvImportResult = {
   count: number
   skipped_existing: string[]
