@@ -23,11 +23,16 @@ import {
 
 // Direct Shopify connect is hidden while the Partner app awaits App Store
 // review — Shopify refuses to install unreviewed public apps on real
-// merchant stores. Flip to true when the app is approved, and fill in the
-// listing URL below. Stores that already completed the connection keep
-// their working import flow either way — and the ?claim= install flow
-// (merchant installs from Shopify's side) works regardless of this flag.
-const SHOPIFY_CONNECT_ENABLED = false
+// merchant stores. Controlled at runtime via the SHOPIFY_CONNECT_ENABLED
+// env var on the Railway service (injected through runtime-config.js), so
+// it can be flipped without a rebuild — e.g. on for the review window.
+// Stores that already completed the connection keep their working import
+// flow either way — and the ?claim= install flow (merchant installs from
+// Shopify's side) works regardless of this flag.
+const SHOPIFY_CONNECT_ENABLED = Boolean(
+  typeof window !== "undefined" &&
+    window.__RUNTIME_CONFIG__?.shopifyConnectEnabled
+)
 // The app's Shopify App Store page. Shopify supplies the shop context
 // there, so merchants never type their .myshopify.com domain by hand
 // (App Store requirement 2.3.1). TODO: fill in once the listing is live.
