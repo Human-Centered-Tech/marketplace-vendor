@@ -66,6 +66,11 @@ async function launch() {
   const runtimeConfig = {
     backendUrl: BACKEND_URL,
     publishableApiKey: apiKey || '',
+    // Shows the "Connect via the Shopify App Store" button on /imports.
+    // Off until Shopify approves the app (unreviewed public apps can't be
+    // installed on real merchant stores); flip the env var on Railway — no
+    // rebuild needed. The Shopify-initiated ?claim= flow works regardless.
+    shopifyConnectEnabled: process.env.SHOPIFY_CONNECT_ENABLED === 'true',
   };
   fs.writeFileSync(
     path.join(distDir, 'runtime-config.js'),
