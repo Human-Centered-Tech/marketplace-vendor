@@ -136,3 +136,24 @@ export const useShopifyConnectUrl = () =>
         query: { shop, json: "1" },
       }),
   })
+
+export type ShopifyCsvImportResult = {
+  count: number
+  skipped_existing: string[]
+  skipped_archived: string[]
+  stock_levels_set: number
+  products: { id: string; handle: string; title: string }[]
+  message?: string
+}
+
+// POST /vendor/imports/shopify/csv — interim import path while the Shopify
+// app awaits App Store review: upload the raw Shopify product-export CSV.
+// Creates products directly (as drafts), so no import job to poll.
+export const useShopifyCsvImport = () =>
+  useMutation<ShopifyCsvImportResult, FetchError, string>({
+    mutationFn: (fileContent) =>
+      fetchQuery("/vendor/imports/shopify/csv", {
+        method: "POST",
+        body: { file_content: fileContent },
+      }),
+  })

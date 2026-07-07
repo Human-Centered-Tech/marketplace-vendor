@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Link, useSearchParams } from "react-router-dom"
 import {
   Badge,
   Button,
@@ -13,12 +13,21 @@ import {
 import {
   ImportJob,
   ImportJobStatus,
+  ShopifyCsvImportResult,
   useCreateImportJob,
   useImportJob,
   useImports,
   useShopifyConnectUrl,
+  useShopifyCsvImport,
   useShopifyStatus,
 } from "../../hooks/api/imports"
+
+// Direct OAuth connect is hidden while the Shopify Partner app awaits App
+// Store review — Shopify refuses to install unreviewed public apps on real
+// merchant stores, so the connect flow dead-ends at Shopify's authorize
+// page. Flip to true when the app is approved. Stores that already
+// completed the connection keep their working import flow either way.
+const SHOPIFY_CONNECT_ENABLED = false
 
 const statusColor = (
   s: ImportJobStatus
@@ -42,6 +51,13 @@ export const Imports = () => {
   const [shop, setShop] = useState("")
   const [reconnecting, setReconnecting] = useState(false)
   const [activeJobId, setActiveJobId] = useState<string | undefined>()
+
+  const csvImport = useShopifyCsvImport()
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [csvResult, setCsvResult] = useState<ShopifyCsvImportResult | null>(
+    null
+  )
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: activeData } = useImportJob(activeJobId)
   const activeJob = activeData?.job
@@ -91,6 +107,31 @@ export const Imports = () => {
     [activeJob]
   )
 
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error("Choose your Shopify export file first.")
+      return
+    }
+    try {
+      const content = await csvFile.text()
+      const result = await csvImport.mutateAsync(content)
+      setCsvResult(result)
+      if (result.count > 0) {
+        toast.success(
+          `Imported ${result.count} product${result.count === 1 ? "" : "s"} as drafts.`
+        )
+      } else {
+        toast.info(
+          result.message || "Nothing new to import — everything is up to date."
+        )
+      }
+      setCsvFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    } catch (e: any) {
+      toast.error(e?.message || "Could not import the CSV file.")
+    }
+  }
+
 
   return (
     <Container className="flex flex-col gap-y-6 p-0">
@@ -119,7 +160,7 @@ export const Imports = () => {
                 Change store
               </Button>
             </div>
-          ) : (
+          ) : SHOPIFY_CONNECT_ENABLED ? (
             <div className="flex flex-col gap-2 max-w-md">
               <Label size="small" htmlFor="shop">
                 Your Shopify store handle
@@ -146,9 +187,93 @@ export const Imports = () => {
                 under Settings → Domains.
               </Text>
             </div>
+          ) : (
+            <Text size="small" className="text-ui-fg-subtle">
+              Connecting your store directly is coming soon — our Shopify app
+              is currently in Shopify&apos;s review queue. In the meantime you
+              can import your full catalog from a Shopify export file below;
+              it takes about two minutes.
+            </Text>
           )}
         </div>
       </div>
+
+      {/* Interim: import from a Shopify export CSV while the app awaits
+          Shopify's review (direct connect is hidden above until then). */}
+      {!connected && !statusLoading && (
+        <div className="px-6 pb-2">
+          <Text weight="plus">Import from a Shopify export file</Text>
+          <ol className="list-decimal ml-4 mt-2 flex flex-col gap-1">
+            <li>
+              <Text size="small" className="text-ui-fg-subtle">
+                In your Shopify admin, go to <b>Products</b> and click{" "}
+                <b>Export</b> (top right).
+              </Text>
+            </li>
+            <li>
+              <Text size="small" className="text-ui-fg-subtle">
+                Choose <b>All products</b> and <b>CSV for Excel, Numbers, or
+                other spreadsheet programs</b>, then export. Shopify downloads
+                the file or emails it to you.
+              </Text>
+            </li>
+            <li>
+              <Text size="small" className="text-ui-fg-subtle">
+                Upload that file here. Your products come in as drafts for you
+                to review and publish. Already-imported products are skipped,
+                so you can safely upload a fresh export after adding new
+                products in Shopify.
+              </Text>
+            </li>
+          </ol>
+          <div className="flex items-center gap-2 mt-3 max-w-md">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+            />
+            <Button
+              variant="primary"
+              onClick={handleCsvImport}
+              isLoading={csvImport.isPending}
+              disabled={!csvFile}
+            >
+              Import products
+            </Button>
+          </div>
+          {csvResult && (
+            <div className="mt-3 flex flex-col gap-1">
+              <Text size="small">
+                {csvResult.count > 0 ? (
+                  <>
+                    Imported <b>{csvResult.count}</b> product
+                    {csvResult.count === 1 ? "" : "s"} as drafts
+                    {csvResult.stock_levels_set > 0
+                      ? ` (stock set on ${csvResult.stock_levels_set} variant${csvResult.stock_levels_set === 1 ? "" : "s"})`
+                      : ""}
+                    . <Link to="/products" className="underline">Review and publish them</Link>.
+                  </>
+                ) : (
+                  "Nothing new to import — everything in the file was already imported."
+                )}
+              </Text>
+              {csvResult.skipped_existing.length > 0 && (
+                <Text size="xsmall" className="text-ui-fg-subtle">
+                  Skipped {csvResult.skipped_existing.length} already-imported
+                  product{csvResult.skipped_existing.length === 1 ? "" : "s"}.
+                </Text>
+              )}
+              {csvResult.skipped_archived.length > 0 && (
+                <Text size="xsmall" className="text-ui-fg-subtle">
+                  Skipped {csvResult.skipped_archived.length} archived product
+                  {csvResult.skipped_archived.length === 1 ? "" : "s"}.
+                </Text>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Run import */}
       {connected && (

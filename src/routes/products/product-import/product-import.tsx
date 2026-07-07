@@ -40,10 +40,10 @@ export const ProductImport = () => {
           <Tabs.Content value="shopify">
             <div className="flex flex-col gap-4 py-2">
               <Text size="small" className="text-ui-fg-subtle">
-                Connect your Shopify store and import your catalog directly over
-                the Shopify API — no CSV export needed. Products come in as
-                drafts for you to review, and re-running won&apos;t create
-                duplicates.
+                Import your Shopify catalog from a Shopify product export —
+                products come in as drafts for you to review, and re-uploading
+                won&apos;t create duplicates. (Connecting your store directly
+                is coming soon, once Shopify approves our import app.)
               </Text>
               <div>
                 <Button
