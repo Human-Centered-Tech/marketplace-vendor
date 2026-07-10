@@ -388,13 +388,30 @@ export const Imports = () => {
               </Text>
             </li>
           </ol>
-          <div className="flex items-center gap-2 mt-3 max-w-md">
-            <Input
+          <div className="flex items-center gap-3 mt-3 max-w-xl">
+            {/* Hidden native input; a styled secondary button triggers it so
+                the picker matches our UI (the native "Choose File" control
+                rendered dark + off-center inside a text input). */}
+            <input
               ref={fileInputRef}
               type="file"
               accept=".csv,text/csv"
+              className="hidden"
               onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
             />
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose file
+            </Button>
+            <Text
+              size="small"
+              className="text-ui-fg-subtle truncate min-w-0 flex-1"
+            >
+              {csvFile ? csvFile.name : "No file chosen"}
+            </Text>
             <Button
               variant="primary"
               onClick={handleCsvImport}
