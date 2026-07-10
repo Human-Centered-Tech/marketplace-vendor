@@ -18,6 +18,7 @@ import {
   useImports,
   useShopifyClaim,
   useShopifyConnectCustomApp,
+  useShopifyDisconnect,
   useShopifyCsvImport,
   useShopifyStatus,
 } from "../../hooks/api/imports"
@@ -71,6 +72,7 @@ export const Imports = () => {
   const [activeJobId, setActiveJobId] = useState<string | undefined>()
 
   const connectCustomApp = useShopifyConnectCustomApp()
+  const disconnect = useShopifyDisconnect()
   const [caShop, setCaShop] = useState("")
   const [caClientId, setCaClientId] = useState("")
   const [caClientSecret, setCaClientSecret] = useState("")
@@ -142,6 +144,22 @@ export const Imports = () => {
     [activeJob]
   )
 
+  const handleDisconnect = async () => {
+    if (
+      !window.confirm(
+        "Disconnect this Shopify store? We'll stop accessing it, but your already-imported products stay. To fully revoke, you can also uninstall the app in your Shopify admin."
+      )
+    ) {
+      return
+    }
+    try {
+      await disconnect.mutateAsync()
+      toast.success("Shopify store disconnected.")
+    } catch (e: any) {
+      toast.error(e?.message || "Could not disconnect. Please try again.")
+    }
+  }
+
   const handleConnectCustomApp = async () => {
     if (!caShop.trim() || !caClientId.trim() || !caClientSecret.trim()) {
       toast.error("Enter your store domain, Client ID, and Client Secret.")
@@ -207,6 +225,14 @@ export const Imports = () => {
             <div className="flex items-center gap-3">
               <Badge color="green">Connected</Badge>
               <Text size="small">{status?.shop}</Text>
+              <Button
+                variant="secondary"
+                size="small"
+                isLoading={disconnect.isPending}
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
             </div>
           ) : SHOPIFY_CONNECT_ENABLED ? (
             // No manual .myshopify.com entry (App Store requirement 2.3.1):
