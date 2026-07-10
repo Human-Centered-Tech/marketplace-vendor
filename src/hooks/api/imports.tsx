@@ -178,12 +178,12 @@ export const useShopifyConnectCustomApp = () =>
     },
   })
 
-// DELETE /vendor/imports/shopify/connect — disconnect the store: removes the
+// POST /vendor/imports/shopify/disconnect — disconnect the store: removes the
 // stored credentials + token so we no longer access it. Imported products stay.
 export const useShopifyDisconnect = () =>
   useMutation<{ disconnected: boolean }, FetchError, void>({
     mutationFn: () =>
-      fetchQuery("/vendor/imports/shopify/connect", { method: "DELETE" }),
+      fetchQuery("/vendor/imports/shopify/disconnect", { method: "POST" }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: importsQueryKeys.shopifyStatus(),
