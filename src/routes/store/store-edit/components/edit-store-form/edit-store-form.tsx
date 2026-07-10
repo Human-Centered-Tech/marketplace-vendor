@@ -19,6 +19,7 @@ import { useCallback, useEffect } from "react"
 import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { HttpTypes } from "@medusajs/types"
 import { useQuery } from "@tanstack/react-query"
+import { useSetup } from "../../../../../hooks/api/setup"
 
 export const EditStoreSchema = z.object({
   name: z.string().min(1),
@@ -51,6 +52,12 @@ const SUPPORTED_FORMATS_FILE_EXTENSIONS = [
 export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
   const { t } = useTranslation()
   const { handleSuccess } = useRouteModal()
+
+  // Service businesses have no storefront — logo, cover photo, description
+  // and shipping & return policy are storefront-only, so the form collapses
+  // to name/email/phone for them.
+  const { data: setup } = useSetup()
+  const isService = setup?.is_service === true
 
   const form = useForm<z.infer<typeof EditStoreSchema>>({
     defaultValues: {
@@ -91,6 +98,10 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
           refund_policy: string | null
         } | null
       }>,
+    // Storefront row is meaningless for a service business — don't fetch.
+    // Wait for setup to resolve first: before it lands, isService is false
+    // even for service accounts, and the query would fire anyway.
+    enabled: setup !== undefined && !isService,
   })
   const existingCoverUrl = storefrontData?.seller_storefront?.cover_image_url
   const existingRefundPolicy =
@@ -224,9 +235,9 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
             null
           const finalRefundPolicy = (values.refund_policy ?? "").trim() || null
 
-          const coverChanged = finalCoverUrl !== existingCoverUrl
+          const coverChanged = !isService && finalCoverUrl !== existingCoverUrl
           const refundChanged =
-            finalRefundPolicy !== (existingRefundPolicy || null)
+            !isService && finalRefundPolicy !== (existingRefundPolicy || null)
 
           try {
             if (coverChanged) {
@@ -266,6 +277,9 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
       >
         <RouteDrawer.Body className="flex flex-1 flex-col gap-y-8 overflow-y-auto">
           <div className="flex flex-col gap-y-8">
+            {/* Storefront-only fields — hidden for service businesses. */}
+            {!isService && (
+              <>
             <Form.Field
               name="media"
               control={form.control}
@@ -337,6 +351,8 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
                 )
               }}
             />
+              </>
+            )}
             <Form.Field
               name="name"
               control={form.control}
@@ -376,6 +392,9 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
                 </Form.Item>
               )}
             />
+            {/* Storefront-only fields — hidden for service businesses. */}
+            {!isService && (
+              <>
             <Form.Field
               name="description"
               control={form.control}
@@ -409,6 +428,8 @@ export const EditStoreForm = ({ seller }: { seller: StoreVendor }) => {
                 </Form.Item>
               )}
             />
+              </>
+            )}
           </div>
         </RouteDrawer.Body>
         <RouteDrawer.Footer>

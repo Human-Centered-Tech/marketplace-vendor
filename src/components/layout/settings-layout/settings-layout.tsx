@@ -37,7 +37,9 @@ const useSettingRoutes = (): INavItem[] => {
   return useMemo(() => {
     const routes: INavItem[] = [
       {
-        label: t("store.domain"),
+        // Service businesses have no storefront — "Store" reads wrong, so
+        // the same settings page is presented as "Business" to them.
+        label: isService ? "Business" : t("store.domain"),
         to: "/settings/store",
       },
       {

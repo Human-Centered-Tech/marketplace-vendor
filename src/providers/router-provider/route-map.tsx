@@ -7,6 +7,7 @@ import { MainLayout } from "../../components/layout/main-layout"
 import { PublicLayout } from "../../components/layout/public-layout"
 import { SettingsLayout } from "../../components/layout/settings-layout"
 import { ErrorBoundary } from "../../components/utilities/error-boundary"
+import { StoreSettingsBreadcrumb } from "../../routes/store/store-detail/breadcrumb"
 import { TaxRegionDetailBreadcrumb } from "../../routes/tax-regions/tax-region-detail/breadcrumb"
 import { taxRegionLoader } from "../../routes/tax-regions/tax-region-detail/loader"
 import { RouteExtensions } from "./route-extensions"
@@ -977,7 +978,9 @@ export const RouteMap: RouteObject[] = [
             errorElement: <ErrorBoundary />,
             lazy: () => import("../../routes/store/store-detail"),
             handle: {
-              breadcrumb: () => t("store.domain"),
+              // Component, not a literal — service businesses see "Business"
+              // instead of "Store" (no storefront to speak of).
+              breadcrumb: () => <StoreSettingsBreadcrumb />,
             },
             children: [
               {

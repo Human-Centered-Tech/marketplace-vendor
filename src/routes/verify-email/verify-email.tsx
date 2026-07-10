@@ -14,15 +14,25 @@ import {
  */
 export const VerifyEmail = () => {
   const navigate = useNavigate()
-  const { data, isPending, error, refetch, isFetching } =
-    useEmailVerificationStatus()
+  // Poll while this screen is up: verification happens on the storefront (a
+  // different origin, so it can't signal us), and each background refetch
+  // feeds the effect below so the redirect fires without any manual action.
+  const { data, isPending, error } = useEmailVerificationStatus({
+    refetchInterval: 5000,
+  })
   const sendMutation = useSendVerificationEmail()
 
   useEffect(() => {
     if (isPending) return
-    // No/!invalid session — go log in.
+    // Only bounce to /login on a real auth failure. The 5s poll means a
+    // transient network blip / 5xx (laptop sleep, wifi switch — exactly what
+    // this auto-continue screen invites) would otherwise kick a valid
+    // session off the page; non-auth errors just wait for the next poll.
     if (error) {
-      navigate("/login", { replace: true })
+      const status = (error as any)?.status ?? (error as any)?.response?.status
+      if (status === 401 || status === 403) {
+        navigate("/login", { replace: true })
+      }
       return
     }
     // Verified (or grandfathered / no gate) — proceed to the dashboard.
@@ -40,11 +50,10 @@ export const VerifyEmail = () => {
     }
   }
 
-  // Styled to mirror the storefront's VerifyEmailGate (7/10, Liam): brand
-  // serif heading, one primary action, and the resend demoted to a quiet
-  // text link — previously this was the stock Medusa-UI card, so merchants
-  // saw two very different verification screens depending on where they
-  // landed.
+  // Styled to mirror the storefront's VerifyEmailGate: brand serif heading
+  // with the resend demoted to a quiet text link. No continue button — the
+  // status poll above advances the screen on its own, so the only action a
+  // merchant ever needs here is the resend.
   return (
     <div className="bg-co-cream bg-damask-pattern flex min-h-screen items-center justify-center p-4">
       <div className="bg-co-surface w-full max-w-xl rounded-sm border border-co-champagne/60 p-8 text-center shadow-sm lg:p-12">
@@ -52,7 +61,7 @@ export const VerifyEmail = () => {
           One more step
         </p>
         <h1 className="font-garamond text-co-text mb-4 text-2xl font-bold lg:text-3xl">
-          Verify your email to continue
+          Check your email
         </h1>
         <p className="text-co-text-secondary mb-2 text-[15px]">
           We sent a verification link
@@ -62,17 +71,8 @@ export const VerifyEmail = () => {
               to <span className="text-co-text font-semibold">{data.email}</span>
             </>
           ) : null}
-          . Please open it to unlock your merchant dashboard.
+          . Open it and this page will continue automatically.
         </p>
-        <div className="mb-8" />
-        <button
-          type="button"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="bg-co-navy hover:bg-co-navy-light rounded-sm px-6 py-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-white transition-colors disabled:opacity-50"
-        >
-          {isFetching ? "Checking..." : "I've verified — continue"}
-        </button>
         <p className="text-co-text-secondary mt-6 text-[13px]">
           Didn&apos;t get the email?{" "}
           <button
