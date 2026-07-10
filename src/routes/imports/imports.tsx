@@ -8,7 +8,9 @@ import {
   Input,
   Text,
   toast,
+  Tooltip,
 } from "@medusajs/ui"
+import { InformationCircleSolid } from "@medusajs/icons"
 import {
   ImportJob,
   ImportJobStatus,
@@ -325,8 +327,18 @@ export const Imports = () => {
           )}
 
           <div className="flex flex-col gap-2 mt-3 max-w-md">
+            <div className="flex items-center gap-1">
+              <Text size="small" className="text-ui-fg-subtle">
+                Store domain
+              </Text>
+              <Tooltip
+                content="Your store's permanent .myshopify.com address — not a custom domain. Find it in your Shopify admin's address bar, or under Settings → Domains (the one labeled 'myshopify.com'). Example: catholic-canvas.myshopify.com"
+              >
+                <InformationCircleSolid className="text-ui-fg-muted" />
+              </Tooltip>
+            </div>
             <Input
-              placeholder="your-store.myshopify.com"
+              placeholder="Your store's .myshopify.com domain"
               value={caShop}
               onChange={(e) => setCaShop(e.target.value)}
               autoComplete="off"
