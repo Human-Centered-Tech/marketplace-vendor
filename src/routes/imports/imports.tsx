@@ -316,6 +316,13 @@ export const Imports = () => {
               </li>
             </ol>
           )}
+          {caGuideOpen && (
+            <Text size="xsmall" className="text-ui-fg-subtle mt-2">
+              You can ignore the app&apos;s <b>App URL</b> / redirect settings —
+              this connection doesn&apos;t use them, so Shopify&apos;s defaults
+              are fine.
+            </Text>
+          )}
 
           <div className="flex flex-col gap-2 mt-3 max-w-md">
             <Input
