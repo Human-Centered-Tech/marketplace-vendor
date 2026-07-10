@@ -71,6 +71,12 @@ async function launch() {
     // installed on real merchant stores); flip the env var on Railway — no
     // rebuild needed. The Shopify-initiated ?claim= flow works regardless.
     shopifyConnectEnabled: process.env.SHOPIFY_CONNECT_ENABLED === 'true',
+    // Shows the "Connect with a custom app" form on /imports — the merchant
+    // creates a custom app on their own Shopify store and pastes its Client
+    // ID + Secret (client-credentials grant). Independent of the App Store
+    // button above; flip via the env var on Railway, no rebuild needed.
+    shopifyCustomAppConnectEnabled:
+      process.env.SHOPIFY_CUSTOM_APP_CONNECT_ENABLED === 'true',
   };
   fs.writeFileSync(
     path.join(distDir, 'runtime-config.js'),

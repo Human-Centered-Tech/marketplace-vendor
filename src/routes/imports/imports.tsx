@@ -17,6 +17,7 @@ import {
   useImportJob,
   useImports,
   useShopifyClaim,
+  useShopifyConnectCustomApp,
   useShopifyCsvImport,
   useShopifyStatus,
 } from "../../hooks/api/imports"
@@ -32,6 +33,15 @@ import {
 const SHOPIFY_CONNECT_ENABLED = Boolean(
   typeof window !== "undefined" &&
     window.__RUNTIME_CONFIG__?.shopifyConnectEnabled
+)
+// Shows the "Connect with a custom app" form: the merchant creates a custom
+// app on their OWN Shopify store and pastes its Client ID + Secret. Works for
+// any independent store (no App Store review, no per-store install link),
+// using Shopify's client-credentials grant. Flipped via
+// SHOPIFY_CUSTOM_APP_CONNECT_ENABLED on the Railway service (runtime-config).
+const SHOPIFY_CUSTOM_APP_CONNECT_ENABLED = Boolean(
+  typeof window !== "undefined" &&
+    window.__RUNTIME_CONFIG__?.shopifyCustomAppConnectEnabled
 )
 // The app's Shopify App Store page. Shopify supplies the shop context
 // there, so merchants never type their .myshopify.com domain by hand
@@ -59,6 +69,12 @@ export const Imports = () => {
   const { data: jobsData } = useImports()
 
   const [activeJobId, setActiveJobId] = useState<string | undefined>()
+
+  const connectCustomApp = useShopifyConnectCustomApp()
+  const [caShop, setCaShop] = useState("")
+  const [caClientId, setCaClientId] = useState("")
+  const [caClientSecret, setCaClientSecret] = useState("")
+  const [caGuideOpen, setCaGuideOpen] = useState(false)
 
   const csvImport = useShopifyCsvImport()
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -125,6 +141,26 @@ export const Imports = () => {
     () => (activeJob?.items ?? []).slice(0, 100),
     [activeJob]
   )
+
+  const handleConnectCustomApp = async () => {
+    if (!caShop.trim() || !caClientId.trim() || !caClientSecret.trim()) {
+      toast.error("Enter your store domain, Client ID, and Client Secret.")
+      return
+    }
+    try {
+      const { shop_name } = await connectCustomApp.mutateAsync({
+        shop: caShop.trim(),
+        client_id: caClientId.trim(),
+        client_secret: caClientSecret.trim(),
+      })
+      toast.success(`Connected to ${shop_name}.`)
+      setCaShop("")
+      setCaClientId("")
+      setCaClientSecret("")
+    } catch (e: any) {
+      toast.error(e?.message || "Could not connect. Double-check the values and try again.")
+    }
+  }
 
   const handleCsvImport = async () => {
     if (!csvFile) {
@@ -206,6 +242,90 @@ export const Imports = () => {
           )}
         </div>
       </div>
+
+      {/* Connect with a custom app (client-credentials): the merchant creates
+          a custom app on their OWN store and pastes its Client ID + Secret.
+          Works for any independent store; gives exact inventory + re-runnable
+          imports. Shown alongside the CSV path below. */}
+      {!connected && !statusLoading && SHOPIFY_CUSTOM_APP_CONNECT_ENABLED && (
+        <div className="px-6 pb-2">
+          <Text weight="plus">Connect with a custom app</Text>
+          <Text size="small" className="text-ui-fg-subtle mt-1">
+            Connect your store directly for exact inventory counts and
+            re-runnable imports. It takes about five minutes to set up once.
+          </Text>
+
+          <button
+            type="button"
+            onClick={() => setCaGuideOpen((v) => !v)}
+            className="text-sm underline text-ui-fg-interactive mt-3"
+          >
+            {caGuideOpen ? "Hide setup steps" : "How do I get these values?"}
+          </button>
+
+          {caGuideOpen && (
+            <ol className="list-decimal ml-4 mt-2 flex flex-col gap-1">
+              <li>
+                <Text size="small" className="text-ui-fg-subtle">
+                  In your Shopify admin, go to <b>Settings → Apps and sales
+                  channels → Develop apps</b>, then <b>Build apps in Dev
+                  Dashboard</b>. Create an app (name it anything, e.g.
+                  &quot;Catholic Owned Import&quot;).
+                </Text>
+              </li>
+              <li>
+                <Text size="small" className="text-ui-fg-subtle">
+                  Under <b>API access / scopes</b>, enable{" "}
+                  <b>read_products</b> and <b>read_inventory</b>, then{" "}
+                  <b>release a version</b> and <b>install</b> the app on your
+                  store.
+                </Text>
+              </li>
+              <li>
+                <Text size="small" className="text-ui-fg-subtle">
+                  Open the app&apos;s <b>API credentials / settings</b> and copy
+                  the <b>Client ID</b> and <b>Client Secret</b> into the fields
+                  below, along with your store domain.
+                </Text>
+              </li>
+            </ol>
+          )}
+
+          <div className="flex flex-col gap-2 mt-3 max-w-md">
+            <Input
+              placeholder="your-store.myshopify.com"
+              value={caShop}
+              onChange={(e) => setCaShop(e.target.value)}
+              autoComplete="off"
+            />
+            <Input
+              placeholder="Client ID"
+              value={caClientId}
+              onChange={(e) => setCaClientId(e.target.value)}
+              autoComplete="off"
+            />
+            <Input
+              type="password"
+              placeholder="Client Secret"
+              value={caClientSecret}
+              onChange={(e) => setCaClientSecret(e.target.value)}
+              autoComplete="off"
+            />
+            <div>
+              <Button
+                variant="primary"
+                onClick={handleConnectCustomApp}
+                isLoading={connectCustomApp.isPending}
+                disabled={
+                  !caShop.trim() || !caClientId.trim() || !caClientSecret.trim()
+                }
+              >
+                Connect store
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Interim: import from a Shopify export CSV while the app awaits
           Shopify's review (direct connect is hidden above until then). */}
