@@ -19,6 +19,10 @@ export const VerifyEmail = () => {
   // feeds the effect below so the redirect fires without any manual action.
   const { data, isPending, error } = useEmailVerificationStatus({
     refetchInterval: 5000,
+    // Keep polling while this tab is backgrounded — the user is off in
+    // their email client clicking the link, and this tab should already be
+    // at the dashboard when they come back (focus-refetch also covers it).
+    refetchIntervalInBackground: true,
   })
   const sendMutation = useSendVerificationEmail()
 
