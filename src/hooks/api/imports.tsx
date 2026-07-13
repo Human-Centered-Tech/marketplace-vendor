@@ -136,3 +136,78 @@ export const useShopifyConnectUrl = () =>
         query: { shop, json: "1" },
       }),
   })
+
+// POST /vendor/imports/shopify/claim — second half of a Shopify-initiated
+// install (App Store flow): the OAuth callback parked the connection as
+// pending and redirected here with a single-use claim token; this attaches
+// it to the logged-in seller.
+export const useShopifyClaim = () =>
+  useMutation<{ connected: boolean; shop: string }, FetchError, string>({
+    mutationFn: (claimToken) =>
+      fetchQuery("/vendor/imports/shopify/claim", {
+        method: "POST",
+        body: { claim_token: claimToken },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: importsQueryKeys.shopifyStatus(),
+      })
+    },
+  })
+
+// POST /vendor/imports/shopify/connect — connect a store via a custom app the
+// merchant created on their OWN store (client-credentials grant). They paste
+// the app's Client ID + Client Secret; the backend mints tokens server-to-
+// server, so there's no OAuth redirect. Validates the credentials before
+// saving, so a bad paste rejects here.
+export const useShopifyConnectCustomApp = () =>
+  useMutation<
+    { connected: boolean; shop: string; shop_name: string },
+    FetchError,
+    { shop: string; client_id: string; client_secret: string }
+  >({
+    mutationFn: (body) =>
+      fetchQuery("/vendor/imports/shopify/connect", {
+        method: "POST",
+        body,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: importsQueryKeys.shopifyStatus(),
+      })
+    },
+  })
+
+// POST /vendor/imports/shopify/disconnect — disconnect the store: removes the
+// stored credentials + token so we no longer access it. Imported products stay.
+export const useShopifyDisconnect = () =>
+  useMutation<{ disconnected: boolean }, FetchError, void>({
+    mutationFn: () =>
+      fetchQuery("/vendor/imports/shopify/disconnect", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: importsQueryKeys.shopifyStatus(),
+      })
+    },
+  })
+
+export type ShopifyCsvImportResult = {
+  count: number
+  skipped_existing: string[]
+  skipped_archived: string[]
+  stock_levels_set: number
+  products: { id: string; handle: string; title: string }[]
+  message?: string
+}
+
+// POST /vendor/imports/shopify/csv — interim import path while the Shopify
+// app awaits App Store review: upload the raw Shopify product-export CSV.
+// Creates products directly (as drafts), so no import job to poll.
+export const useShopifyCsvImport = () =>
+  useMutation<ShopifyCsvImportResult, FetchError, string>({
+    mutationFn: (fileContent) =>
+      fetchQuery("/vendor/imports/shopify/csv", {
+        method: "POST",
+        body: { file_content: fileContent },
+      }),
+  })
