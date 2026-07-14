@@ -262,10 +262,9 @@ export const Imports = () => {
             </div>
           ) : (
             <Text size="small" className="text-ui-fg-subtle">
-              Connecting your store directly is coming soon — our Shopify app
-              is currently in Shopify&apos;s review queue. In the meantime you
-              can import your full catalog from a Shopify export file below;
-              it takes about two minutes.
+              You can import your Shopify inventory by connecting to
+              Shopify&apos;s API (automatic) or by manually uploading a CSV
+              file.
             </Text>
           )}
         </div>
@@ -277,7 +276,7 @@ export const Imports = () => {
           imports. Shown alongside the CSV path below. */}
       {!connected && !statusLoading && SHOPIFY_CUSTOM_APP_CONNECT_ENABLED && (
         <div className="px-6 pb-2">
-          <Text weight="plus">Connect with a custom app</Text>
+          <Text weight="plus">Connect your Shopify store</Text>
           <Text size="small" className="text-ui-fg-subtle mt-1">
             Connect your store directly for exact inventory counts and
             re-runnable imports. It takes about five minutes to set up once.
