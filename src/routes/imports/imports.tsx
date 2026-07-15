@@ -37,15 +37,10 @@ const SHOPIFY_CONNECT_ENABLED = Boolean(
   typeof window !== "undefined" &&
     window.__RUNTIME_CONFIG__?.shopifyConnectEnabled
 )
-// Shows the "Connect with a custom app" form: the merchant creates a custom
-// app on their OWN Shopify store and pastes its Client ID + Secret. Works for
-// any independent store (no App Store review, no per-store install link),
-// using Shopify's client-credentials grant. Flipped via
-// SHOPIFY_CUSTOM_APP_CONNECT_ENABLED on the Railway service (runtime-config).
-const SHOPIFY_CUSTOM_APP_CONNECT_ENABLED = Boolean(
-  typeof window !== "undefined" &&
-    window.__RUNTIME_CONFIG__?.shopifyCustomAppConnectEnabled
-)
+// The "Connect your Shopify store" form: the merchant creates a custom app on
+// their OWN Shopify store and pastes its Client ID + Secret. Works for any
+// independent store (no App Store review, no per-store install link), using
+// Shopify's client-credentials grant.
 // The app's Shopify App Store page. Shopify supplies the shop context
 // there, so merchants never type their .myshopify.com domain by hand
 // (App Store requirement 2.3.1). TODO: fill in once the listing is live.
@@ -274,7 +269,7 @@ export const Imports = () => {
           a custom app on their OWN store and pastes its Client ID + Secret.
           Works for any independent store; gives exact inventory + re-runnable
           imports. Shown alongside the CSV path below. */}
-      {!connected && !statusLoading && SHOPIFY_CUSTOM_APP_CONNECT_ENABLED && (
+      {!connected && !statusLoading && (
         <div className="px-6 pb-2">
           <Text weight="plus">Connect your Shopify store</Text>
           <Text size="small" className="text-ui-fg-subtle mt-1">
