@@ -277,27 +277,22 @@ export const Imports = () => {
           </Text>
 
           {/* Walkthrough video (YouTube embed, part of the setup playlist).
-              16:9 padding-hack wrapper so it stays responsive without depending
-              on aspect-ratio utilities. */}
-          <div
-            className="mt-3 w-full max-w-md"
-            style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}
-          >
-            <iframe
-              className="rounded-lg"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-              }}
-              src="https://www.youtube.com/embed/v0ZnJfF283Y?list=PLL-GqaKoO8XU"
-              title="How to connect your Shopify store"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          </div>
+              aspect-ratio keeps it 16:9 relative to the iframe's OWN width — a
+              padding-bottom % hack resolves against the wider parent and comes
+              out far too tall. */}
+          <iframe
+            className="mt-3 w-full max-w-md rounded-lg"
+            style={{
+              aspectRatio: "16 / 9",
+              height: "auto",
+              border: 0,
+              display: "block",
+            }}
+            src="https://www.youtube.com/embed/v0ZnJfF283Y?list=PLL-GqaKoO8XU"
+            title="How to connect your Shopify store"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
 
           <Text weight="plus" size="small" className="mt-3">
             Setup steps
