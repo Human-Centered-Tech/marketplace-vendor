@@ -303,10 +303,12 @@ export const Imports = () => {
               <li>
                 <Text size="small" className="text-ui-fg-subtle">
                   Under <b>API access / scopes</b>, enable{" "}
-                  <b>read_products</b>, <b>read_inventory</b>, and{" "}
+                  <b>read_products</b>, <b>read_inventory</b>,{" "}
                   <b>write_inventory</b> (write access lets a marketplace sale
-                  update your Shopify stock), then <b>release a version</b> and{" "}
-                  <b>install</b> the app on your store.
+                  update your Shopify stock), and <b>read_locations</b> (so
+                  sales come off the right store location), then{" "}
+                  <b>release a version</b> and <b>install</b> the app on your
+                  store.
                 </Text>
               </li>
               <li>
