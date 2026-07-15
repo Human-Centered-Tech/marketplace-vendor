@@ -8,7 +8,9 @@ import {
   Input,
   Text,
   toast,
+  Tooltip,
 } from "@medusajs/ui"
+import { InformationCircleSolid } from "@medusajs/icons"
 import {
   ImportJob,
   ImportJobStatus,
@@ -17,6 +19,8 @@ import {
   useImportJob,
   useImports,
   useShopifyClaim,
+  useShopifyConnectCustomApp,
+  useShopifyDisconnect,
   useShopifyCsvImport,
   useShopifyStatus,
 } from "../../hooks/api/imports"
@@ -33,6 +37,10 @@ const SHOPIFY_CONNECT_ENABLED = Boolean(
   typeof window !== "undefined" &&
     window.__RUNTIME_CONFIG__?.shopifyConnectEnabled
 )
+// The "Connect your Shopify store" form: the merchant creates a custom app on
+// their OWN Shopify store and pastes its Client ID + Secret. Works for any
+// independent store (no App Store review, no per-store install link), using
+// Shopify's client-credentials grant.
 // The app's Shopify App Store page. Shopify supplies the shop context
 // there, so merchants never type their .myshopify.com domain by hand
 // (App Store requirement 2.3.1). TODO: fill in once the listing is live.
@@ -59,6 +67,13 @@ export const Imports = () => {
   const { data: jobsData } = useImports()
 
   const [activeJobId, setActiveJobId] = useState<string | undefined>()
+
+  const connectCustomApp = useShopifyConnectCustomApp()
+  const disconnect = useShopifyDisconnect()
+  const [caShop, setCaShop] = useState("")
+  const [caClientId, setCaClientId] = useState("")
+  const [caClientSecret, setCaClientSecret] = useState("")
+  const [caGuideOpen, setCaGuideOpen] = useState(false)
 
   const csvImport = useShopifyCsvImport()
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -126,6 +141,42 @@ export const Imports = () => {
     [activeJob]
   )
 
+  const handleDisconnect = async () => {
+    if (
+      !window.confirm(
+        "Disconnect this Shopify store? We'll stop accessing it, but your already-imported products stay. To fully revoke, you can also uninstall the app in your Shopify admin."
+      )
+    ) {
+      return
+    }
+    try {
+      await disconnect.mutateAsync()
+      toast.success("Shopify store disconnected.")
+    } catch (e: any) {
+      toast.error(e?.message || "Could not disconnect. Please try again.")
+    }
+  }
+
+  const handleConnectCustomApp = async () => {
+    if (!caShop.trim() || !caClientId.trim() || !caClientSecret.trim()) {
+      toast.error("Enter your store domain, Client ID, and Client Secret.")
+      return
+    }
+    try {
+      const { shop_name } = await connectCustomApp.mutateAsync({
+        shop: caShop.trim(),
+        client_id: caClientId.trim(),
+        client_secret: caClientSecret.trim(),
+      })
+      toast.success(`Connected to ${shop_name}.`)
+      setCaShop("")
+      setCaClientId("")
+      setCaClientSecret("")
+    } catch (e: any) {
+      toast.error(e?.message || "Could not connect. Double-check the values and try again.")
+    }
+  }
+
   const handleCsvImport = async () => {
     if (!csvFile) {
       toast.error("Choose your Shopify export file first.")
@@ -171,6 +222,14 @@ export const Imports = () => {
             <div className="flex items-center gap-3">
               <Badge color="green">Connected</Badge>
               <Text size="small">{status?.shop}</Text>
+              <Button
+                variant="secondary"
+                size="small"
+                isLoading={disconnect.isPending}
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
             </div>
           ) : SHOPIFY_CONNECT_ENABLED ? (
             // No manual .myshopify.com entry (App Store requirement 2.3.1):
@@ -198,14 +257,117 @@ export const Imports = () => {
             </div>
           ) : (
             <Text size="small" className="text-ui-fg-subtle">
-              Connecting your store directly is coming soon — our Shopify app
-              is currently in Shopify&apos;s review queue. In the meantime you
-              can import your full catalog from a Shopify export file below;
-              it takes about two minutes.
+              You can import your Shopify inventory by connecting to
+              Shopify&apos;s API (automatic) or by manually uploading a CSV
+              file.
             </Text>
           )}
         </div>
       </div>
+
+      {/* Connect with a custom app (client-credentials): the merchant creates
+          a custom app on their OWN store and pastes its Client ID + Secret.
+          Works for any independent store; gives exact inventory + re-runnable
+          imports. Shown alongside the CSV path below. */}
+      {!connected && !statusLoading && (
+        <div className="px-6 pb-2">
+          <Text weight="plus">Connect your Shopify store</Text>
+          <Text size="small" className="text-ui-fg-subtle mt-1">
+            Connect your store directly for exact inventory counts and
+            re-runnable imports. It takes about five minutes to set up once.
+          </Text>
+
+          <button
+            type="button"
+            onClick={() => setCaGuideOpen((v) => !v)}
+            className="text-sm underline text-ui-fg-interactive mt-3"
+          >
+            {caGuideOpen ? "Hide setup steps" : "How do I get these values?"}
+          </button>
+
+          {caGuideOpen && (
+            <ol className="list-decimal ml-4 mt-2 flex flex-col gap-1">
+              <li>
+                <Text size="small" className="text-ui-fg-subtle">
+                  In your Shopify admin, go to <b>Settings → Apps and sales
+                  channels → Develop apps</b>, then <b>Build apps in Dev
+                  Dashboard</b>. Create an app (name it anything, e.g.
+                  &quot;Catholic Owned Import&quot;).
+                </Text>
+              </li>
+              <li>
+                <Text size="small" className="text-ui-fg-subtle">
+                  Under <b>API access / scopes</b>, enable{" "}
+                  <b>read_products</b>, <b>read_inventory</b>,{" "}
+                  <b>write_inventory</b> (write access lets a marketplace sale
+                  update your Shopify stock), and <b>read_locations</b> (so
+                  sales come off the right store location), then{" "}
+                  <b>release a version</b> and <b>install</b> the app on your
+                  store.
+                </Text>
+              </li>
+              <li>
+                <Text size="small" className="text-ui-fg-subtle">
+                  Open the app&apos;s <b>API credentials / settings</b> and copy
+                  the <b>Client ID</b> and <b>Client Secret</b> into the fields
+                  below, along with your store domain.
+                </Text>
+              </li>
+            </ol>
+          )}
+          {caGuideOpen && (
+            <Text size="xsmall" className="text-ui-fg-subtle mt-2">
+              You can ignore the app&apos;s <b>App URL</b> / redirect settings —
+              this connection doesn&apos;t use them, so Shopify&apos;s defaults
+              are fine.
+            </Text>
+          )}
+
+          <div className="flex flex-col gap-2 mt-3 max-w-md">
+            <div className="flex items-center gap-1">
+              <Text size="small" className="text-ui-fg-subtle">
+                Store domain
+              </Text>
+              <Tooltip
+                content="Your store's permanent .myshopify.com address — not a custom domain. Find it in your Shopify admin's address bar, or under Settings → Domains (the one labeled 'myshopify.com'). Example: catholic-canvas.myshopify.com"
+              >
+                <InformationCircleSolid className="text-ui-fg-muted" />
+              </Tooltip>
+            </div>
+            <Input
+              placeholder="Your store's .myshopify.com domain"
+              value={caShop}
+              onChange={(e) => setCaShop(e.target.value)}
+              autoComplete="off"
+            />
+            <Input
+              placeholder="Client ID"
+              value={caClientId}
+              onChange={(e) => setCaClientId(e.target.value)}
+              autoComplete="off"
+            />
+            <Input
+              type="password"
+              placeholder="Client Secret"
+              value={caClientSecret}
+              onChange={(e) => setCaClientSecret(e.target.value)}
+              autoComplete="off"
+            />
+            <div>
+              <Button
+                variant="primary"
+                onClick={handleConnectCustomApp}
+                isLoading={connectCustomApp.isPending}
+                disabled={
+                  !caShop.trim() || !caClientId.trim() || !caClientSecret.trim()
+                }
+              >
+                Connect store
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Interim: import from a Shopify export CSV while the app awaits
           Shopify's review (direct connect is hidden above until then). */}
@@ -235,13 +397,30 @@ export const Imports = () => {
               </Text>
             </li>
           </ol>
-          <div className="flex items-center gap-2 mt-3 max-w-md">
-            <Input
+          <div className="flex items-center gap-3 mt-3 max-w-xl">
+            {/* Hidden native input; a styled secondary button triggers it so
+                the picker matches our UI (the native "Choose File" control
+                rendered dark + off-center inside a text input). */}
+            <input
               ref={fileInputRef}
               type="file"
               accept=".csv,text/csv"
+              className="hidden"
               onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
             />
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Choose file
+            </Button>
+            <Text
+              size="small"
+              className="text-ui-fg-subtle truncate min-w-0 flex-1"
+            >
+              {csvFile ? csvFile.name : "No file chosen"}
+            </Text>
             <Button
               variant="primary"
               onClick={handleCsvImport}
