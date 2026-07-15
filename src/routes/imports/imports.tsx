@@ -73,7 +73,6 @@ export const Imports = () => {
   const [caShop, setCaShop] = useState("")
   const [caClientId, setCaClientId] = useState("")
   const [caClientSecret, setCaClientSecret] = useState("")
-  const [caGuideOpen, setCaGuideOpen] = useState(false)
 
   const csvImport = useShopifyCsvImport()
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -277,51 +276,42 @@ export const Imports = () => {
             re-runnable imports. It takes about five minutes to set up once.
           </Text>
 
-          <button
-            type="button"
-            onClick={() => setCaGuideOpen((v) => !v)}
-            className="text-sm underline text-ui-fg-interactive mt-3"
-          >
-            {caGuideOpen ? "Hide setup steps" : "How do I get these values?"}
-          </button>
-
-          {caGuideOpen && (
-            <ol className="list-decimal ml-4 mt-2 flex flex-col gap-1">
-              <li>
-                <Text size="small" className="text-ui-fg-subtle">
-                  In your Shopify admin, go to <b>Settings → Apps and sales
-                  channels → Develop apps</b>, then <b>Build apps in Dev
-                  Dashboard</b>. Create an app (name it anything, e.g.
-                  &quot;Catholic Owned Import&quot;).
-                </Text>
-              </li>
-              <li>
-                <Text size="small" className="text-ui-fg-subtle">
-                  Under <b>API access / scopes</b>, enable{" "}
-                  <b>read_products</b>, <b>read_inventory</b>,{" "}
-                  <b>write_inventory</b> (write access lets a marketplace sale
-                  update your Shopify stock), and <b>read_locations</b> (so
-                  sales come off the right store location), then{" "}
-                  <b>release a version</b> and <b>install</b> the app on your
-                  store.
-                </Text>
-              </li>
-              <li>
-                <Text size="small" className="text-ui-fg-subtle">
-                  Open the app&apos;s <b>API credentials / settings</b> and copy
-                  the <b>Client ID</b> and <b>Client Secret</b> into the fields
-                  below, along with your store domain.
-                </Text>
-              </li>
-            </ol>
-          )}
-          {caGuideOpen && (
-            <Text size="xsmall" className="text-ui-fg-subtle mt-2">
-              You can ignore the app&apos;s <b>App URL</b> / redirect settings —
-              this connection doesn&apos;t use them, so Shopify&apos;s defaults
-              are fine.
-            </Text>
-          )}
+          <Text weight="plus" size="small" className="mt-3">
+            Setup steps
+          </Text>
+          <ol className="list-decimal ml-4 mt-1 flex flex-col gap-1">
+            <li>
+              <Text size="small" className="text-ui-fg-subtle">
+                In your Shopify admin, go to <b>Settings → Apps and sales
+                channels → Develop apps</b>, then <b>Build apps in Dev
+                Dashboard</b>. Create an app (name it anything, e.g.
+                &quot;Catholic Owned Import&quot;).
+              </Text>
+            </li>
+            <li>
+              <Text size="small" className="text-ui-fg-subtle">
+                Under <b>API access / scopes</b>, enable{" "}
+                <b>read_products</b>, <b>read_inventory</b>,{" "}
+                <b>write_inventory</b> (write access lets a marketplace sale
+                update your Shopify stock), and <b>read_locations</b> (so sales
+                come off the right store location), then{" "}
+                <b>release a version</b> and <b>install</b> the app on your
+                store.
+              </Text>
+            </li>
+            <li>
+              <Text size="small" className="text-ui-fg-subtle">
+                Open the app&apos;s <b>API credentials / settings</b> and copy
+                the <b>Client ID</b> and <b>Client Secret</b> into the fields
+                below, along with your store domain.
+              </Text>
+            </li>
+          </ol>
+          <Text size="xsmall" className="text-ui-fg-subtle mt-2">
+            You can ignore the app&apos;s <b>App URL</b> / redirect settings —
+            this connection doesn&apos;t use them, so Shopify&apos;s defaults are
+            fine.
+          </Text>
 
           <div className="flex flex-col gap-2 mt-3 max-w-md">
             <div className="flex items-center gap-1">
