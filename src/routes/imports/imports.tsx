@@ -282,10 +282,18 @@ export const Imports = () => {
           <ol className="list-decimal ml-4 mt-1 flex flex-col gap-1">
             <li>
               <Text size="small" className="text-ui-fg-subtle">
-                In your Shopify admin, go to <b>Settings → Apps and sales
-                channels → Develop apps</b>, then <b>Build apps in Dev
-                Dashboard</b>. Create an app (name it anything, e.g.
-                &quot;Catholic Owned Import&quot;).
+                Log in to your{" "}
+                <a
+                  href="https://admin.shopify.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-ui-fg-interactive underline"
+                >
+                  Shopify admin
+                </a>
+                , then go to <b>Settings → Apps and sales channels → Develop
+                apps</b>, then <b>Build apps in Dev Dashboard</b>. Create an app
+                (name it anything, e.g. &quot;Catholic Owned Import&quot;).
               </Text>
             </li>
             <li>
