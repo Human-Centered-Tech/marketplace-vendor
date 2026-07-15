@@ -23,5 +23,6 @@ interface Window {
     backendUrl?: string
     publishableApiKey?: string
     shopifyConnectEnabled?: boolean
+    shopifyCustomAppConnectEnabled?: boolean
   }
 }

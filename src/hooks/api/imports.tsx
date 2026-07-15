@@ -155,6 +155,42 @@ export const useShopifyClaim = () =>
     },
   })
 
+// POST /vendor/imports/shopify/connect — connect a store via a custom app the
+// merchant created on their OWN store (client-credentials grant). They paste
+// the app's Client ID + Client Secret; the backend mints tokens server-to-
+// server, so there's no OAuth redirect. Validates the credentials before
+// saving, so a bad paste rejects here.
+export const useShopifyConnectCustomApp = () =>
+  useMutation<
+    { connected: boolean; shop: string; shop_name: string },
+    FetchError,
+    { shop: string; client_id: string; client_secret: string }
+  >({
+    mutationFn: (body) =>
+      fetchQuery("/vendor/imports/shopify/connect", {
+        method: "POST",
+        body,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: importsQueryKeys.shopifyStatus(),
+      })
+    },
+  })
+
+// POST /vendor/imports/shopify/disconnect — disconnect the store: removes the
+// stored credentials + token so we no longer access it. Imported products stay.
+export const useShopifyDisconnect = () =>
+  useMutation<{ disconnected: boolean }, FetchError, void>({
+    mutationFn: () =>
+      fetchQuery("/vendor/imports/shopify/disconnect", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: importsQueryKeys.shopifyStatus(),
+      })
+    },
+  })
+
 export type ShopifyCsvImportResult = {
   count: number
   skipped_existing: string[]
