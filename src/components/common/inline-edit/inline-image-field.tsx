@@ -53,34 +53,36 @@ export const InlineImageField = <T extends FieldValues>({
       control={control}
       name={name}
       render={() => (
-        <Form.Item className="grid grid-cols-2 items-start gap-x-4 px-6 py-4 space-y-0">
+        // Image rows stack vertically (label/hint on top, full-width dropzone
+        // below) rather than the 2-column label/value layout used by text
+        // rows — the dropzone is too large to sit comfortably in a half-width
+        // column.
+        <Form.Item className="px-6 py-4">
           <div className="flex flex-col gap-y-1">
             <Form.Label optional={optional}>{label}</Form.Label>
             {hint && <span className="text-ui-fg-subtle text-xs">{hint}</span>}
           </div>
-          <div className="flex flex-col gap-y-2">
-            <Form.Control>
-              <FileUpload
-                uploadedImage={shownImage}
-                multiple={false}
-                label={t("products.media.uploadImagesLabel")}
-                hint={t("products.media.uploadImagesHint")}
-                hasError={hasError}
-                formats={formats}
-                onUploaded={onUploaded}
-              />
-            </Form.Control>
-            {onRemove && shownImage && (
-              <button
-                type="button"
-                onClick={onRemove}
-                className="text-ui-fg-subtle hover:text-ui-fg-base text-xs underline self-start"
-              >
-                {removeLabel ?? t("actions.remove", "Remove")}
-              </button>
-            )}
-            <Form.ErrorMessage />
-          </div>
+          <Form.Control>
+            <FileUpload
+              uploadedImage={shownImage}
+              multiple={false}
+              label={t("products.media.uploadImagesLabel")}
+              hint={t("products.media.uploadImagesHint")}
+              hasError={hasError}
+              formats={formats}
+              onUploaded={onUploaded}
+            />
+          </Form.Control>
+          {onRemove && shownImage && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="text-ui-fg-subtle hover:text-ui-fg-base text-xs underline self-start"
+            >
+              {removeLabel ?? t("actions.remove", "Remove")}
+            </button>
+          )}
+          <Form.ErrorMessage />
         </Form.Item>
       )}
     />
