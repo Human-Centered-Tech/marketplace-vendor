@@ -127,6 +127,15 @@ export const SetupChecklist = () => {
 
 // ---------------------------------------------------------------------------
 
+type StepCta = {
+  label: string
+  href: string
+  external?: boolean
+  // When set, the CTA renders as a button that performs the reverse-SSO
+  // handoff to the storefront, opening href as the post-login destination.
+  storefrontHandoff?: string
+}
+
 type Row = {
   section: "store_basics" | "catholic_owned" | "go_live"
   label: string
@@ -137,15 +146,12 @@ type Row = {
   // button) — used for steps whose values are prefilled and not meant to be
   // re-edited from the checklist (e.g. locations & shipping).
   hideEditWhenDone?: boolean
-  cta?: {
-    label: string
-    href: string
-    external?: boolean
-    // When set, the row's CTA renders as a button that performs the
-    // reverse-SSO handoff to the storefront, opening href as the
-    // post-login destination.
-    storefrontHandoff?: string
-  }
+  cta?: StepCta
+  // Override for the completed-step "Edit" button when the edit destination
+  // differs from the create/setup CTA (e.g. the directory listing step: its
+  // CTA creates at /create, but Edit must reopen the existing listing at
+  // /edit). Falls back to `cta` when unset.
+  editCta?: StepCta
 }
 
 const Section = ({ title, rows }: { title: string; rows: Row[] }) => (
@@ -183,7 +189,7 @@ const StepActionLink = ({
   label,
   className,
 }: {
-  cta: NonNullable<Row["cta"]>
+  cta: StepCta
   disabled?: boolean
   label: string
   className: string
@@ -278,11 +284,13 @@ const ChecklistRow = ({ row }: { row: Row }) => {
       )}
       {done && (
         <div className="flex items-center gap-2">
-          {cta && !row.hideEditWhenDone && (
-            // Lets the vendor re-open a completed step to make changes —
-            // navigates to the same destination the step's CTA would.
+          {(row.editCta ?? cta) && !row.hideEditWhenDone && (
+            // Lets the vendor re-open a completed step to make changes.
+            // Prefers editCta (the step's edit destination) over the create/
+            // setup CTA so e.g. the directory listing reopens the existing
+            // listing instead of the blank create form.
             <StepActionLink
-              cta={cta}
+              cta={(row.editCta ?? cta)!}
               label="Edit"
               className="rounded-lg border border-co-navy/20 px-3 py-1.5 font-poppins text-xs font-medium text-co-navy transition-all hover:bg-co-cream"
             />
@@ -455,6 +463,13 @@ const buildRows = (data: SetupResponse): Row[] => {
         label: "Create",
         href: "/user/directory/create",
         storefrontHandoff: "/user/directory/create",
+      },
+      // Once the listing exists, "Edit" must reopen it (the create route
+      // starts a blank form and won't reflect/save the existing listing).
+      editCta: {
+        label: "Edit",
+        href: "/user/directory/edit",
+        storefrontHandoff: "/user/directory/edit",
       },
     },
     // Owner interview only displays on Featured/Enterprise listings, so only
