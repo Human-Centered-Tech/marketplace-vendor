@@ -133,6 +133,10 @@ type Row = {
   hint: string
   done: boolean
   disabled?: boolean
+  // When true, a completed step shows only the "Done" badge (no "Edit"
+  // button) — used for steps whose values are prefilled and not meant to be
+  // re-edited from the checklist (e.g. locations & shipping).
+  hideEditWhenDone?: boolean
   cta?: {
     label: string
     href: string
@@ -160,6 +164,71 @@ const Section = ({ title, rows }: { title: string; rows: Row[] }) => (
     </div>
   </div>
 )
+
+const primaryCtaClassName = (disabled?: boolean) =>
+  clx(
+    "min-w-[80px] rounded-lg px-4 py-2 font-poppins text-sm font-medium text-center transition-all",
+    disabled
+      ? "bg-co-text-secondary/20 text-co-text-secondary cursor-not-allowed pointer-events-none"
+      : "bg-co-navy text-co-text-on-dark hover:bg-co-navy-light"
+  )
+
+// Renders a step's navigation target — storefront reverse-SSO handoff,
+// external link, or in-app route. Reused by both the primary CTA (incomplete
+// steps) and the "Edit" button (completed steps), so the three-way navigation
+// logic lives in one place.
+const StepActionLink = ({
+  cta,
+  disabled,
+  label,
+  className,
+}: {
+  cta: NonNullable<Row["cta"]>
+  disabled?: boolean
+  label: string
+  className: string
+}) => {
+  if (cta.storefrontHandoff) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) return
+          void navigateWithStorefrontHandoff(cta.storefrontHandoff!)
+        }}
+        className={className}
+        disabled={disabled}
+      >
+        {label}
+      </button>
+    )
+  }
+  if (cta.external) {
+    return (
+      <a
+        href={cta.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        aria-disabled={disabled}
+      >
+        {label}
+      </a>
+    )
+  }
+  // ?from=dashboard tells BackToDashboardBar (in Shell) to surface a "Back to
+  // dashboard" return link while the vendor works through this step.
+  return (
+    <Link
+      to={`${cta.href}?from=dashboard`}
+      className={className}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : undefined}
+    >
+      {label}
+    </Link>
+  )
+}
 
 const ChecklistRow = ({ row }: { row: Row }) => {
   const { done, disabled, cta } = row
@@ -200,61 +269,28 @@ const ChecklistRow = ({ row }: { row: Row }) => {
         </div>
       </div>
       {cta && !done && (
-        cta.storefrontHandoff ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (disabled) return
-              void navigateWithStorefrontHandoff(cta.storefrontHandoff!)
-            }}
-            className={clx(
-              "min-w-[80px] rounded-lg px-4 py-2 font-poppins text-sm font-medium text-center transition-all",
-              disabled
-                ? "bg-co-text-secondary/20 text-co-text-secondary cursor-not-allowed"
-                : "bg-co-navy text-co-text-on-dark hover:bg-co-navy-light"
-            )}
-            disabled={disabled}
-          >
-            {cta.label}
-          </button>
-        ) : cta.external ? (
-          <a
-            href={cta.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={clx(
-              "min-w-[80px] rounded-lg px-4 py-2 font-poppins text-sm font-medium text-center transition-all",
-              disabled
-                ? "bg-co-text-secondary/20 text-co-text-secondary cursor-not-allowed pointer-events-none"
-                : "bg-co-navy text-co-text-on-dark hover:bg-co-navy-light"
-            )}
-            aria-disabled={disabled}
-          >
-            {cta.label}
-          </a>
-        ) : (
-          // ?from=dashboard tells BackToDashboardBar (in Shell) to surface
-          // a "Back to dashboard" return link while the vendor works
-          // through this step. Storefront-handoff CTAs already return to
-          // the dashboard via the storefront's post-save redirect, so
-          // they don't need the param.
-          <Link
-            to={`${cta.href}?from=dashboard`}
-            className={clx(
-              "min-w-[80px] rounded-lg px-4 py-2 font-poppins text-sm font-medium text-center transition-all",
-              disabled
-                ? "bg-co-text-secondary/20 text-co-text-secondary cursor-not-allowed pointer-events-none"
-                : "bg-co-navy text-co-text-on-dark hover:bg-co-navy-light"
-            )}
-            aria-disabled={disabled}
-            tabIndex={disabled ? -1 : undefined}
-          >
-            {cta.label}
-          </Link>
-        )
+        <StepActionLink
+          cta={cta}
+          disabled={disabled}
+          label={cta.label}
+          className={primaryCtaClassName(disabled)}
+        />
       )}
       {done && (
-        <span className="font-poppins text-xs text-co-success">Done</span>
+        <div className="flex items-center gap-2">
+          {cta && !row.hideEditWhenDone && (
+            // Lets the vendor re-open a completed step to make changes —
+            // navigates to the same destination the step's CTA would.
+            <StepActionLink
+              cta={cta}
+              label="Edit"
+              className="rounded-lg border border-co-navy/20 px-3 py-1.5 font-poppins text-xs font-medium text-co-navy transition-all hover:bg-co-cream"
+            />
+          )}
+          <span className="rounded-full border border-co-success bg-co-success/10 px-2.5 py-1 font-poppins text-xs font-medium text-co-success">
+            Done
+          </span>
+        </div>
       )}
     </div>
   )
@@ -385,6 +421,8 @@ const buildRows = (data: SetupResponse): Row[] => {
         hint: "Tell us where you ship from and your shipping rates.",
         done: sb.locations_shipping,
         cta: { label: "Set up", href: "/settings/locations" },
+        // Prefilled during onboarding — no re-edit affordance once complete.
+        hideEditWhenDone: true,
       },
       {
         section: "store_basics",
