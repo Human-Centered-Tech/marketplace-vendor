@@ -984,14 +984,6 @@ export const RouteMap: RouteObject[] = [
             },
             children: [
               {
-                path: "edit",
-                lazy: () => import("../../routes/store/store-edit"),
-              },
-              {
-                path: "edit-company",
-                lazy: () => import("../../routes/store/store-edit-company"),
-              },
-              {
                 path: "currencies",
                 lazy: () => import("../../routes/store/store-add-currencies"),
               },
