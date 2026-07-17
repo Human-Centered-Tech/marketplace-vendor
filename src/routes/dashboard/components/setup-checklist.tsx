@@ -133,6 +133,10 @@ type Row = {
   hint: string
   done: boolean
   disabled?: boolean
+  // When true, a completed step shows only the "Done" badge (no "Edit"
+  // button) — used for steps whose values are prefilled and not meant to be
+  // re-edited from the checklist (e.g. locations & shipping).
+  hideEditWhenDone?: boolean
   cta?: {
     label: string
     href: string
@@ -274,10 +278,7 @@ const ChecklistRow = ({ row }: { row: Row }) => {
       )}
       {done && (
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-co-success bg-co-success/10 px-2.5 py-1 font-poppins text-xs font-medium text-co-success">
-            Done
-          </span>
-          {cta && (
+          {cta && !row.hideEditWhenDone && (
             // Lets the vendor re-open a completed step to make changes —
             // navigates to the same destination the step's CTA would.
             <StepActionLink
@@ -286,6 +287,9 @@ const ChecklistRow = ({ row }: { row: Row }) => {
               className="rounded-lg border border-co-navy/20 px-3 py-1.5 font-poppins text-xs font-medium text-co-navy transition-all hover:bg-co-cream"
             />
           )}
+          <span className="rounded-full border border-co-success bg-co-success/10 px-2.5 py-1 font-poppins text-xs font-medium text-co-success">
+            Done
+          </span>
         </div>
       )}
     </div>
@@ -417,6 +421,8 @@ const buildRows = (data: SetupResponse): Row[] => {
         hint: "Tell us where you ship from and your shipping rates.",
         done: sb.locations_shipping,
         cta: { label: "Set up", href: "/settings/locations" },
+        // Prefilled during onboarding — no re-edit affordance once complete.
+        hideEditWhenDone: true,
       },
       {
         section: "store_basics",
