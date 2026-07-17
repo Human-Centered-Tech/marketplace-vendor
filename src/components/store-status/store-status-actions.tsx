@@ -38,7 +38,13 @@ export const PauseShopButton = ({
   }
 
   return (
-    <Button variant={variant} size={size} isLoading={isPending} onClick={onClick}>
+    <Button
+      type="button"
+      variant={variant}
+      size={size}
+      isLoading={isPending}
+      onClick={onClick}
+    >
       Pause shop
     </Button>
   )
@@ -70,7 +76,13 @@ export const ReopenShopButton = ({
   }
 
   return (
-    <Button variant={variant} size={size} isLoading={isPending} onClick={onClick}>
+    <Button
+      type="button"
+      variant={variant}
+      size={size}
+      isLoading={isPending}
+      onClick={onClick}
+    >
       Reopen shop
     </Button>
   )
