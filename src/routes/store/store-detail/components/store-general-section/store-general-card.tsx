@@ -72,13 +72,12 @@ export const InlineStoreCard = ({
         control={control}
         name="description"
         label="Description"
-        optional
+        maxLength={150}
       />
       <InlineTextareaField
         control={control}
         name="refund_policy"
         label="Shipping & return policy"
-        optional
         rows={6}
         hint="Plain text, shown on your storefront and product pages so buyers know your terms before they purchase. Include BOTH your shipping timeline (how long orders take to ship and arrive) and your return terms (whether you accept returns, the window, and any conditions). Line breaks preserved."
       />
