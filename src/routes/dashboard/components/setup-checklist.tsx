@@ -494,10 +494,12 @@ const buildRows = (data: SetupResponse): Row[] => {
       label: "Connect your parish",
       hint: "Helps your business appear in local searches.",
       done: co.parish_affiliated,
+      // Parish affiliation now has its own storefront page, separate from the
+      // directory listing edit form.
       cta: {
         label: "Add",
-        href: "/user/directory/edit",
-        storefrontHandoff: "/user/directory/edit",
+        href: "/user/directory/parish",
+        storefrontHandoff: "/user/directory/parish",
       },
     },
 
