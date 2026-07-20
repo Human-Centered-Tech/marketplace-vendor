@@ -64,6 +64,12 @@ export const ProductEdit = () => {
   return (
     <>
       <EditProductForm
+        // Re-seed the form when the product's structure changes server-side
+        // (e.g. a variant added via the create-variant modal, or images saved),
+        // so newly added variants/images appear without a manual reload.
+        key={`${product.id}:${product.variants?.length ?? 0}:${
+          product.images?.length ?? 0
+        }`}
         product={product}
         store={store}
         stockLocations={stock_locations}

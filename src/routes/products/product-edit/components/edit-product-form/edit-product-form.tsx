@@ -27,7 +27,6 @@ import { castNumber } from "../../../../../lib/cast-number"
 import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { InventoryItemWithLevels } from "../../../../../types/inventory"
 import { ExtendedAdminProduct } from "../../../../../types/products"
-import { ProductCreateMediaSection } from "../../../product-create/components/product-create-details-form/components/product-create-details-media-section"
 import { ProductCreateAttributeSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-attribute-section"
 import { ProductCreateOrganizationSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-section"
 import { ProductCreateVariantsPricingSection } from "../../../product-create/components/product-create-variants-pricing-section"
@@ -38,6 +37,7 @@ import {
   SHIPPING_RETURN_POLICY_KEY,
   buildProductEditDefaults,
 } from "../../constants"
+import { ProductEditMediaSection } from "../product-edit-media-section"
 import { ProductEditMetadataSection } from "../product-edit-metadata-section"
 import { ProductEditStockSection } from "../product-edit-stock-section"
 
@@ -425,7 +425,7 @@ export const EditProductForm = ({
           </InlineEditCard>
 
           {/* Media */}
-          <ProductCreateMediaSection form={createForm} />
+          <ProductEditMediaSection form={form} />
 
           {/* Organize — type / categories / tags / discountable */}
           <ProductCreateOrganizationSection form={createForm} />
@@ -434,6 +434,19 @@ export const EditProductForm = ({
           <ProductCreateAttributeSection form={createForm} />
 
           {/* Variants & pricing — per-variant title / sku / USD price */}
+          <div className="flex items-center justify-between">
+            <Heading level="h2">
+              {t("products.variants.header", "Variants")}
+            </Heading>
+            <Button
+              variant="secondary"
+              size="small"
+              type="button"
+              onClick={() => navigate(`/products/${product.id}/variants/create`)}
+            >
+              {t("products.variants.actions.create", "Add variant")}
+            </Button>
+          </div>
           <ProductCreateVariantsPricingSection form={createForm} store={store} />
 
           {/* Stock — per-variant, per-location quantities */}
