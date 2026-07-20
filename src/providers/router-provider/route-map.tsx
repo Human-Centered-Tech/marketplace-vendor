@@ -275,7 +275,7 @@ export const RouteMap: RouteObject[] = [
                 children: [
                   {
                     path: "",
-                    lazy: () => import("../../routes/products/product-detail"),
+                    lazy: () => import("../../routes/products/product-edit"),
                     children: [
                       {
                         path: "additional-attributes",
