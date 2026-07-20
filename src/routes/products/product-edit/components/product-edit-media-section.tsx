@@ -60,7 +60,7 @@ export const ProductEditMediaSection = ({
             No images yet.
           </Text>
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-3">
             {fields.map((field, index) => (
               <div
                 key={field.field_id}

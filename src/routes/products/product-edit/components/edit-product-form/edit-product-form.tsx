@@ -438,15 +438,73 @@ export const EditProductForm = ({
             <Heading level="h2">
               {t("products.variants.header", "Variants")}
             </Heading>
-            <Button
-              variant="secondary"
-              size="small"
-              type="button"
-              onClick={() => navigate(`/products/${product.id}/variants/create`)}
-            >
-              {t("products.variants.actions.create", "Add variant")}
-            </Button>
+            <div className="flex items-center gap-x-2">
+              <Button
+                variant="secondary"
+                size="small"
+                type="button"
+                onClick={() =>
+                  navigate(`/products/${product.id}/options/create`)
+                }
+              >
+                Add option
+              </Button>
+              <Button
+                variant="secondary"
+                size="small"
+                type="button"
+                onClick={() =>
+                  navigate(`/products/${product.id}/variants/create`)
+                }
+              >
+                {t("products.variants.actions.create", "Add variant")}
+              </Button>
+            </div>
           </div>
+
+          {/* Options — edit values (e.g. add a new color) so they become
+              selectable when adding a variant. */}
+          {(product.options ?? []).length > 0 && (
+            <InlineEditCard
+              title="Options"
+              description="Edit an option's values (e.g. add a new color). New values become selectable when you add a variant."
+            >
+              {(product.options ?? []).map((option) => (
+                <div
+                  key={option.id}
+                  className="flex items-center justify-between gap-x-4 px-6 py-3"
+                >
+                  <div className="flex flex-col">
+                    <Text size="small" leading="compact" weight="plus">
+                      {option.title}
+                    </Text>
+                    <Text
+                      size="xsmall"
+                      leading="compact"
+                      className="text-ui-fg-subtle"
+                    >
+                      {(option.values ?? [])
+                        .map((v: any) => v.value)
+                        .join(", ")}
+                    </Text>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/products/${product.id}/options/${option.id}/edit`
+                      )
+                    }
+                  >
+                    {t("actions.edit")}
+                  </Button>
+                </div>
+              ))}
+            </InlineEditCard>
+          )}
+
           <ProductCreateVariantsPricingSection form={createForm} store={store} />
 
           {/* Stock — per-variant, per-location quantities */}
