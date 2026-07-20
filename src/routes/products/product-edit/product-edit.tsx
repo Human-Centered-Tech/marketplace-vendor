@@ -69,7 +69,7 @@ export const ProductEdit = () => {
         // so newly added variants/images appear without a manual reload.
         key={`${product.id}:${product.variants?.length ?? 0}:${
           product.images?.length ?? 0
-        }`}
+        }:${product.options?.length ?? 0}`}
         product={product}
         store={store}
         stockLocations={stock_locations}
