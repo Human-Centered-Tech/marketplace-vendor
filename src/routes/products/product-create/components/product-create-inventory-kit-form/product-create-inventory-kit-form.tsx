@@ -1,5 +1,7 @@
 import { UseFormReturn } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
+import { InlineEditCard } from "../../../../../components/common/inline-edit"
 import { ProductCreateSchemaType } from "../../types"
 import { ProductCreateInventoryKitSection } from "./components/product-create-inventory-kit-section/product-create-inventory-kit-section"
 
@@ -10,11 +12,13 @@ type ProductAttributesProps = {
 export const ProductCreateInventoryKitForm = ({
   form,
 }: ProductAttributesProps) => {
+  const { t } = useTranslation()
+
   return (
-    <div className="flex flex-col items-center p-16">
-      <div className="flex w-full max-w-[720px] flex-col gap-y-8">
+    <InlineEditCard title={t("products.create.tabs.inventory")}>
+      <div className="px-6 py-4">
         <ProductCreateInventoryKitSection form={form} />
       </div>
-    </div>
+    </InlineEditCard>
   )
 }
