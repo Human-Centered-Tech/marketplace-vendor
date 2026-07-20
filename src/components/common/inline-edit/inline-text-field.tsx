@@ -12,6 +12,8 @@ interface InlineTextFieldProps<T extends FieldValues> {
   type?: string
   placeholder?: string
   inputProps?: ComponentProps<typeof Input>
+  /** Stack the input UNDER its label (instead of the default 2-column row). */
+  stacked?: boolean
 }
 
 /**
@@ -28,13 +30,20 @@ export const InlineTextField = <T extends FieldValues>({
   type = "text",
   placeholder,
   inputProps,
+  stacked,
 }: InlineTextFieldProps<T>) => {
   return (
     <Form.Field
       control={control}
       name={name}
       render={({ field }) => (
-        <Form.Item className="grid grid-cols-2 items-center gap-x-4 px-6 py-4 space-y-0">
+        <Form.Item
+          className={
+            stacked
+              ? "flex flex-col gap-y-2 px-6 py-4"
+              : "grid grid-cols-2 items-center gap-x-4 px-6 py-4 space-y-0"
+          }
+        >
           <Form.Label optional={optional}>{label}</Form.Label>
           <div className="flex flex-col gap-y-1">
             <Form.Control>
