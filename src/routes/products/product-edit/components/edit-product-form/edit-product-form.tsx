@@ -38,7 +38,6 @@ import {
 } from "../../constants"
 import { ProductEditMediaSection } from "../product-edit-media-section"
 import { ProductEditMetadataSection } from "../product-edit-metadata-section"
-import { ProductEditOptionsSection } from "../product-edit-options-section"
 import { ProductEditStockSection } from "../product-edit-stock-section"
 import { ProductEditVariantsSection } from "../product-edit-variants-section"
 
@@ -179,6 +178,29 @@ export const EditProductForm = ({
       } as any,
       {
         onSuccess: async () => {
+          // --- Variant deletions (explicit, already confirmed in the UI) ---
+          // Run first: removing an option value's variants must precede the
+          // option update that drops that value.
+          const toDelete = values.variants_to_delete ?? []
+          if (toDelete.length) {
+            try {
+              await Promise.all(
+                toDelete.map((vid) =>
+                  fetchQuery(
+                    `/vendor/products/${product.id}/variants/${vid}`,
+                    { method: "DELETE" }
+                  )
+                )
+              )
+            } catch (err) {
+              toast.error(
+                `Product saved, but removing a variant didn't: ${
+                  err instanceof Error ? err.message : "unknown error"
+                }`
+              )
+            }
+          }
+
           // --- Options: create new / update changed / delete removed ---
           const sameValues = (a: string[] = [], b: string[] = []) =>
             a.length === b.length && a.every((v, i) => v === b[i])
@@ -232,6 +254,44 @@ export const EditProductForm = ({
             } catch (err) {
               toast.error(
                 `Product saved, but some option changes didn't: ${
+                  err instanceof Error ? err.message : "unknown error"
+                }`
+              )
+            }
+          }
+
+          // --- New variants (opted-in combinations) — after options so their
+          // option values exist. ---
+          const newVariants = values.variants.filter(
+            (v) => !v.id && v.should_create
+          )
+          if (newVariants.length) {
+            try {
+              await Promise.all(
+                newVariants.map((v) => {
+                  const price = v.prices?.[CURRENCY_CODE]
+                  const amount =
+                    price !== "" && price != null
+                      ? parseFloat(String(price))
+                      : NaN
+                  const prices = !Number.isNaN(amount)
+                    ? [{ currency_code: CURRENCY_CODE, amount }]
+                    : []
+                  return fetchQuery(`/vendor/products/${product.id}/variants`, {
+                    method: "POST",
+                    body: {
+                      title: v.title || Object.values(v.options).join(" / "),
+                      sku: v.sku || undefined,
+                      options: v.options,
+                      manage_inventory: true,
+                      prices,
+                    },
+                  })
+                })
+              )
+            } catch (err) {
+              toast.error(
+                `Product saved, but adding a variant didn't: ${
                   err instanceof Error ? err.message : "unknown error"
                 }`
               )
@@ -505,28 +565,8 @@ export const EditProductForm = ({
           {/* Attributes — dimensions, codes, country, material */}
           <ProductCreateAttributeSection form={createForm} />
 
-          {/* Options — edit titles/values inline (add a new color, etc.) */}
-          <ProductEditOptionsSection form={form} />
-
-          {/* Variants & pricing — per-variant title / sku / USD price + remove */}
-          <div className="flex items-center justify-between">
-            <Heading level="h2">
-              {t("products.variants.header", "Variants")}
-            </Heading>
-            <Button
-              variant="secondary"
-              size="small"
-              type="button"
-              onClick={() => navigate(`/products/${product.id}/variants/create`)}
-            >
-              {t("products.variants.actions.create", "Add variant")}
-            </Button>
-          </div>
-          <ProductEditVariantsSection
-            form={form}
-            productId={product.id}
-            store={store}
-          />
+          {/* Options + Variants — live combination grid */}
+          <ProductEditVariantsSection form={form} store={store} />
 
           {/* Stock — per-variant, per-location quantities */}
           <ProductEditStockSection form={form} />

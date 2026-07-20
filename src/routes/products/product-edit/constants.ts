@@ -18,7 +18,8 @@ export const CURRENCY_CODE = "usd"
 export const SHIPPING_RETURN_POLICY_KEY = "shipping_return_policy"
 
 const EditVariantSchema = z.object({
-  id: z.string(),
+  // Absent for brand-new combinations the user opts to create.
+  id: z.string().optional(),
   title: z.string().optional(),
   sku: z.string().optional(),
   // Kept for parity with the reused create pricing section, which only renders
@@ -85,6 +86,9 @@ export const ProductEditSchema = z.object({
   media: z.array(MediaSchema).optional(),
   stock: z.array(StockVariantSchema),
   metadata: z.array(MetadataRowSchema),
+  // Ids of existing variants the user explicitly (and confirmed) removed —
+  // the ONLY source of truth for variant deletion on save.
+  variants_to_delete: z.array(z.string()),
 })
 
 export type ProductEditSchemaType = z.infer<typeof ProductEditSchema>
@@ -242,5 +246,6 @@ export const buildProductEditDefaults = (
     media: buildMediaDefaults(product.images, product.thumbnail),
     stock: buildStockDefaults(product, stockLocations, inventoryItems),
     metadata: buildMetadataDefaults(product),
+    variants_to_delete: [],
   }
 }
