@@ -11,6 +11,18 @@ interface StickySaveBarProps<T extends FieldValues> {
   onDiscard?: () => void
   saveLabel?: string
   discardLabel?: string
+  /**
+   * Optional second submit button rendered before the primary Save (e.g. a
+   * "Save as draft" alongside "Create Product"). `dataName` is set as the
+   * button's `data-name` so the host onSubmit can read
+   * `e.nativeEvent.submitter?.dataset.name` to branch. Omit for a single-action
+   * bar (unchanged behavior).
+   */
+  secondaryAction?: {
+    label: string
+    dataName: string
+    isLoading?: boolean
+  }
 }
 
 /**
@@ -28,6 +40,7 @@ export const StickySaveBar = <T extends FieldValues>({
   onDiscard,
   saveLabel,
   discardLabel,
+  secondaryAction,
 }: StickySaveBarProps<T>) => {
   const { t } = useTranslation()
   // Subscribe to dirty state so the bar toggles as the user edits.
@@ -53,11 +66,19 @@ export const StickySaveBar = <T extends FieldValues>({
           >
             {discardLabel ?? t("actions.discard", "Discard")}
           </Button>
-          <Button
-            size="small"
-            type="submit"
-            isLoading={isSubmitting}
-          >
+          {secondaryAction && (
+            <Button
+              size="small"
+              variant="secondary"
+              type="submit"
+              data-name={secondaryAction.dataName}
+              isLoading={secondaryAction.isLoading}
+              disabled={isSubmitting}
+            >
+              {secondaryAction.label}
+            </Button>
+          )}
+          <Button size="small" type="submit" isLoading={isSubmitting}>
             {saveLabel ?? t("actions.save")}
           </Button>
         </div>

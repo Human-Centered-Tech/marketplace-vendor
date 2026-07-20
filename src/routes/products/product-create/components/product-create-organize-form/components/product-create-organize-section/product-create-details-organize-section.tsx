@@ -1,4 +1,3 @@
-import { Heading } from "@medusajs/ui"
 import { UseFormReturn } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
@@ -75,7 +74,6 @@ export const ProductCreateOrganizationSection = ({
 
   return (
     <div id="organize" className="flex flex-col gap-y-8">
-      <Heading>{t("products.organization.header")}</Heading>
       <SwitchBox
         control={form.control}
         name="discountable"
