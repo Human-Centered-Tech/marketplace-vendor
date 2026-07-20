@@ -29,7 +29,6 @@ import { InventoryItemWithLevels } from "../../../../../types/inventory"
 import { ExtendedAdminProduct } from "../../../../../types/products"
 import { ProductCreateAttributeSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-attribute-section"
 import { ProductCreateOrganizationSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-section"
-import { ProductCreateVariantsPricingSection } from "../../../product-create/components/product-create-variants-pricing-section"
 import { ProductCreateSchemaType } from "../../../product-create/types"
 import {
   CURRENCY_CODE,
@@ -39,7 +38,9 @@ import {
 } from "../../constants"
 import { ProductEditMediaSection } from "../product-edit-media-section"
 import { ProductEditMetadataSection } from "../product-edit-metadata-section"
+import { ProductEditOptionsSection } from "../product-edit-options-section"
 import { ProductEditStockSection } from "../product-edit-stock-section"
+import { ProductEditVariantsSection } from "../product-edit-variants-section"
 
 type EditProductFormProps = {
   product: ExtendedAdminProduct
@@ -92,6 +93,18 @@ export const EditProductForm = ({
     [defaultValues]
   )
   const originalTagIds = useMemo(() => defaultValues.tags ?? [], [defaultValues])
+  const originalOptions = useMemo(
+    () =>
+      new Map(
+        defaultValues.options
+          .filter((o) => o.id)
+          .map((o) => [
+            o.id as string,
+            { title: o.title, values: o.values },
+          ])
+      ),
+    [defaultValues]
+  )
   const existingPolicy = defaultValues.shipping_return_policy ?? ""
 
   const { mutateAsync: updateProduct, isPending } = useUpdateProduct(product.id)
@@ -166,6 +179,65 @@ export const EditProductForm = ({
       } as any,
       {
         onSuccess: async () => {
+          // --- Options: create new / update changed / delete removed ---
+          const sameValues = (a: string[] = [], b: string[] = []) =>
+            a.length === b.length && a.every((v, i) => v === b[i])
+          const formOptionIds = new Set(
+            values.options.filter((o) => o.id).map((o) => o.id)
+          )
+          const optionOps: Promise<unknown>[] = []
+          // Deletes: originals no longer present in the form.
+          for (const [optionId] of originalOptions) {
+            if (!formOptionIds.has(optionId)) {
+              optionOps.push(
+                fetchQuery(
+                  `/vendor/products/${product.id}/options/${optionId}`,
+                  { method: "DELETE" }
+                )
+              )
+            }
+          }
+          // Creates + updates.
+          for (const option of values.options) {
+            if (!option.title.trim()) {
+              continue
+            }
+            const body = { title: option.title, values: option.values }
+            if (option.id) {
+              const orig = originalOptions.get(option.id)
+              if (
+                orig &&
+                (orig.title !== option.title ||
+                  !sameValues(orig.values, option.values))
+              ) {
+                optionOps.push(
+                  fetchQuery(
+                    `/vendor/products/${product.id}/options/${option.id}`,
+                    { method: "POST", body }
+                  )
+                )
+              }
+            } else {
+              optionOps.push(
+                fetchQuery(`/vendor/products/${product.id}/options`, {
+                  method: "POST",
+                  body,
+                })
+              )
+            }
+          }
+          if (optionOps.length) {
+            try {
+              await Promise.all(optionOps)
+            } catch (err) {
+              toast.error(
+                `Product saved, but some option changes didn't: ${
+                  err instanceof Error ? err.message : "unknown error"
+                }`
+              )
+            }
+          }
+
           // --- Variant title/sku/USD price (only the ones that changed) ---
           const changedVariants = values.variants
             .filter((v) => {
@@ -433,79 +505,28 @@ export const EditProductForm = ({
           {/* Attributes — dimensions, codes, country, material */}
           <ProductCreateAttributeSection form={createForm} />
 
-          {/* Variants & pricing — per-variant title / sku / USD price */}
+          {/* Options — edit titles/values inline (add a new color, etc.) */}
+          <ProductEditOptionsSection form={form} />
+
+          {/* Variants & pricing — per-variant title / sku / USD price + remove */}
           <div className="flex items-center justify-between">
             <Heading level="h2">
               {t("products.variants.header", "Variants")}
             </Heading>
-            <div className="flex items-center gap-x-2">
-              <Button
-                variant="secondary"
-                size="small"
-                type="button"
-                onClick={() =>
-                  navigate(`/products/${product.id}/options/create`)
-                }
-              >
-                Add option
-              </Button>
-              <Button
-                variant="secondary"
-                size="small"
-                type="button"
-                onClick={() =>
-                  navigate(`/products/${product.id}/variants/create`)
-                }
-              >
-                {t("products.variants.actions.create", "Add variant")}
-              </Button>
-            </div>
-          </div>
-
-          {/* Options — edit values (e.g. add a new color) so they become
-              selectable when adding a variant. */}
-          {(product.options ?? []).length > 0 && (
-            <InlineEditCard
-              title="Options"
-              description="Edit an option's values (e.g. add a new color). New values become selectable when you add a variant."
+            <Button
+              variant="secondary"
+              size="small"
+              type="button"
+              onClick={() => navigate(`/products/${product.id}/variants/create`)}
             >
-              {(product.options ?? []).map((option) => (
-                <div
-                  key={option.id}
-                  className="flex items-center justify-between gap-x-4 px-6 py-3"
-                >
-                  <div className="flex flex-col">
-                    <Text size="small" leading="compact" weight="plus">
-                      {option.title}
-                    </Text>
-                    <Text
-                      size="xsmall"
-                      leading="compact"
-                      className="text-ui-fg-subtle"
-                    >
-                      {(option.values ?? [])
-                        .map((v: any) => v.value)
-                        .join(", ")}
-                    </Text>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        `/products/${product.id}/options/${option.id}/edit`
-                      )
-                    }
-                  >
-                    {t("actions.edit")}
-                  </Button>
-                </div>
-              ))}
-            </InlineEditCard>
-          )}
-
-          <ProductCreateVariantsPricingSection form={createForm} store={store} />
+              {t("products.variants.actions.create", "Add variant")}
+            </Button>
+          </div>
+          <ProductEditVariantsSection
+            form={form}
+            productId={product.id}
+            store={store}
+          />
 
           {/* Stock — per-variant, per-location quantities */}
           <ProductEditStockSection form={form} />
