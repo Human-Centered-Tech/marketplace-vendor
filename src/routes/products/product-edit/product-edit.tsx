@@ -1,15 +1,16 @@
-import { Heading } from "@medusajs/ui"
-import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
 
-import { RouteDrawer } from "../../../components/modals"
+import { SingleColumnPageSkeleton } from "../../../components/common/skeleton/skeleton"
 import { useProduct } from "../../../hooks/api/products"
 import { PRODUCT_DETAIL_FIELDS } from "../product-detail/constants"
 import { EditProductForm } from "./components/edit-product-form"
 
+// Full-page single-form product edit (mirrors the create page + store settings).
+// Replaces the old RouteDrawer. Advanced surfaces (stock, region pricing,
+// add/remove variants, options, metadata, attributes) stay as their own modals
+// on the product detail page.
 export const ProductEdit = () => {
   const { id } = useParams()
-  const { t } = useTranslation()
 
   const { product, isLoading, isError, error } = useProduct(id!, {
     fields: PRODUCT_DETAIL_FIELDS,
@@ -19,17 +20,9 @@ export const ProductEdit = () => {
     throw error
   }
 
-  return (
-    <RouteDrawer>
-      <RouteDrawer.Header>
-        <RouteDrawer.Title asChild>
-          <Heading>{t("products.edit.header")}</Heading>
-        </RouteDrawer.Title>
-        <RouteDrawer.Description className="sr-only">
-          {t("products.edit.description")}
-        </RouteDrawer.Description>
-      </RouteDrawer.Header>
-      {!isLoading && product && <EditProductForm product={product} />}
-    </RouteDrawer>
-  )
+  if (isLoading || !product) {
+    return <SingleColumnPageSkeleton sections={4} />
+  }
+
+  return <EditProductForm product={product} />
 }
