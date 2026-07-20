@@ -489,19 +489,8 @@ const buildRows = (data: SetupResponse): Row[] => {
           } as Row,
         ]
       : []),
-    {
-      section: "catholic_owned",
-      label: "Connect your parish",
-      hint: "Helps your business appear in local searches.",
-      done: co.parish_affiliated,
-      // Parish affiliation now has its own storefront page, separate from the
-      // directory listing edit form.
-      cta: {
-        label: "Add",
-        href: "/user/directory/parish",
-        storefrontHandoff: "/user/directory/parish",
-      },
-    },
+    // Parish affiliation is edited as part of the directory listing (in the
+    // storefront listing form), so it has no separate checklist step.
 
     // --- Go live ---
     {
