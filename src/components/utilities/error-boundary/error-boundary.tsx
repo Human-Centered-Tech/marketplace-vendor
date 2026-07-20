@@ -1,14 +1,47 @@
 import { ExclamationCircle } from "@medusajs/icons"
 import { Text } from "@medusajs/ui"
+import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Navigate, useLocation, useRouteError } from "react-router-dom"
 
 import { isFetchError } from "../../../lib/is-fetch-error"
+import { fetchQuery } from "../../../lib/client"
 
 export const ErrorBoundary = () => {
   const error = useRouteError()
   const location = useLocation()
   const { t } = useTranslation()
+
+  // DIAGNOSTIC: report unhandled loader/render errors to the backend so the
+  // real error + stack lands in server logs we can read (the vendor's browser
+  // console isn't reachable to us). Extracts ONLY specific error fields — never
+  // serializes the whole error object — so no order/customer payload, tokens,
+  // or request headers are included. Skips 401 (just a login bounce). Fire-and-
+  // forget; never throws. Remove once the order-detail crash is fixed.
+  useEffect(() => {
+    try {
+      const fe = isFetchError(error) ? error : null
+      if (fe?.status === 401) return
+      const anyErr = error as any
+      const cap = (s: unknown, n: number) =>
+        typeof s === "string" ? s.slice(0, n) : null
+      void fetchQuery("/vendor/client-error", {
+        method: "POST",
+        body: {
+          message: cap(anyErr?.message, 500),
+          stack: cap(anyErr?.stack, 4000),
+          status: fe?.status ?? null,
+          url: location.pathname,
+          ua: cap(
+            typeof navigator !== "undefined" ? navigator.userAgent : null,
+            300
+          ),
+        },
+      }).catch(() => {})
+    } catch {
+      // never let diagnostics throw inside the error boundary
+    }
+  }, [error, location.pathname])
 
   let code: number | null = null
 
