@@ -1,5 +1,4 @@
 import { HttpTypes } from "@medusajs/types"
-import { Heading } from "@medusajs/ui"
 import { useMemo } from "react"
 import { UseFormReturn, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
@@ -55,52 +54,48 @@ export const ProductCreateVariantsPricingSection = ({
     return ret
   }, [variants])
 
-  // A header per block only makes sense when there are real options (i.e. more
-  // than the single implicit default variant).
-  const showHeaders = options.length > 0 && variantData.length > 1
+  // Multiple variants → one card per variant, titled by its option combo.
+  // A single (default) variant → one "Pricing" card.
+  const isMulti = variantData.length > 1
 
   return (
-    <InlineEditCard title={t("products.create.tabs.variants")}>
-      <div className="flex flex-col divide-y">
-        {variantData.map((v) => {
-          const comboLabel = options
-            .map((o) => v.options?.[o.title])
-            .filter(Boolean)
-            .join(" / ")
+    <div className="flex flex-col gap-y-3">
+      {variantData.map((v, idx) => {
+        const comboLabel = options
+          .map((o) => v.options?.[o.title])
+          .filter(Boolean)
+          .join(" / ")
+        const cardTitle = isMulti
+          ? comboLabel || `${t("fields.variant", "Variant")} ${idx + 1}`
+          : "Pricing"
 
-          return (
-            <div
-              key={v.originalIndex}
-              className="flex flex-col divide-y"
-            >
-              {showHeaders && comboLabel && (
-                <div className="px-6 py-4">
-                  <Heading level="h3">{comboLabel}</Heading>
-                </div>
-              )}
-              <InlineTextField
+        return (
+          <InlineEditCard key={v.originalIndex} title={cardTitle}>
+            <InlineTextField
+              control={form.control}
+              name={`variants.${v.originalIndex}.title`}
+              label={t("fields.title")}
+              stacked
+            />
+            <InlineTextField
+              control={form.control}
+              name={`variants.${v.originalIndex}.sku`}
+              label={t("fields.sku")}
+              optional
+              stacked
+            />
+            {currencyCodes.map((code) => (
+              <ProductCreatePriceField
+                key={code}
                 control={form.control}
-                name={`variants.${v.originalIndex}.title`}
-                label={t("fields.title")}
+                name={`variants.${v.originalIndex}.prices.${code}`}
+                code={code}
+                stacked
               />
-              <InlineTextField
-                control={form.control}
-                name={`variants.${v.originalIndex}.sku`}
-                label={t("fields.sku")}
-                optional
-              />
-              {currencyCodes.map((code) => (
-                <ProductCreatePriceField
-                  key={code}
-                  control={form.control}
-                  name={`variants.${v.originalIndex}.prices.${code}`}
-                  code={code}
-                />
-              ))}
-            </div>
-          )
-        })}
-      </div>
-    </InlineEditCard>
+            ))}
+          </InlineEditCard>
+        )
+      })}
+    </div>
   )
 }
