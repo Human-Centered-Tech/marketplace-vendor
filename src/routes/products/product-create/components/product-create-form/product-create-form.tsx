@@ -150,7 +150,12 @@ export const ProductCreateForm = ({
         categories: payload.categories.map((cat) => ({
           id: cat,
         })),
-        variants: payload.variants.map((variant) => ({
+        // Only create the variants the user actually kept ticked. Without this
+        // filter every generated combination is created, ignoring unchecked
+        // rows (the checkbox does nothing on submit).
+        variants: payload.variants
+          .filter((variant) => variant.should_create)
+          .map((variant) => ({
           ...variant,
           sku: variant.sku === "" ? undefined : variant.sku,
           manage_inventory: true,
