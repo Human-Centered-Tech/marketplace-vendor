@@ -547,6 +547,21 @@ export const EditProductForm = ({
         },
       }
     )
+  }, () => {
+    // Validation failed — surface WHY instead of a silent no-op Save.
+    const errs = form.formState.errors
+    let message = "Please fix the highlighted fields before saving."
+    if (errs.title) {
+      message = "A product title is required."
+    } else if (errs.options) {
+      message =
+        "Every option must keep at least one value, and a product needs at " +
+        "least one option. Leave one option with a value (a product can't " +
+        "have zero options/variants)."
+    } else if (errs.variants) {
+      message = "A product needs at least one variant."
+    }
+    toast.error(message)
   })
 
   // The reused create sections are typed against the create schema; our edit
