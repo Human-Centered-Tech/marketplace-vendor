@@ -20,10 +20,12 @@ import {
 } from "../../../../../extensions"
 import { useBatchInventoryItemsLocationLevels } from "../../../../../hooks/api/inventory"
 import {
+  productsQueryKeys,
   useUpdateProduct,
   useUpdateProductVariantsBatch,
 } from "../../../../../hooks/api/products"
 import { castNumber } from "../../../../../lib/cast-number"
+import { queryClient } from "../../../../../lib/query-client"
 import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { InventoryItemWithLevels } from "../../../../../types/inventory"
 import { ExtendedAdminProduct } from "../../../../../types/products"
@@ -47,6 +49,9 @@ type EditProductFormProps = {
   store?: HttpTypes.AdminStore
   stockLocations: HttpTypes.AdminStockLocation[]
   inventoryItems: InventoryItemWithLevels[]
+  // Called after a save's mutations + refetch complete, so the wrapper can
+  // re-seed the form from fresh server data (new variants get their real ids).
+  onSaved?: () => void
 }
 
 const parseIntOrUndefined = (value?: string) =>
@@ -57,6 +62,7 @@ export const EditProductForm = ({
   store,
   stockLocations,
   inventoryItems,
+  onSaved,
 }: EditProductFormProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -507,8 +513,34 @@ export const EditProductForm = ({
           toast.success(
             t("products.edit.successToast", { title: values.title })
           )
-          // Re-baseline so the sticky bar hides again.
+          // Re-baseline immediately so the sticky bar hides.
           form.reset(values)
+          // The variant/option creates + deletes above ran AFTER useUpdateProduct
+          // already invalidated the product query, so the cache is stale (it
+          // never saw the new/removed variants/options). Re-fetch now — awaited
+          // so the cache holds fresh server state.
+          await queryClient.invalidateQueries({
+            queryKey: productsQueryKeys.detail(product.id),
+          })
+          // If anything structural was created or deleted, the form still holds
+          // id-less new entries (and stale variants_to_delete). Re-seed the form
+          // from the fresh product so those carry their real ids — otherwise a
+          // second save would recreate them. Pure field/price edits skip this
+          // (no remount, no flicker).
+          const createdOptions = values.options.some(
+            (o) => !o.id && o.title.trim()
+          )
+          const deletedOptions = Array.from(originalOptions.keys()).some(
+            (oid) => !formOptionIds.has(oid)
+          )
+          if (
+            newVariants.length > 0 ||
+            toDelete.length > 0 ||
+            createdOptions ||
+            deletedOptions
+          ) {
+            onSaved?.()
+          }
         },
         onError: (e) => {
           toast.error(e.message)
