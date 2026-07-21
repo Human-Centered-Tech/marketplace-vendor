@@ -1,6 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { Button, Heading, Input, Text, Textarea, toast } from "@medusajs/ui"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { UseFormReturn } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -63,6 +63,10 @@ export const EditProductForm = ({
   const { getFormFields, getFormConfigs } = useDashboardExtension()
   const fields = getFormFields("product", "edit")
   const configs = getFormConfigs("product", "edit")
+
+  // Hide the sticky save bar while the Add-variations drawer is open so it
+  // doesn't peek through the overlay.
+  const [variationsModalOpen, setVariationsModalOpen] = useState(false)
 
   const defaultValues = useMemo(
     () => buildProductEditDefaults(product, stockLocations, inventoryItems),
@@ -299,8 +303,9 @@ export const EditProductForm = ({
           }
 
           // --- Starting stock for new variants (captured in the modal) ---
-          // Created variants get their inventory item lazily, so refetch to map
-          // combo → inventory_item_id, then set the primary location's level.
+          // Created variants get their inventory item (and often a zero level)
+          // lazily, so refetch to map combo → inventory_item_id, then per item
+          // decide create-vs-update against the primary location's level.
           const newWithStock = newVariants.filter(
             (v) => v.new_stock != null && String(v.new_stock).trim() !== ""
           )
@@ -313,25 +318,47 @@ export const EditProductForm = ({
               const primaryLocation = stockLocations[0].id
               const create: HttpTypes.AdminBatchInventoryItemsLocationLevels["create"] =
                 []
-              newWithStock.forEach((nv) => {
+              const update: HttpTypes.AdminBatchInventoryItemsLocationLevels["update"] =
+                []
+              for (const nv of newWithStock) {
                 const title = nv.title || Object.values(nv.options).join(" / ")
                 const freshVariant = (fresh?.variants ?? []).find(
                   (fv: any) => fv.title === title
                 )
                 const invId =
                   freshVariant?.inventory_items?.[0]?.inventory_item_id
-                if (invId) {
-                  create.push({
-                    inventory_item_id: invId,
-                    location_id: primaryLocation,
-                    stocked_quantity: castNumber(nv.new_stock as any),
-                  })
+                if (!invId) {
+                  continue
                 }
-              })
-              if (create.length) {
+                const entry = {
+                  inventory_item_id: invId,
+                  location_id: primaryLocation,
+                  stocked_quantity: castNumber(nv.new_stock as any),
+                }
+                // A manage_inventory variant may already have a zero level at
+                // the location — update it instead of creating a duplicate.
+                let hasLevel = false
+                try {
+                  const res = await fetchQuery(
+                    `/vendor/inventory-items/${invId}/location-levels`,
+                    { method: "GET" }
+                  )
+                  hasLevel = (res?.location_levels ?? []).some(
+                    (l: any) => l.location_id === primaryLocation
+                  )
+                } catch {
+                  // treat as no level
+                }
+                if (hasLevel) {
+                  update.push(entry)
+                } else {
+                  create.push(entry)
+                }
+              }
+              if (create.length || update.length) {
                 await updateStockLevels({
                   create,
-                  update: [],
+                  update,
                   delete: [],
                   force: true,
                 })
@@ -617,6 +644,7 @@ export const EditProductForm = ({
             form={form}
             store={store}
             stockLocations={stockLocations}
+            onModalOpenChange={setVariationsModalOpen}
           />
 
           {/* Stock — per-variant, per-location quantities */}
@@ -625,11 +653,13 @@ export const EditProductForm = ({
           {/* Metadata */}
           <ProductEditMetadataSection form={form} />
 
-          <StickySaveBar
-            form={form}
-            isSubmitting={isPending}
-            saveLabel={t("actions.save")}
-          />
+          {!variationsModalOpen && (
+            <StickySaveBar
+              form={form}
+              isSubmitting={isPending}
+              saveLabel={t("actions.save")}
+            />
+          )}
         </KeyboundForm>
       </Form>
     </SingleColumnPage>

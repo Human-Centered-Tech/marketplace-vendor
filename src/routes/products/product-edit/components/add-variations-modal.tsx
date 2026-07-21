@@ -1,12 +1,4 @@
-import {
-  Button,
-  FocusModal,
-  Heading,
-  Input,
-  Switch,
-  Text,
-  clx,
-} from "@medusajs/ui"
+import { Button, Drawer, Input, Switch, Text, clx } from "@medusajs/ui"
 import { useEffect, useState } from "react"
 
 export type NewVariationSelection = {
@@ -32,10 +24,10 @@ const label = (options: Record<string, string>) =>
   Object.values(options).join(" / ")
 
 /**
- * Pops the moment a new option value is added. Lists every new combination the
+ * Opens the moment a new option value is added. Lists every new combination the
  * value introduces; each is off by default and can be toggled on with its
  * price + starting stock. "Add all variations" flips them all on. Only the
- * enabled rows are created.
+ * enabled rows are created. Rendered as a side drawer (not full screen).
  */
 export const AddVariationsModal = ({
   open,
@@ -50,7 +42,7 @@ export const AddVariationsModal = ({
   const [addAll, setAddAll] = useState(false)
   const [rows, setRows] = useState<Row[]>([])
 
-  // Re-seed whenever the modal opens for a fresh set of combos.
+  // Re-seed whenever the drawer opens for a fresh set of combos.
   useEffect(() => {
     if (open) {
       setAddAll(false)
@@ -81,135 +73,117 @@ export const AddVariationsModal = ({
   }
 
   return (
-    <FocusModal open={open} onOpenChange={onOpenChange}>
-      <FocusModal.Content>
-        <FocusModal.Header>
-          <FocusModal.Title className="sr-only">
-            Add variations
-          </FocusModal.Title>
-          <FocusModal.Description className="sr-only">
-            Choose which new combinations to add.
-          </FocusModal.Description>
-          <div className="flex items-center justify-end gap-x-2">
-            <Button
-              variant="secondary"
-              size="small"
-              type="button"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="small"
-              type="button"
-              onClick={handleConfirm}
-              disabled={enabledCount === 0}
-            >
-              {enabledCount > 0
-                ? `Add ${enabledCount} variation${enabledCount > 1 ? "s" : ""}`
-                : "Add variations"}
-            </Button>
-          </div>
-        </FocusModal.Header>
-        <FocusModal.Body className="flex flex-col items-center overflow-y-auto">
-          <div className="flex w-full max-w-2xl flex-col gap-y-6 px-6 py-8">
-            <div className="flex flex-col gap-y-1">
-              <Heading level="h1">Add variations</Heading>
-              <Text size="small" className="text-ui-fg-subtle">
-                {addedLabel ? (
-                  <>
-                    Adding <span className="text-ui-fg-base">{addedLabel}</span>{" "}
-                    creates the combinations below. Choose which to add — none
-                    are added until you turn them on.
-                  </>
-                ) : (
-                  "Choose which new combinations to add — none are added until you turn them on."
-                )}
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer.Content>
+        <Drawer.Header>
+          <Drawer.Title>Add variations</Drawer.Title>
+          <Drawer.Description>
+            {addedLabel
+              ? `Adding ${addedLabel} creates the combinations below. Choose which to add.`
+              : "Choose which new combinations to add."}
+          </Drawer.Description>
+        </Drawer.Header>
+
+        <Drawer.Body className="flex flex-col gap-y-4 overflow-y-auto">
+          <div className="bg-ui-bg-component flex items-center justify-between rounded-lg border px-4 py-3">
+            <div className="flex flex-col">
+              <Text size="small" weight="plus" leading="compact">
+                Add all variations
+              </Text>
+              <Text size="xsmall" className="text-ui-fg-subtle">
+                Turn every combination on at once.
               </Text>
             </div>
+            <Switch checked={addAll} onCheckedChange={toggleAll} />
+          </div>
 
-            <div className="bg-ui-bg-component flex items-center justify-between rounded-lg border px-4 py-3">
-              <div className="flex flex-col">
-                <Text size="small" weight="plus" leading="compact">
-                  Add all variations
-                </Text>
-                <Text size="xsmall" className="text-ui-fg-subtle">
-                  Turn every combination on at once.
-                </Text>
-              </div>
-              <Switch checked={addAll} onCheckedChange={toggleAll} />
-            </div>
-
-            <div className="flex flex-col gap-y-3">
-              {rows.map((row, i) => (
-                <div
-                  key={label(row.options)}
-                  className={clx(
-                    "rounded-lg border px-4 py-3 transition-colors",
-                    row.enabled ? "bg-ui-bg-base" : "bg-ui-bg-subtle"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <Text size="small" weight="plus" leading="compact">
-                      {label(row.options)}
-                    </Text>
-                    <Switch
-                      checked={row.enabled}
-                      onCheckedChange={(v) => setRow(i, { enabled: v })}
-                    />
-                  </div>
-                  {row.enabled && (
-                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-y-3">
+            {rows.map((row, i) => (
+              <div
+                key={label(row.options)}
+                className={clx(
+                  "rounded-lg border px-4 py-3 transition-colors",
+                  row.enabled ? "bg-ui-bg-base" : "bg-ui-bg-subtle"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <Text size="small" weight="plus" leading="compact">
+                    {label(row.options)}
+                  </Text>
+                  <Switch
+                    checked={row.enabled}
+                    onCheckedChange={(v) => setRow(i, { enabled: v })}
+                  />
+                </div>
+                {row.enabled && (
+                  <div className="mt-3 flex flex-col gap-3">
+                    <div className="flex flex-col gap-y-1">
+                      <Text
+                        size="xsmall"
+                        className="text-ui-fg-subtle"
+                        leading="compact"
+                      >
+                        Price ({currencyCode.toUpperCase()})
+                      </Text>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={row.price}
+                        onChange={(e) =>
+                          setRow(i, {
+                            price: e.target.value.replace(/[^0-9.]/g, ""),
+                          })
+                        }
+                      />
+                    </div>
+                    {canStock && (
                       <div className="flex flex-col gap-y-1">
                         <Text
                           size="xsmall"
                           className="text-ui-fg-subtle"
                           leading="compact"
                         >
-                          Price ({currencyCode.toUpperCase()})
+                          Stock{stockLocationName ? ` — ${stockLocationName}` : ""}
                         </Text>
                         <Input
                           type="text"
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          value={row.price}
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={row.stock}
                           onChange={(e) =>
                             setRow(i, {
-                              price: e.target.value.replace(/[^0-9.]/g, ""),
+                              stock: e.target.value.replace(/[^0-9]/g, ""),
                             })
                           }
                         />
                       </div>
-                      {canStock && (
-                        <div className="flex flex-col gap-y-1">
-                          <Text
-                            size="xsmall"
-                            className="text-ui-fg-subtle"
-                            leading="compact"
-                          >
-                            Stock{stockLocationName ? ` — ${stockLocationName}` : ""}
-                          </Text>
-                          <Input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={row.stock}
-                            onChange={(e) =>
-                              setRow(i, {
-                                stock: e.target.value.replace(/[^0-9]/g, ""),
-                              })
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </FocusModal.Body>
-      </FocusModal.Content>
-    </FocusModal>
+        </Drawer.Body>
+
+        <Drawer.Footer>
+          <Drawer.Close asChild>
+            <Button variant="secondary" size="small" type="button">
+              Cancel
+            </Button>
+          </Drawer.Close>
+          <Button
+            size="small"
+            type="button"
+            onClick={handleConfirm}
+            disabled={enabledCount === 0}
+          >
+            {enabledCount > 0
+              ? `Add ${enabledCount} variation${enabledCount > 1 ? "s" : ""}`
+              : "Add variations"}
+          </Button>
+        </Drawer.Footer>
+      </Drawer.Content>
+    </Drawer>
   )
 }
