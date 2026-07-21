@@ -41,7 +41,6 @@ import { CollapsibleEditCard } from "../collapsible-edit-card"
 import { ProductEditAttributesSection } from "../product-edit-attributes-section"
 import { ProductEditMediaSection } from "../product-edit-media-section"
 import { ProductEditMetadataSection } from "../product-edit-metadata-section"
-import { ProductEditStockSection } from "../product-edit-stock-section"
 import { ProductEditVariantsSection } from "../product-edit-variants-section"
 
 type EditProductFormProps = {
@@ -699,9 +698,6 @@ export const EditProductForm = ({
             stockLocations={stockLocations}
             onModalOpenChange={setVariationsModalOpen}
           />
-
-          {/* Stock — per-variant, per-location quantities */}
-          <ProductEditStockSection form={form} />
 
           {/* Metadata */}
           <ProductEditMetadataSection form={form} />

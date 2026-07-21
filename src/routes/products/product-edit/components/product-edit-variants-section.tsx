@@ -3,6 +3,7 @@ import { Plus, XMarkMini } from "@medusajs/icons"
 import {
   Badge,
   Button,
+  Checkbox,
   Heading,
   IconButton,
   Input,
@@ -12,7 +13,7 @@ import {
   usePrompt,
 } from "@medusajs/ui"
 import { useMemo, useState } from "react"
-import { UseFormReturn, useWatch } from "react-hook-form"
+import { Controller, UseFormReturn, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
 import { Form } from "../../../../components/common/form"
@@ -106,6 +107,18 @@ export const ProductEditVariantsSection = ({
     []) as EditOption[]
   const variants = (useWatch({ control: form.control, name: "variants" }) ??
     []) as EditVariant[]
+
+  // Stock lives in its own form array (seeded from the loaded product's
+  // variants); index it by variant id so each variant card can render its own
+  // per-location Count rows.
+  const stock = (useWatch({ control: form.control, name: "stock" }) ??
+    []) as ProductEditSchemaType["stock"]
+  const stockIndexById = useMemo(() => {
+    const map = new Map<string, number>()
+    stock.forEach((s, i) => map.set(s.id, i))
+    return map
+  }, [stock])
+  const primaryLocationName = stockLocations?.[0]?.name
 
   // A variant matches a permutation only if it has exactly the same set of
   // option/value pairs — subset matching mis-collapses variants when an option
@@ -430,11 +443,7 @@ export const ProductEditVariantsSection = ({
                     leading="compact"
                     className="text-ui-fg-subtle"
                   >
-                    Added when you save
-                    {v.new_stock != null && v.new_stock !== ""
-                      ? ` · stock ${v.new_stock}`
-                      : ""}
-                    .
+                    Added when you save.
                   </Text>
                 </div>
                 <Badge size="2xsmall" color="blue" className="ml-auto">
@@ -465,6 +474,137 @@ export const ProductEditVariantsSection = ({
                 stacked
               />
             ))}
+
+            {/* Stock — folded into the same card as sku/price */}
+            {!isExisting ? (
+              <div className="flex flex-col gap-y-1 px-6 py-4">
+                <Text
+                  size="xsmall"
+                  leading="compact"
+                  className="text-ui-fg-muted"
+                >
+                  Starting stock
+                  {primaryLocationName ? ` — ${primaryLocationName}` : ""}
+                </Text>
+                <Controller
+                  control={form.control}
+                  name={`variants.${i}.new_stock`}
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <Input
+                      {...field}
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="0"
+                      value={value ?? ""}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "")
+                        onChange(digits === "" ? null : Number(digits))
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            ) : (
+              (() => {
+                const sIdx = stockIndexById.get(v.id as string)
+                const sEntry = sIdx != null ? stock[sIdx] : undefined
+                if (sIdx == null || !sEntry) {
+                  return null
+                }
+                if (!sEntry.inventory_item_id) {
+                  return (
+                    <div className="px-6 py-4">
+                      <Text size="small" className="text-ui-fg-subtle">
+                        This variant has no inventory item, so stock can't be
+                        edited here.
+                      </Text>
+                    </div>
+                  )
+                }
+                return (
+                  <>
+                    <div className="px-6 pt-4">
+                      <Text
+                        size="xsmall"
+                        weight="plus"
+                        leading="compact"
+                        className="text-ui-fg-muted"
+                      >
+                        Stock
+                      </Text>
+                    </div>
+                    {sEntry.locations.map((location, lIdx) => (
+                      <div
+                        key={location.id}
+                        className="flex flex-col gap-y-3 px-6 py-4"
+                      >
+                        <div className="flex items-center gap-x-2">
+                          <Controller
+                            control={form.control}
+                            name={`stock.${sIdx}.locations.${lIdx}.checked`}
+                            render={({
+                              field: { value, onChange, ...field },
+                            }) => (
+                              <Checkbox
+                                {...field}
+                                checked={!!value}
+                                onCheckedChange={(c) => onChange(!!c)}
+                              />
+                            )}
+                          />
+                          <div className="flex flex-col">
+                            <Text
+                              size="xsmall"
+                              leading="compact"
+                              className="text-ui-fg-muted"
+                            >
+                              Location
+                            </Text>
+                            <Text size="small" leading="compact" weight="plus">
+                              {location.name || location.id}
+                            </Text>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-y-1">
+                          <Text
+                            size="xsmall"
+                            leading="compact"
+                            className="text-ui-fg-muted"
+                          >
+                            Count
+                          </Text>
+                          <Controller
+                            control={form.control}
+                            name={`stock.${sIdx}.locations.${lIdx}.quantity`}
+                            render={({
+                              field: { value, onChange, ...field },
+                            }) => (
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                placeholder="0"
+                                value={value ?? ""}
+                                onChange={(e) => {
+                                  const digits = e.target.value.replace(
+                                    /[^0-9]/g,
+                                    ""
+                                  )
+                                  onChange(digits === "" ? null : Number(digits))
+                                }}
+                                disabled={!location.checked}
+                              />
+                            )}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )
+              })()
+            )}
 
             <div className="flex justify-end px-6 py-3">
               {isExisting ? (
