@@ -205,13 +205,18 @@ export const ProductEditVariantsSection = ({
     // Keep existing / drop removed. New combos are NOT auto-added here.
     reconcile(nextOptions)
 
-    // Additions → pop the modal with just the new combinations to choose from.
+    // Additions → pop the modal with only the combinations that involve the
+    // value(s) just added (not every pre-existing gap in the matrix), and that
+    // aren't already a variant.
     if (added.length) {
       const perms = getPermutations(nextOptions)
       const existing = new Set(
         (form.getValues("variants") ?? []).map((v) => comboKey(v.options))
       )
-      const newCombos = perms.filter((p) => !existing.has(comboKey(p)))
+      const optionTitle = option.title
+      const newCombos = perms.filter(
+        (p) => added.includes(p[optionTitle]) && !existing.has(comboKey(p))
+      )
       if (newCombos.length) {
         setModalCombos(newCombos)
         setModalAddedLabel(added.map((a) => `"${a}"`).join(", "))
