@@ -33,7 +33,17 @@ type ProductEditVariantsSectionProps = {
   form: UseFormReturn<ProductEditSchemaType>
   store?: { supported_currencies?: { currency_code: string }[] }
   stockLocations?: HttpTypes.AdminStockLocation[]
+  onModalOpenChange?: (open: boolean) => void
 }
+
+// Order-independent key for an option-value combination, so existing combos
+// (whose keys may be in a different insertion order than freshly-built
+// permutations) are matched correctly.
+const comboKey = (options: Record<string, string>) =>
+  Object.keys(options)
+    .sort()
+    .map((k) => `${k}=${options[k]}`)
+    .join("|")
 
 // Cartesian product of option values → one record per combination.
 const getPermutations = (
@@ -68,15 +78,21 @@ export const ProductEditVariantsSection = ({
   form,
   store,
   stockLocations,
+  onModalOpenChange,
 }: ProductEditVariantsSectionProps) => {
   const { t } = useTranslation()
   const prompt = usePrompt()
 
   // "Add variations" modal state — opened the instant a new option value adds
   // combinations the product doesn't have yet.
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen, setModalOpenState] = useState(false)
   const [modalCombos, setModalCombos] = useState<Record<string, string>[]>([])
   const [modalAddedLabel, setModalAddedLabel] = useState<string>("")
+
+  const setModalOpen = (open: boolean) => {
+    setModalOpenState(open)
+    onModalOpenChange?.(open)
+  }
 
   const currencyCodes = useMemo(
     () =>
@@ -193,11 +209,9 @@ export const ProductEditVariantsSection = ({
     if (added.length) {
       const perms = getPermutations(nextOptions)
       const existing = new Set(
-        (form.getValues("variants") ?? []).map((v) =>
-          JSON.stringify(v.options)
-        )
+        (form.getValues("variants") ?? []).map((v) => comboKey(v.options))
       )
-      const newCombos = perms.filter((p) => !existing.has(JSON.stringify(p)))
+      const newCombos = perms.filter((p) => !existing.has(comboKey(p)))
       if (newCombos.length) {
         setModalCombos(newCombos)
         setModalAddedLabel(added.map((a) => `"${a}"`).join(", "))
