@@ -27,7 +27,6 @@ import { castNumber } from "../../../../../lib/cast-number"
 import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { InventoryItemWithLevels } from "../../../../../types/inventory"
 import { ExtendedAdminProduct } from "../../../../../types/products"
-import { ProductCreateAttributeSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-attribute-section"
 import { ProductCreateOrganizationSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-section"
 import { ProductCreateSchemaType } from "../../../product-create/types"
 import {
@@ -36,6 +35,8 @@ import {
   SHIPPING_RETURN_POLICY_KEY,
   buildProductEditDefaults,
 } from "../../constants"
+import { CollapsibleEditCard } from "../collapsible-edit-card"
+import { ProductEditAttributesSection } from "../product-edit-attributes-section"
 import { ProductEditMediaSection } from "../product-edit-media-section"
 import { ProductEditMetadataSection } from "../product-edit-metadata-section"
 import { ProductEditStockSection } from "../product-edit-stock-section"
@@ -636,8 +637,13 @@ export const EditProductForm = ({
           {/* Organize — type / categories / tags / discountable */}
           <ProductCreateOrganizationSection form={createForm} />
 
-          {/* Attributes — dimensions, codes, country, material */}
-          <ProductCreateAttributeSection form={createForm} />
+          {/* Attributes — collapsed by default (optional shipping/customs) */}
+          <CollapsibleEditCard
+            title={t("products.attributes", "Attributes")}
+            description="Optional shipping dimensions & customs codes."
+          >
+            <ProductEditAttributesSection form={form} />
+          </CollapsibleEditCard>
 
           {/* Options + Variants — live combination grid */}
           <ProductEditVariantsSection
