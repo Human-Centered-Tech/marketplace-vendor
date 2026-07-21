@@ -506,22 +506,14 @@ export const ProductEditVariantsSection = ({
             )}
 
             {!isExisting && (
-              <div className="flex items-center gap-x-3 px-6 py-3">
-                <div className="flex flex-col">
-                  <Text size="small" leading="compact" weight="plus">
-                    New variation
-                  </Text>
-                  <Text
-                    size="xsmall"
-                    leading="compact"
-                    className="text-ui-fg-subtle"
-                  >
-                    Added when you save.
-                  </Text>
-                </div>
-                <Badge size="2xsmall" color="blue" className="ml-auto">
-                  New
-                </Badge>
+              <div className="px-6 py-3">
+                <Text
+                  size="xsmall"
+                  leading="compact"
+                  className="text-ui-fg-subtle"
+                >
+                  New — added when you save.
+                </Text>
               </div>
             )}
 
@@ -556,7 +548,7 @@ export const ProductEditVariantsSection = ({
                   leading="compact"
                   className="text-ui-fg-muted"
                 >
-                  Starting stock
+                  Quantity
                   {primaryLocationName ? ` — ${primaryLocationName}` : ""}
                 </Text>
                 <Controller
@@ -569,6 +561,7 @@ export const ProductEditVariantsSection = ({
                       inputMode="numeric"
                       autoComplete="off"
                       placeholder="0"
+                      className="max-w-[10rem]"
                       value={value ?? ""}
                       onChange={(e) => {
                         const digits = e.target.value.replace(/[^0-9]/g, "")
@@ -645,7 +638,7 @@ export const ProductEditVariantsSection = ({
                             leading="compact"
                             className="text-ui-fg-muted"
                           >
-                            Count
+                            Quantity
                           </Text>
                           <Controller
                             control={form.control}
@@ -659,6 +652,7 @@ export const ProductEditVariantsSection = ({
                                 inputMode="numeric"
                                 autoComplete="off"
                                 placeholder="0"
+                                className="max-w-[10rem]"
                                 value={value ?? ""}
                                 onChange={(e) => {
                                   const digits = e.target.value.replace(

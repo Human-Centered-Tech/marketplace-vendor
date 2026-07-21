@@ -72,7 +72,7 @@ const PriceInput = ({
       }
     >
       <Form.Label>Price</Form.Label>
-      <div className="flex flex-col gap-y-1">
+      <div className="flex w-full max-w-[10rem] flex-col gap-y-1">
         <Form.Control>
           <div className="bg-ui-bg-field shadow-borders-base focus-within:shadow-borders-interactive-with-active relative flex h-8 items-center rounded-md">
             <span
