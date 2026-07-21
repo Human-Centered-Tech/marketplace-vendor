@@ -53,8 +53,18 @@ type EditProductFormProps = {
   onSaved?: () => void
 }
 
-const parseIntOrUndefined = (value?: string) =>
-  value && value.trim() !== "" ? parseInt(value) || undefined : undefined
+// Parse a dimension/weight field:
+//  - blank  → null  (explicitly clear it on the server, not "leave unchanged")
+//  - "0"    → 0     (a legitimate value; parseInt("0")||undefined dropped it)
+//  - "1.5"  → 1.5   (allow decimals; parseInt truncated them)
+//  - junk   → undefined (don't touch it)
+const parseDimension = (value?: string): number | null | undefined => {
+  if (value == null || value.trim() === "") {
+    return null
+  }
+  const n = parseFloat(value)
+  return Number.isNaN(n) ? undefined : n
+}
 
 export const EditProductForm = ({
   product,
@@ -179,10 +189,10 @@ export const EditProductForm = ({
         categories: values.categories.map((id) => ({ id })),
         origin_country: values.origin_country || undefined,
         material: values.material || undefined,
-        weight: parseIntOrUndefined(values.weight),
-        length: parseIntOrUndefined(values.length),
-        height: parseIntOrUndefined(values.height),
-        width: parseIntOrUndefined(values.width),
+        weight: parseDimension(values.weight),
+        length: parseDimension(values.length),
+        height: parseDimension(values.height),
+        width: parseDimension(values.width),
         mid_code: values.mid_code || undefined,
         hs_code: values.hs_code || undefined,
         images,
@@ -402,7 +412,11 @@ export const EditProductForm = ({
                 sku: v.sku || undefined,
               }
               const price = v.prices?.[CURRENCY_CODE]
-              if (price !== "" && price != null) {
+              if (price === "" || price == null) {
+                // Cleared → actually remove the price (empty price set),
+                // instead of silently keeping the old one on the server.
+                body.prices = []
+              } else {
                 const amount = parseFloat(String(price))
                 if (!Number.isNaN(amount)) {
                   body.prices = [{ currency_code: CURRENCY_CODE, amount }]
