@@ -120,6 +120,18 @@ export const ProductEditVariantsSection = ({
   }, [stock])
   const primaryLocationName = stockLocations?.[0]?.name
 
+  // Titles of the product's real options (titled + at least one value) — used
+  // to flag "incomplete" variants (leftovers missing a value for an option
+  // added later). Requiring a value avoids flagging mid-edit, while an option
+  // title is typed but before its values exist.
+  const currentOptionTitles = useMemo(
+    () =>
+      options
+        .filter((o) => o.title.trim() && (o.values?.length ?? 0) > 0)
+        .map((o) => o.title),
+    [options]
+  )
+
   // A variant matches a permutation only if it has exactly the same set of
   // option/value pairs — subset matching mis-collapses variants when an option
   // axis is removed.
@@ -215,7 +227,43 @@ export const ProductEditVariantsSection = ({
       i === index ? { ...o, values: nextValues } : o
     )
     form.setValue(`options.${index}.values`, nextValues, { shouldDirty: true })
-    // Keep existing / drop removed. New combos are NOT auto-added here.
+
+    // Adding a value to a NEW option axis orphans existing variants — they have
+    // no value for it, so they no longer fit the option set. Confirm removing
+    // them so we don't leave stale "Red" cards next to the new "Red / Small"
+    // combinations. (Adding to an existing option orphans nothing.)
+    if (added.length) {
+      const perms = getPermutations(nextOptions)
+      const alreadyQueued = new Set(form.getValues("variants_to_delete") ?? [])
+      const orphaned = (form.getValues("variants") ?? []).filter(
+        (v) =>
+          v.id && !alreadyQueued.has(v.id) && !exactMatch(v.options, perms)
+      )
+      if (orphaned.length) {
+        const confirmed = await prompt({
+          title: "Add this option?",
+          description: `Your existing variant(s) — ${orphaned
+            .map((o) => o.title || comboLabel(o.options))
+            .join(
+              ", "
+            )} — don't have a value for this option, so they can't stay as-is. They'll be removed; recreate them below with the new option. This can't be undone.`,
+          confirmText: t("actions.continue", "Continue"),
+          cancelText: t("actions.cancel", "Cancel"),
+        })
+        if (!confirmed) {
+          form.setValue(
+            `options.${index}.values`,
+            [...(option.values ?? [])],
+            { shouldDirty: false }
+          )
+          return
+        }
+        queueDeletion(orphaned.map((o) => o.id as string))
+      }
+    }
+
+    // Keep existing / drop removed + just-queued orphans. New combos are NOT
+    // auto-added here.
     reconcile(nextOptions)
 
     // Additions → pop the modal with only the combinations that involve the
@@ -426,12 +474,37 @@ export const ProductEditVariantsSection = ({
       {variants.map((v, i) => {
         const label = v.title || comboLabel(v.options) || `Variant ${i + 1}`
         const isExisting = !!v.id
+        const missingOptions = isExisting
+          ? currentOptionTitles.filter((tt) => !(v.options && tt in v.options))
+          : []
 
         return (
           <InlineEditCard
             key={isExisting ? v.id : `new-${JSON.stringify(v.options)}`}
             title={label}
           >
+            {isExisting && missingOptions.length > 0 && (
+              <div className="flex items-center gap-x-3 px-6 py-3">
+                <div className="flex flex-col">
+                  <Text size="small" leading="compact" weight="plus">
+                    Incomplete variant
+                  </Text>
+                  <Text
+                    size="xsmall"
+                    leading="compact"
+                    className="text-ui-fg-subtle"
+                  >
+                    Missing a value for {missingOptions.join(", ")} — a leftover
+                    from before that option was added. Remove it and recreate it
+                    with all options.
+                  </Text>
+                </div>
+                <Badge size="2xsmall" color="orange" className="ml-auto">
+                  Incomplete
+                </Badge>
+              </div>
+            )}
+
             {!isExisting && (
               <div className="flex items-center gap-x-3 px-6 py-3">
                 <div className="flex flex-col">
