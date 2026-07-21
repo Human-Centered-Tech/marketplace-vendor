@@ -1,8 +1,8 @@
+import { HttpTypes } from "@medusajs/types"
 import { Plus, XMarkMini } from "@medusajs/icons"
 import {
   Badge,
   Button,
-  Checkbox,
   Heading,
   IconButton,
   Input,
@@ -11,8 +11,8 @@ import {
   toast,
   usePrompt,
 } from "@medusajs/ui"
-import { useMemo } from "react"
-import { Controller, UseFormReturn, useWatch } from "react-hook-form"
+import { useMemo, useState } from "react"
+import { UseFormReturn, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
 import { Form } from "../../../../components/common/form"
@@ -21,6 +21,10 @@ import { InlineTextField } from "../../../../components/common/inline-edit/inlin
 import { ChipInput } from "../../../../components/inputs/chip-input"
 import { ProductCreatePriceField } from "../../product-create/components/product-create-variants-pricing-section/product-create-price-field"
 import { CURRENCY_CODE, ProductEditSchemaType } from "../constants"
+import {
+  AddVariationsModal,
+  NewVariationSelection,
+} from "./add-variations-modal"
 
 type EditVariant = ProductEditSchemaType["variants"][number]
 type EditOption = ProductEditSchemaType["options"][number]
@@ -28,6 +32,7 @@ type EditOption = ProductEditSchemaType["options"][number]
 type ProductEditVariantsSectionProps = {
   form: UseFormReturn<ProductEditSchemaType>
   store?: { supported_currencies?: { currency_code: string }[] }
+  stockLocations?: HttpTypes.AdminStockLocation[]
 }
 
 // Cartesian product of option values → one record per combination.
@@ -62,9 +67,16 @@ const comboLabel = (options: Record<string, string>) =>
 export const ProductEditVariantsSection = ({
   form,
   store,
+  stockLocations,
 }: ProductEditVariantsSectionProps) => {
   const { t } = useTranslation()
   const prompt = usePrompt()
+
+  // "Add variations" modal state — opened the instant a new option value adds
+  // combinations the product doesn't have yet.
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalCombos, setModalCombos] = useState<Record<string, string>[]>([])
+  const [modalAddedLabel, setModalAddedLabel] = useState<string>("")
 
   const currencyCodes = useMemo(
     () =>
@@ -96,11 +108,11 @@ export const ProductEditVariantsSection = ({
     })
   }
 
-  // Rebuild the variants array from a fresh set of options: keep existing
-  // variants that still map to a permutation, keep (never silently drop) any
-  // existing variant that no longer maps but wasn't confirmed for deletion,
-  // drop deletions-in-progress + stale new combos, and append fresh combos as
-  // unchecked "create" rows.
+  // Rebuild the variants array after an option change: keep existing variants
+  // that still map to a permutation, keep (never silently drop) any existing
+  // variant that no longer maps but wasn't confirmed for deletion, and drop
+  // deletions-in-progress + stale new combos. New combinations are NOT appended
+  // here — they're offered through the "Add variations" modal instead.
   const reconcile = (nextOptions: EditOption[]) => {
     const perms = getPermutations(nextOptions)
     const toDelete = new Set(form.getValues("variants_to_delete") ?? [])
@@ -115,22 +127,10 @@ export const ProductEditVariantsSection = ({
         kept.push({ ...v, options: m, title: v.title || comboLabel(m) })
       } else if (v.id) {
         kept.push(v) // existing + unconfirmed — keep it, never lose data
-      }
-      // else: stale new combo → drop
-    })
-
-    const usedKeys = new Set(kept.map((v) => JSON.stringify(v.options)))
-    perms.forEach((p) => {
-      if (!usedKeys.has(JSON.stringify(p))) {
-        kept.push({
-          id: undefined as unknown as string,
-          title: comboLabel(p),
-          sku: "",
-          should_create: false,
-          variant_rank: kept.length,
-          options: p,
-          prices: { [CURRENCY_CODE]: "" },
-        })
+      } else if (!v.should_create) {
+        // stale, unconfirmed new combo → drop
+      } else {
+        kept.push(v) // an opted-in new combo the user already chose — keep it
       }
     })
 
@@ -152,9 +152,9 @@ export const ProductEditVariantsSection = ({
 
   const handleValuesChange = async (index: number, nextValues: string[]) => {
     const option = options[index]
-    const removed = (option.values ?? []).filter(
-      (v) => !nextValues.includes(v)
-    )
+    const prevValues = option.values ?? []
+    const removed = prevValues.filter((v) => !nextValues.includes(v))
+    const added = nextValues.filter((v) => !prevValues.includes(v))
 
     if (removed.length) {
       const affected = variants.filter(
@@ -186,7 +186,53 @@ export const ProductEditVariantsSection = ({
       i === index ? { ...o, values: nextValues } : o
     )
     form.setValue(`options.${index}.values`, nextValues, { shouldDirty: true })
+    // Keep existing / drop removed. New combos are NOT auto-added here.
     reconcile(nextOptions)
+
+    // Additions → pop the modal with just the new combinations to choose from.
+    if (added.length) {
+      const perms = getPermutations(nextOptions)
+      const existing = new Set(
+        (form.getValues("variants") ?? []).map((v) =>
+          JSON.stringify(v.options)
+        )
+      )
+      const newCombos = perms.filter((p) => !existing.has(JSON.stringify(p)))
+      if (newCombos.length) {
+        setModalCombos(newCombos)
+        setModalAddedLabel(added.map((a) => `"${a}"`).join(", "))
+        setModalOpen(true)
+      }
+    }
+  }
+
+  // Append the combinations chosen in the modal as opted-in new variants.
+  const handleAddVariations = (selections: NewVariationSelection[]) => {
+    if (!selections.length) {
+      return
+    }
+    const current = form.getValues("variants") ?? []
+    const additions: EditVariant[] = selections.map((s, i) => ({
+      id: undefined,
+      title: comboLabel(s.options),
+      sku: "",
+      should_create: true,
+      variant_rank: current.length + i,
+      options: s.options,
+      prices: { [CURRENCY_CODE]: s.price ?? "" },
+      new_stock: s.stock === "" ? null : Number(s.stock),
+    }))
+    form.setValue("variants", [...current, ...additions], { shouldDirty: true })
+  }
+
+  // Drop an un-saved new combination (nothing to delete on the server).
+  const handleDropNew = (index: number) => {
+    const current = form.getValues("variants") ?? []
+    form.setValue(
+      "variants",
+      current.filter((_, i) => i !== index),
+      { shouldDirty: true }
+    )
   }
 
   const handleTitleChange = (index: number, nextTitle: string) => {
@@ -348,7 +394,6 @@ export const ProductEditVariantsSection = ({
       {variants.map((v, i) => {
         const label = v.title || comboLabel(v.options) || `Variant ${i + 1}`
         const isExisting = !!v.id
-        const isNewChecked = !isExisting && v.should_create
 
         return (
           <InlineEditCard
@@ -357,27 +402,20 @@ export const ProductEditVariantsSection = ({
           >
             {!isExisting && (
               <div className="flex items-center gap-x-3 px-6 py-3">
-                <Controller
-                  control={form.control}
-                  name={`variants.${i}.should_create`}
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <Checkbox
-                      {...field}
-                      checked={!!value}
-                      onCheckedChange={(c) => onChange(!!c)}
-                    />
-                  )}
-                />
                 <div className="flex flex-col">
                   <Text size="small" leading="compact" weight="plus">
-                    Create this variant
+                    New variation
                   </Text>
                   <Text
                     size="xsmall"
                     leading="compact"
                     className="text-ui-fg-subtle"
                   >
-                    New combination — enable to add it when you save.
+                    Added when you save
+                    {v.new_stock != null && v.new_stock !== ""
+                      ? ` · stock ${v.new_stock}`
+                      : ""}
+                    .
                   </Text>
                 </div>
                 <Badge size="2xsmall" color="blue" className="ml-auto">
@@ -386,35 +424,31 @@ export const ProductEditVariantsSection = ({
               </div>
             )}
 
-            {(isExisting || isNewChecked) && (
-              <>
-                <InlineTextField
-                  control={form.control}
-                  name={`variants.${i}.title`}
-                  label={t("fields.title")}
-                  stacked
-                />
-                <InlineTextField
-                  control={form.control}
-                  name={`variants.${i}.sku`}
-                  label={t("fields.sku")}
-                  optional
-                  stacked
-                />
-                {currencyCodes.map((code) => (
-                  <ProductCreatePriceField
-                    key={code}
-                    control={form.control as any}
-                    name={`variants.${i}.prices.${code}`}
-                    code={code}
-                    stacked
-                  />
-                ))}
-              </>
-            )}
+            <InlineTextField
+              control={form.control}
+              name={`variants.${i}.title`}
+              label={t("fields.title")}
+              stacked
+            />
+            <InlineTextField
+              control={form.control}
+              name={`variants.${i}.sku`}
+              label={t("fields.sku")}
+              optional
+              stacked
+            />
+            {currencyCodes.map((code) => (
+              <ProductCreatePriceField
+                key={code}
+                control={form.control as any}
+                name={`variants.${i}.prices.${code}`}
+                code={code}
+                stacked
+              />
+            ))}
 
-            {isExisting && (
-              <div className="flex justify-end px-6 py-3">
+            <div className="flex justify-end px-6 py-3">
+              {isExisting ? (
                 <Button
                   type="button"
                   variant="secondary"
@@ -424,8 +458,17 @@ export const ProductEditVariantsSection = ({
                 >
                   {t("products.variants.actions.remove", "Remove variant")}
                 </Button>
-              </div>
-            )}
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="small"
+                  onClick={() => handleDropNew(i)}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
           </InlineEditCard>
         )
       })}
@@ -438,6 +481,17 @@ export const ProductEditVariantsSection = ({
             <Form.ErrorMessage />
           </Form.Item>
         )}
+      />
+
+      <AddVariationsModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        combos={modalCombos}
+        addedLabel={modalAddedLabel}
+        currencyCode={currencyCodes[0] ?? CURRENCY_CODE}
+        canStock={(stockLocations?.length ?? 0) > 0}
+        stockLocationName={stockLocations?.[0]?.name}
+        onConfirm={handleAddVariations}
       />
     </div>
   )

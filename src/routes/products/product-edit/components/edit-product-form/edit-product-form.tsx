@@ -298,6 +298,53 @@ export const EditProductForm = ({
             }
           }
 
+          // --- Starting stock for new variants (captured in the modal) ---
+          // Created variants get their inventory item lazily, so refetch to map
+          // combo → inventory_item_id, then set the primary location's level.
+          const newWithStock = newVariants.filter(
+            (v) => v.new_stock != null && String(v.new_stock).trim() !== ""
+          )
+          if (newWithStock.length && stockLocations.length) {
+            try {
+              const { product: fresh } = await fetchQuery(
+                `/vendor/products/${product.id}`,
+                { method: "GET", query: { fields: "*variants.inventory_items" } }
+              )
+              const primaryLocation = stockLocations[0].id
+              const create: HttpTypes.AdminBatchInventoryItemsLocationLevels["create"] =
+                []
+              newWithStock.forEach((nv) => {
+                const title = nv.title || Object.values(nv.options).join(" / ")
+                const freshVariant = (fresh?.variants ?? []).find(
+                  (fv: any) => fv.title === title
+                )
+                const invId =
+                  freshVariant?.inventory_items?.[0]?.inventory_item_id
+                if (invId) {
+                  create.push({
+                    inventory_item_id: invId,
+                    location_id: primaryLocation,
+                    stocked_quantity: castNumber(nv.new_stock as any),
+                  })
+                }
+              })
+              if (create.length) {
+                await updateStockLevels({
+                  create,
+                  update: [],
+                  delete: [],
+                  force: true,
+                })
+              }
+            } catch (err) {
+              toast.error(
+                `Variants added, but their starting stock didn't set: ${
+                  err instanceof Error ? err.message : "unknown error"
+                }`
+              )
+            }
+          }
+
           // --- Variant title/sku/USD price (only the ones that changed) ---
           const changedVariants = values.variants
             .filter((v) => {
@@ -566,7 +613,11 @@ export const EditProductForm = ({
           <ProductCreateAttributeSection form={createForm} />
 
           {/* Options + Variants — live combination grid */}
-          <ProductEditVariantsSection form={form} store={store} />
+          <ProductEditVariantsSection
+            form={form}
+            store={store}
+            stockLocations={stockLocations}
+          />
 
           {/* Stock — per-variant, per-location quantities */}
           <ProductEditStockSection form={form} />
