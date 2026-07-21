@@ -125,9 +125,13 @@ export const ProductCreateForm = ({
         uploadedMedia = (await Promise.all(fileReqs)).flat()
       }
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message)
-      }
+      // Abort — don't create the product without the images the user picked.
+      toast.error(
+        `Image upload failed — the product wasn't created. ${
+          error instanceof Error ? error.message : "Please try again."
+        }`
+      )
+      return
     }
 
     const vendorTagIds = payload.tags || []
