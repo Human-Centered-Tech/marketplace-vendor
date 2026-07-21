@@ -136,11 +136,14 @@ export const EditProductForm = ({
         const { files } = await uploadFilesQuery(filesToUpload)
         uploaded = files
       } catch (err) {
+        // Abort the whole save — don't drop the failed image (or null the
+        // thumbnail) and silently commit everything else.
         toast.error(
-          `Image upload failed: ${
-            err instanceof Error ? err.message : "unknown error"
+          `Image upload failed — nothing was saved. ${
+            err instanceof Error ? err.message : "Please try again."
           }`
         )
+        return
       }
     }
     const withUrls = media.map((entry, i) => {
