@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Outlet, useParams } from "react-router-dom"
 
 import { SingleColumnPageSkeleton } from "../../../components/common/skeleton/skeleton"
@@ -14,6 +14,11 @@ import { EditProductForm } from "./components/edit-product-form"
 // detail page.
 export const ProductEdit = () => {
   const { id } = useParams()
+
+  // Bumped after each successful save so the form remounts and re-seeds from the
+  // freshly-refetched product — even when net variant/image/option counts are
+  // unchanged (e.g. a swap: delete one + add one).
+  const [saveNonce, setSaveNonce] = useState(0)
 
   const { product, isLoading, isError, error } = useProduct(id!, {
     fields: `${PRODUCT_DETAIL_FIELDS},*variants.inventory_items,*options,*options.values`,
@@ -64,16 +69,17 @@ export const ProductEdit = () => {
   return (
     <>
       <EditProductForm
-        // Re-seed the form when the product's structure changes server-side
-        // (e.g. a variant added via the create-variant modal, or images saved),
-        // so newly added variants/images appear without a manual reload.
+        // Re-seed the form when the product changes server-side (a modal
+        // deep-link edit, or our own save) so freshly created variants carry
+        // their real ids. saveNonce covers count-neutral saves (swaps).
         key={`${product.id}:${product.variants?.length ?? 0}:${
           product.images?.length ?? 0
-        }:${product.options?.length ?? 0}`}
+        }:${product.options?.length ?? 0}:${saveNonce}`}
         product={product}
         store={store}
         stockLocations={stock_locations}
         inventoryItems={inventoryItemsWithLevels}
+        onSaved={() => setSaveNonce((n) => n + 1)}
       />
       {/* Hosts any deep-linked modal child routes (media, prices, stock, …)
           that still resolve under /products/:id during the inline migration. */}
