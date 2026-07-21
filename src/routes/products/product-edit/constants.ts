@@ -30,6 +30,9 @@ const EditVariantSchema = z.object({
   prices: z.record(z.string(), optionalFloat).optional(),
   manage_inventory: z.boolean().optional(),
   inventory_kit: z.boolean().optional(),
+  // Stock count captured for a brand-new combination in the "Add variations"
+  // modal; applied to the primary location after the variant is created.
+  new_stock: z.union([z.number(), z.string(), z.null()]).optional(),
 })
 
 const EditOptionSchema = z.object({
