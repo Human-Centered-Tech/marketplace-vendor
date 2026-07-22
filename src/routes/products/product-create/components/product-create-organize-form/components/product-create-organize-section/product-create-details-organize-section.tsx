@@ -10,6 +10,7 @@ import { useComboboxData } from "../../../../../../../hooks/use-combobox-data"
 import { fetchQuery } from "../../../../../../../lib/client"
 import { ProductCreateSchemaType } from "../../../../types"
 import { CategoryCombobox } from "../../../../../common/components/category-combobox"
+import { SelectedFieldChips } from "../../../../../common/components/selected-field-chips"
 
 type ProductCreateOrganizationSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
@@ -107,48 +108,56 @@ export const ProductCreateOrganizationSection = ({
         />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Form.Field
-          control={form.control}
-          name="categories"
-          render={({ field }) => {
-            return (
-              <Form.Item>
-                <Form.Label optional>
-                  {t("products.fields.categories.label")}
-                </Form.Label>
-                <Form.Control>
-                  <CategoryCombobox {...field} />
-                  {/* <CategorySelect  /> */}
-                </Form.Control>
-                <Form.ErrorMessage />
-              </Form.Item>
-            )
-          }}
-        />
-        <Form.Field
-          control={form.control}
-          name="tags"
-          render={({ field }) => {
-            return (
-              <Form.Item>
-                <Form.Label optional>
-                  {t("products.fields.tags.label")}
-                </Form.Label>
-                <Form.Control>
-                  <Combobox
-                    {...field}
-                    options={tags.options}
-                    searchValue={tags.searchValue}
-                    onSearchValueChange={tags.onSearchValueChange}
-                    fetchNextPage={tags.fetchNextPage}
-                    onCreateOption={handleCreateTag}
-                  />
-                </Form.Control>
-                <Form.ErrorMessage />
-              </Form.Item>
-            )
-          }}
-        />
+        <div>
+          <Form.Field
+            control={form.control}
+            name="categories"
+            render={({ field }) => {
+              return (
+                <Form.Item>
+                  <Form.Label optional>
+                    {t("products.fields.categories.label")}
+                  </Form.Label>
+                  <Form.Control>
+                    <CategoryCombobox {...field} maxSelected={3} />
+                    {/* <CategorySelect  /> */}
+                  </Form.Control>
+                  <Form.ErrorMessage />
+                </Form.Item>
+              )
+            }}
+          />
+          {/* Selected categories, shown directly under their picker. */}
+          <SelectedFieldChips form={form} field="categories" />
+        </div>
+        <div>
+          <Form.Field
+            control={form.control}
+            name="tags"
+            render={({ field }) => {
+              return (
+                <Form.Item>
+                  <Form.Label optional>
+                    {t("products.fields.tags.label")}
+                  </Form.Label>
+                  <Form.Control>
+                    <Combobox
+                      {...field}
+                      options={tags.options}
+                      searchValue={tags.searchValue}
+                      onSearchValueChange={tags.onSearchValueChange}
+                      fetchNextPage={tags.fetchNextPage}
+                      onCreateOption={handleCreateTag}
+                    />
+                  </Form.Control>
+                  <Form.ErrorMessage />
+                </Form.Item>
+              )
+            }}
+          />
+          {/* Selected tags, shown directly under their picker. */}
+          <SelectedFieldChips form={form} field="tags" />
+        </div>
       </div>
     </div>
   )
