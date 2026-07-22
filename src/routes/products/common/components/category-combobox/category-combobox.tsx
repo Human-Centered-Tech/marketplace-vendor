@@ -32,6 +32,8 @@ interface CategoryComboboxProps
   > {
   value: string[]
   onChange: (value: string[]) => void
+  /** Max categories a product may have. Mirrors the backend .max(3) cap. */
+  maxSelected?: number
 }
 
 type Level = {
@@ -41,11 +43,14 @@ type Level = {
 
 const TABLUAR_NUM_WIDTH = 8
 const TAG_BASE_WIDTH = 28
+const DEFAULT_MAX_SELECTED = 3
 
 export const CategoryCombobox = forwardRef<
   HTMLInputElement,
   CategoryComboboxProps
->(({ value, onChange, className, ...props }, ref) => {
+>(({ value, onChange, className, maxSelected, ...props }, ref) => {
+  const max = maxSelected ?? DEFAULT_MAX_SELECTED
+  const atCap = value.length >= max
   const innerRef = useRef<HTMLInputElement>(null)
 
   useImperativeHandle<HTMLInputElement | null, HTMLInputElement | null>(
@@ -123,11 +128,13 @@ export const CategoryCombobox = forwardRef<
   }
 
   const handleSelect = (option: ProductCategoryOption) => {
-    handleOpenChange(false)
+    // Multi-select: toggle the value in/out and keep the popover open so the
+    // user can pick several. A product may have up to `max` categories; adds
+    // beyond that are ignored (the over-cap options are also visually disabled).
     if (value.includes(option.value)) {
-      onChange([])
-    } else {
-      onChange([option.value])
+      onChange(value.filter((v) => v !== option.value))
+    } else if (value.length < max) {
+      onChange([...value, option.value])
     }
   }
 
@@ -227,7 +234,15 @@ export const CategoryCombobox = forwardRef<
     throw error
   }
 
-  const selectedLabel = findCategory(product_categories, value[0])
+  // Collapsed summary: a single selection shows its name; multiple show a
+  // count (label lookup needs the categories loaded, but the count never does).
+  const firstLabel = findCategory(product_categories, value[0])
+  const selectedLabel =
+    value.length > 1
+      ? `${value.length} categories`
+      : value.length === 1
+        ? (firstLabel ?? "1 category")
+        : null
 
   return (
     <RadixPopover.Root open={open} onOpenChange={handleOpenChange}>
@@ -344,6 +359,14 @@ export const CategoryCombobox = forwardRef<
           </Fragment>
         )}
         <div className="p-1">
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
+              Choose up to {max} categories
+            </Text>
+            <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+              {value.length}/{max}
+            </Text>
+          </div>
           {options.length > 0 &&
             !showLoading &&
             options.map((option, index) => (
@@ -364,9 +387,15 @@ export const CategoryCombobox = forwardRef<
                   }
                   type="button"
                   role="option"
+                  aria-selected={isSelected(value, option.value)}
+                  // At the cap, only already-selected rows stay actionable (to
+                  // allow deselecting); the rest are disabled so the user can't
+                  // exceed `max`.
+                  disabled={atCap && !isSelected(value, option.value)}
                   className={clx(
                     "grid h-full w-full appearance-none grid-cols-[20px_1fr] items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 text-left outline-none",
-                    "data-[active=true]:bg-ui-bg-field-hover"
+                    "data-[active=true]:bg-ui-bg-field-hover",
+                    "disabled:cursor-not-allowed disabled:opacity-50"
                   )}
                   onClick={() => handleSelect(option)}
                   onMouseEnter={() =>

@@ -117,7 +117,7 @@ export const ProductCreateOrganizationSection = ({
                   {t("products.fields.categories.label")}
                 </Form.Label>
                 <Form.Control>
-                  <CategoryCombobox {...field} />
+                  <CategoryCombobox {...field} maxSelected={3} />
                   {/* <CategorySelect  /> */}
                 </Form.Control>
                 <Form.ErrorMessage />
