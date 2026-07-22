@@ -224,33 +224,6 @@ export const EditProductForm = ({
             }
           }
 
-          // --- Option-value renames (in place, keeps variants) — BEFORE the
-          // string-based option diff, so that diff then sees the already-renamed
-          // values as matching (a no-op) instead of delete+recreate. ---
-          const renames = values.value_renames ?? []
-          if (renames.length) {
-            try {
-              await Promise.all(
-                renames.map((r) =>
-                  fetchQuery(
-                    `/vendor/products/${product.id}/option-values/${r.value_id}`,
-                    { method: "POST", body: { value: r.value } }
-                  )
-                )
-              )
-            } catch (err) {
-              // Critical: if a rename failed, the option diff below would see
-              // the old value missing and delete+recreate it, wiping variants.
-              // Abort the rest of the save instead; the user can retry.
-              toast.error(
-                `Renaming an option value failed — the rest of your changes were not saved. ${
-                  err instanceof Error ? err.message : "Please try again."
-                }`
-              )
-              return
-            }
-          }
-
           // --- Options: create new / update changed / delete removed ---
           const sameValues = (a: string[] = [], b: string[] = []) =>
             a.length === b.length && a.every((v, i) => v === b[i])
@@ -556,9 +529,8 @@ export const EditProductForm = ({
           toast.success(
             t("products.edit.successToast", { title: values.title })
           )
-          // Re-baseline immediately so the sticky bar hides. Clear applied
-          // renames so a later save doesn't re-issue them.
-          form.reset({ ...values, value_renames: [] })
+          // Re-baseline immediately so the sticky bar hides.
+          form.reset(values)
           // The variant/option creates + deletes above ran AFTER useUpdateProduct
           // already invalidated the product query, so the cache is stale (it
           // never saw the new/removed variants/options). Re-fetch now — awaited
@@ -739,7 +711,6 @@ export const EditProductForm = ({
           {/* Options + Variants — live combination grid */}
           <ProductEditVariantsSection
             form={form}
-            product={product}
             store={store}
             stockLocations={stockLocations}
             onModalOpenChange={setVariationsModalOpen}
