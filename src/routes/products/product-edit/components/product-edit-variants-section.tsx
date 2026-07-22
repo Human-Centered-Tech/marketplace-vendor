@@ -19,19 +19,21 @@ import { useTranslation } from "react-i18next"
 import { Form } from "../../../../components/common/form"
 import { InlineEditCard } from "../../../../components/common/inline-edit"
 import { InlineTextField } from "../../../../components/common/inline-edit/inline-text-field"
-import { ChipInput } from "../../../../components/inputs/chip-input"
 import { ProductCreatePriceField } from "../../product-create/components/product-create-variants-pricing-section/product-create-price-field"
+import { ExtendedAdminProduct } from "../../../../types/products"
 import { CURRENCY_CODE, ProductEditSchemaType } from "../constants"
 import {
   AddVariationsModal,
   NewVariationSelection,
 } from "./add-variations-modal"
+import { OptionValueRows } from "./option-value-rows"
 
 type EditVariant = ProductEditSchemaType["variants"][number]
 type EditOption = ProductEditSchemaType["options"][number]
 
 type ProductEditVariantsSectionProps = {
   form: UseFormReturn<ProductEditSchemaType>
+  product: ExtendedAdminProduct
   store?: { supported_currencies?: { currency_code: string }[] }
   stockLocations?: HttpTypes.AdminStockLocation[]
   onModalOpenChange?: (open: boolean) => void
@@ -77,6 +79,7 @@ const comboLabel = (options: Record<string, string>) =>
  */
 export const ProductEditVariantsSection = ({
   form,
+  product,
   store,
   stockLocations,
   onModalOpenChange,
@@ -131,6 +134,19 @@ export const ProductEditVariantsSection = ({
         .map((o) => o.title),
     [options]
   )
+
+  // optionId → (valueString → valueId), seeded from the product. Renames mutate
+  // it in place (so chained renames keep resolving to the same value id). The
+  // memo re-seeds whenever the product is refetched.
+  const valueIdByOption = useMemo(() => {
+    const map = new Map<string, Map<string, string>>()
+    ;(product.options ?? []).forEach((o) => {
+      const vm = new Map<string, string>()
+      ;(o.values ?? []).forEach((v: any) => vm.set(v.value, v.id))
+      map.set(o.id, vm)
+    })
+    return map
+  }, [product])
 
   // A variant matches a permutation only if it has exactly the same set of
   // option/value pairs — subset matching mis-collapses variants when an option
@@ -315,6 +331,62 @@ export const ProductEditVariantsSection = ({
     )
   }
 
+  // Rename an option value in place (editable value row). If it maps to a real
+  // server value id, queue a rename applied on save (variants keep their data);
+  // for a not-yet-saved value, just relabel it locally.
+  const handleRenameValue = (
+    index: number,
+    oldValue: string,
+    newValue: string
+  ) => {
+    const option = options[index]
+    const optionId = option.id
+
+    // Update the option's values.
+    const nextValues = (option.values ?? []).map((v) =>
+      v === oldValue ? newValue : v
+    )
+    form.setValue(`options.${index}.values`, nextValues, { shouldDirty: true })
+
+    // Re-key every variant that used the old value, and refresh auto-generated
+    // titles (leave custom titles alone).
+    const rekeyed = (form.getValues("variants") ?? []).map((v) => {
+      if (v.options?.[option.title] !== oldValue) {
+        return v
+      }
+      const nextOpts = { ...v.options, [option.title]: newValue }
+      const wasAutoTitle = !v.title || v.title === comboLabel(v.options)
+      return {
+        ...v,
+        options: nextOpts,
+        title: wasAutoTitle ? comboLabel(nextOpts) : v.title,
+      }
+    })
+    form.setValue("variants", rekeyed, { shouldDirty: true })
+
+    // Queue the server-side rename (only for existing, saved values).
+    const valueId = optionId
+      ? valueIdByOption.get(optionId)?.get(oldValue)
+      : undefined
+    if (valueId) {
+      const current = form.getValues("value_renames") ?? []
+      const at = current.findIndex((r) => r.value_id === valueId)
+      const next =
+        at >= 0
+          ? current.map((r, i) =>
+              i === at ? { value_id: valueId, value: newValue } : r
+            )
+          : [...current, { value_id: valueId, value: newValue }]
+      form.setValue("value_renames", next, { shouldDirty: true })
+      // Keep the map resolving through chained renames.
+      const vm = valueIdByOption.get(optionId as string)
+      if (vm) {
+        vm.set(newValue, valueId)
+        vm.delete(oldValue)
+      }
+    }
+  }
+
   const handleTitleChange = (index: number, nextTitle: string) => {
     const prevTitle = options[index].title
     form.setValue(`options.${index}.title`, nextTitle, { shouldDirty: true })
@@ -431,12 +503,19 @@ export const ProductEditVariantsSection = ({
                   >
                     {t("fields.values", "Values")}
                   </Label>
-                  <ChipInput
-                    value={option.values}
-                    variant="contrast"
-                    placeholder="Red, Blue, Purple…"
-                    onChange={(next: string[]) =>
-                      handleValuesChange(index, next)
+                  <OptionValueRows
+                    values={option.values}
+                    onAdd={(v) =>
+                      handleValuesChange(index, [...option.values, v])
+                    }
+                    onRemove={(v) =>
+                      handleValuesChange(
+                        index,
+                        option.values.filter((x) => x !== v)
+                      )
+                    }
+                    onRename={(oldV, newV) =>
+                      handleRenameValue(index, oldV, newV)
                     }
                   />
                 </div>
