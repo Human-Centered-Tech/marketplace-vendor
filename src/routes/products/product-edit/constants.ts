@@ -92,6 +92,11 @@ export const ProductEditSchema = z.object({
   // Ids of existing variants the user explicitly (and confirmed) removed —
   // the ONLY source of truth for variant deletion on save.
   variants_to_delete: z.array(z.string()),
+  // Pending in-place option-value renames (value_id → new value), applied on
+  // save so variants keep their SKU/price/stock instead of being recreated.
+  value_renames: z.array(
+    z.object({ value_id: z.string(), value: z.string() })
+  ),
 })
 
 export type ProductEditSchemaType = z.infer<typeof ProductEditSchema>
@@ -250,5 +255,6 @@ export const buildProductEditDefaults = (
     stock: buildStockDefaults(product, stockLocations, inventoryItems),
     metadata: buildMetadataDefaults(product),
     variants_to_delete: [],
+    value_renames: [],
   }
 }
