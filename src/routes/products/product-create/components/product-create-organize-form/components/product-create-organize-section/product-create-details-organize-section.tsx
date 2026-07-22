@@ -10,6 +10,7 @@ import { useComboboxData } from "../../../../../../../hooks/use-combobox-data"
 import { fetchQuery } from "../../../../../../../lib/client"
 import { ProductCreateSchemaType } from "../../../../types"
 import { CategoryCombobox } from "../../../../../common/components/category-combobox"
+import { SelectedOrganizeSummary } from "../../../../../common/components/selected-organize-summary"
 
 type ProductCreateOrganizationSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
@@ -106,49 +107,54 @@ export const ProductCreateOrganizationSection = ({
           }}
         />
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Form.Field
-          control={form.control}
-          name="categories"
-          render={({ field }) => {
-            return (
-              <Form.Item>
-                <Form.Label optional>
-                  {t("products.fields.categories.label")}
-                </Form.Label>
-                <Form.Control>
-                  <CategoryCombobox {...field} maxSelected={3} />
-                  {/* <CategorySelect  /> */}
-                </Form.Control>
-                <Form.ErrorMessage />
-              </Form.Item>
-            )
-          }}
-        />
-        <Form.Field
-          control={form.control}
-          name="tags"
-          render={({ field }) => {
-            return (
-              <Form.Item>
-                <Form.Label optional>
-                  {t("products.fields.tags.label")}
-                </Form.Label>
-                <Form.Control>
-                  <Combobox
-                    {...field}
-                    options={tags.options}
-                    searchValue={tags.searchValue}
-                    onSearchValueChange={tags.onSearchValueChange}
-                    fetchNextPage={tags.fetchNextPage}
-                    onCreateOption={handleCreateTag}
-                  />
-                </Form.Control>
-                <Form.ErrorMessage />
-              </Form.Item>
-            )
-          }}
-        />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_minmax(200px,260px)]">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Form.Field
+            control={form.control}
+            name="categories"
+            render={({ field }) => {
+              return (
+                <Form.Item>
+                  <Form.Label optional>
+                    {t("products.fields.categories.label")}
+                  </Form.Label>
+                  <Form.Control>
+                    <CategoryCombobox {...field} maxSelected={3} />
+                    {/* <CategorySelect  /> */}
+                  </Form.Control>
+                  <Form.ErrorMessage />
+                </Form.Item>
+              )
+            }}
+          />
+          <Form.Field
+            control={form.control}
+            name="tags"
+            render={({ field }) => {
+              return (
+                <Form.Item>
+                  <Form.Label optional>
+                    {t("products.fields.tags.label")}
+                  </Form.Label>
+                  <Form.Control>
+                    <Combobox
+                      {...field}
+                      options={tags.options}
+                      searchValue={tags.searchValue}
+                      onSearchValueChange={tags.onSearchValueChange}
+                      fetchNextPage={tags.fetchNextPage}
+                      onCreateOption={handleCreateTag}
+                    />
+                  </Form.Control>
+                  <Form.ErrorMessage />
+                </Form.Item>
+              )
+            }}
+          />
+        </div>
+        {/* Live view of what's picked, so both category + tag selections are
+            visible (and removable) without reopening either combobox. */}
+        <SelectedOrganizeSummary form={form} />
       </div>
     </div>
   )
