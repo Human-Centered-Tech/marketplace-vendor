@@ -522,6 +522,7 @@ export const ProductEditVariantsSection = ({
               name={`variants.${i}.title`}
               label={t("fields.title")}
               stacked
+              inputProps={{ className: "max-w-[10rem]" }}
             />
             <InlineTextField
               control={form.control}
@@ -529,6 +530,7 @@ export const ProductEditVariantsSection = ({
               label={t("fields.sku")}
               optional
               stacked
+              inputProps={{ className: "max-w-[10rem]" }}
             />
             {currencyCodes.map((code) => (
               <ProductCreatePriceField

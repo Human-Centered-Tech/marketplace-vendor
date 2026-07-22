@@ -1,6 +1,6 @@
 import CurrencyInput from "react-currency-input-field"
 import { Control, FieldValues, Path } from "react-hook-form"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Form } from "../../../../../components/common/form"
 import { currencies } from "../../../../../lib/data/currencies"
@@ -54,13 +54,17 @@ const PriceInput = ({
 }) => {
   const { value, onChange, onBlur, ref } = field
 
-  // Local, uncontrolled-during-typing value; synced from the form only when it
-  // changes externally (e.g. discard/reset). We commit to the form on blur, so
-  // typing never triggers a re-render/reformat of the input mid-keystroke.
+  // Local display value. We commit to the form on every keystroke (so the save
+  // bar reacts instantly), but only re-sync the display FROM the form when the
+  // input isn't focused — otherwise the form → localValue round-trip reformats
+  // the field mid-typing and jumps the cursor.
   const [localValue, setLocalValue] = useState<string | undefined>(value ?? "")
+  const focusedRef = useRef(false)
 
   useEffect(() => {
-    setLocalValue(value ?? "")
+    if (!focusedRef.current) {
+      setLocalValue(value ?? "")
+    }
   }, [value])
 
   return (
@@ -85,8 +89,16 @@ const PriceInput = ({
               ref={ref}
               className="txt-compact-small text-ui-fg-base w-full flex-1 appearance-none bg-transparent pl-8 pr-2.5 text-right outline-none"
               value={localValue}
-              onValueChange={(val) => setLocalValue(val ?? "")}
+              onFocus={() => {
+                focusedRef.current = true
+              }}
+              onValueChange={(val) => {
+                setLocalValue(val ?? "")
+                // Commit as you type so the form goes dirty immediately.
+                onChange(val ?? "")
+              }}
               onBlur={() => {
+                focusedRef.current = false
                 onChange(localValue ?? "")
                 onBlur()
               }}
