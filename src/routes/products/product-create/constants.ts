@@ -87,6 +87,8 @@ export const ProductCreateSchema = z
     enable_variants: z.boolean(),
     variants: z.array(ProductCreateVariantSchema).min(1),
     media: z.array(MediaSchema).optional(),
+    // { colorValue: "#rrggbb" } → product.metadata.color_hex (storefront swatch)
+    color_hex: z.record(z.string(), z.string()).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.variants.every((v) => !v.should_create)) {
@@ -144,6 +146,7 @@ export const PRODUCT_CREATE_FORM_DEFAULTS: Partial<
   ]),
   enable_variants: false,
   media: [],
+  color_hex: {},
   categories: [],
   collection_id: "",
   shipping_profile_id: "",

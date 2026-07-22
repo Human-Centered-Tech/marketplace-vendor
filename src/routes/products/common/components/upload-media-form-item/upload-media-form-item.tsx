@@ -12,7 +12,7 @@ import {
   EditProductMediaSchemaType,
   ProductCreateSchemaType,
 } from "../../../product-create/types"
-import { EditStoreSchema } from "../../../../store/store-edit/components/edit-store-form/edit-store-form"
+import { StorefrontMediaSchema } from "../../../../../components/common/inline-edit/constants"
 
 type Media = z.infer<typeof MediaSchema>
 
@@ -42,7 +42,7 @@ export const UploadMediaFormItem = ({
   form:
     | UseFormReturn<ProductCreateSchemaType>
     | UseFormReturn<EditProductMediaSchemaType>
-    | UseFormReturn<z.infer<typeof EditStoreSchema>>
+    | UseFormReturn<z.infer<typeof StorefrontMediaSchema>>
   append: (value: Media) => void
   showHint?: boolean
 }) => {

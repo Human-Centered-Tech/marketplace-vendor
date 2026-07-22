@@ -1,35 +1,93 @@
-import { Heading } from "@medusajs/ui"
-import { useTranslation } from "react-i18next"
-import { useParams } from "react-router-dom"
+import { useMemo, useState } from "react"
+import { Outlet, useParams } from "react-router-dom"
 
-import { RouteDrawer } from "../../../components/modals"
+import { SingleColumnPageSkeleton } from "../../../components/common/skeleton/skeleton"
+import { useStockLocations, useStore } from "../../../hooks/api"
+import { useMultipleInventoryItemLevels } from "../../../hooks/api/inventory"
 import { useProduct } from "../../../hooks/api/products"
 import { PRODUCT_DETAIL_FIELDS } from "../product-detail/constants"
 import { EditProductForm } from "./components/edit-product-form"
 
+// Unified full-page product editor. Clicking a product lands here — everything
+// (general, media, organize, attributes, per-variant pricing, stock, metadata)
+// is editable inline with a single sticky Save bar. Replaces the read-only
+// detail page.
 export const ProductEdit = () => {
   const { id } = useParams()
-  const { t } = useTranslation()
+
+  // Bumped after each successful save so the form remounts and re-seeds from the
+  // freshly-refetched product — even when net variant/image/option counts are
+  // unchanged (e.g. a swap: delete one + add one).
+  const [saveNonce, setSaveNonce] = useState(0)
 
   const { product, isLoading, isError, error } = useProduct(id!, {
-    fields: PRODUCT_DETAIL_FIELDS,
+    fields: `${PRODUCT_DETAIL_FIELDS},*variants.inventory_items,*options,*options.values`,
   })
 
-  if (isError) {
-    throw error
+  const { store, isPending: isStorePending } = useStore()
+
+  const { stock_locations, isPending: isLocationsPending } = useStockLocations({
+    limit: 9999,
+  })
+
+  const inventoryItemIds = useMemo(() => {
+    const ids: string[] = []
+    product?.variants?.forEach((variant) => {
+      variant.inventory_items?.forEach((item) => {
+        ids.push(item.inventory_item_id)
+      })
+    })
+    return ids
+  }, [product])
+
+  const {
+    inventoryItemsWithLevels,
+    isPending: isInventoryPending,
+    isError: isInventoryError,
+    error: inventoryError,
+  } = useMultipleInventoryItemLevels(inventoryItemIds, {
+    // Must request the level's own quantity columns explicitly — "*stock_locations"
+    // alone returns only the relation, so stocked_quantity came back undefined
+    // and the Quantity fields seeded blank even when stock existed.
+    fields:
+      "id,location_id,stocked_quantity,reserved_quantity,*stock_locations",
+  })
+
+  if (isError || isInventoryError) {
+    throw error || inventoryError
+  }
+
+  const ready =
+    !isLoading &&
+    !isStorePending &&
+    !isLocationsPending &&
+    !isInventoryPending &&
+    !!product &&
+    !!stock_locations &&
+    !!inventoryItemsWithLevels
+
+  if (!ready) {
+    return <SingleColumnPageSkeleton sections={6} />
   }
 
   return (
-    <RouteDrawer>
-      <RouteDrawer.Header>
-        <RouteDrawer.Title asChild>
-          <Heading>{t("products.edit.header")}</Heading>
-        </RouteDrawer.Title>
-        <RouteDrawer.Description className="sr-only">
-          {t("products.edit.description")}
-        </RouteDrawer.Description>
-      </RouteDrawer.Header>
-      {!isLoading && product && <EditProductForm product={product} />}
-    </RouteDrawer>
+    <>
+      <EditProductForm
+        // Re-seed the form when the product changes server-side (a modal
+        // deep-link edit, or our own save) so freshly created variants carry
+        // their real ids. saveNonce covers count-neutral saves (swaps).
+        key={`${product.id}:${product.variants?.length ?? 0}:${
+          product.images?.length ?? 0
+        }:${product.options?.length ?? 0}:${saveNonce}`}
+        product={product}
+        store={store}
+        stockLocations={stock_locations}
+        inventoryItems={inventoryItemsWithLevels}
+        onSaved={() => setSaveNonce((n) => n + 1)}
+      />
+      {/* Hosts any deep-linked modal child routes (media, prices, stock, …)
+          that still resolve under /products/:id during the inline migration. */}
+      <Outlet />
+    </>
   )
 }
