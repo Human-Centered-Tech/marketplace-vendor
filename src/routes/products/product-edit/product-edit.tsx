@@ -46,7 +46,11 @@ export const ProductEdit = () => {
     isError: isInventoryError,
     error: inventoryError,
   } = useMultipleInventoryItemLevels(inventoryItemIds, {
-    fields: "*stock_locations",
+    // Must request the level's own quantity columns explicitly — "*stock_locations"
+    // alone returns only the relation, so stocked_quantity came back undefined
+    // and the Quantity fields seeded blank even when stock existed.
+    fields:
+      "id,location_id,stocked_quantity,reserved_quantity,*stock_locations",
   })
 
   if (isError || isInventoryError) {
