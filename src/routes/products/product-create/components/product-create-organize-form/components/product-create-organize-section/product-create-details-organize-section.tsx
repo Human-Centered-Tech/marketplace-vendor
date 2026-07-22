@@ -10,7 +10,7 @@ import { useComboboxData } from "../../../../../../../hooks/use-combobox-data"
 import { fetchQuery } from "../../../../../../../lib/client"
 import { ProductCreateSchemaType } from "../../../../types"
 import { CategoryCombobox } from "../../../../../common/components/category-combobox"
-import { SelectedOrganizeSummary } from "../../../../../common/components/selected-organize-summary"
+import { SelectedFieldChips } from "../../../../../common/components/selected-field-chips"
 
 type ProductCreateOrganizationSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
@@ -107,8 +107,8 @@ export const ProductCreateOrganizationSection = ({
           }}
         />
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_minmax(200px,260px)]">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
           <Form.Field
             control={form.control}
             name="categories"
@@ -127,6 +127,10 @@ export const ProductCreateOrganizationSection = ({
               )
             }}
           />
+          {/* Selected categories, shown directly under their picker. */}
+          <SelectedFieldChips form={form} field="categories" />
+        </div>
+        <div>
           <Form.Field
             control={form.control}
             name="tags"
@@ -151,10 +155,9 @@ export const ProductCreateOrganizationSection = ({
               )
             }}
           />
+          {/* Selected tags, shown directly under their picker. */}
+          <SelectedFieldChips form={form} field="tags" />
         </div>
-        {/* Live view of what's picked, so both category + tag selections are
-            visible (and removable) without reopening either combobox. */}
-        <SelectedOrganizeSummary form={form} />
       </div>
     </div>
   )
