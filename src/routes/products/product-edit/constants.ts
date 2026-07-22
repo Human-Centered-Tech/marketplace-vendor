@@ -17,6 +17,10 @@ export const CURRENCY_CODE = "usd"
 // editor so it isn't shown/round-tripped twice.
 export const SHIPPING_RETURN_POLICY_KEY = "shipping_return_policy"
 
+// Per-color-value hex swatches live in product.metadata under this key (a
+// { valueString: "#rrggbb" } map). Kept out of the raw metadata editor.
+export const COLOR_HEX_KEY = "color_hex"
+
 const EditVariantSchema = z.object({
   // Absent for brand-new combinations the user opts to create.
   id: z.string().optional(),
@@ -92,6 +96,9 @@ export const ProductEditSchema = z.object({
   // Ids of existing variants the user explicitly (and confirmed) removed —
   // the ONLY source of truth for variant deletion on save.
   variants_to_delete: z.array(z.string()),
+  // { colorValue: "#rrggbb" } — the swatch color shown per color-option value
+  // on the storefront. Persisted into product.metadata.color_hex.
+  color_hex: z.record(z.string(), z.string()),
 })
 
 export type ProductEditSchemaType = z.infer<typeof ProductEditSchema>
@@ -191,11 +198,27 @@ const buildMetadataDefaults = (
 ): ProductEditSchemaType["metadata"] => {
   const metadata = (product.metadata || {}) as Record<string, unknown>
   return Object.entries(metadata)
-    .filter(([key]) => key !== SHIPPING_RETURN_POLICY_KEY)
+    .filter(([key]) => key !== SHIPPING_RETURN_POLICY_KEY && key !== COLOR_HEX_KEY)
     .map(([key, value]) => ({
       key,
       value: value == null ? "" : String(value),
     }))
+}
+
+const buildColorHexDefaults = (
+  product: ExtendedAdminProduct
+): Record<string, string> => {
+  const raw = (product.metadata as any)?.[COLOR_HEX_KEY]
+  if (raw && typeof raw === "object") {
+    const out: Record<string, string> = {}
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === "string") {
+        out[k] = v
+      }
+    }
+    return out
+  }
+  return {}
 }
 
 export const buildProductEditDefaults = (
@@ -250,5 +273,6 @@ export const buildProductEditDefaults = (
     stock: buildStockDefaults(product, stockLocations, inventoryItems),
     metadata: buildMetadataDefaults(product),
     variants_to_delete: [],
+    color_hex: buildColorHexDefaults(product),
   }
 }
