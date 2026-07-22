@@ -53,6 +53,12 @@ type EditProductFormProps = {
   store?: HttpTypes.AdminStore
   stockLocations: HttpTypes.AdminStockLocation[]
   inventoryItems: InventoryItemWithLevels[]
+  // The product's VENDOR tags (vptag_…) — the system the tag picker actually
+  // manages and saves to. Seeding the form's `tags` from these (not native
+  // product.tags / ptag_…) keeps the field in the right namespace so saves post
+  // valid ids and the chips resolve. Shopify-imported native tags live in
+  // product.tags and are intentionally not shown here.
+  vendorTagIds: string[]
   // Called after a save's mutations + refetch complete, so the wrapper can
   // re-seed the form from fresh server data (new variants get their real ids).
   onSaved?: () => void
@@ -76,6 +82,7 @@ export const EditProductForm = ({
   store,
   stockLocations,
   inventoryItems,
+  vendorTagIds,
   onSaved,
 }: EditProductFormProps) => {
   const { t } = useTranslation()
@@ -90,8 +97,15 @@ export const EditProductForm = ({
   const [variationsModalOpen, setVariationsModalOpen] = useState(false)
 
   const defaultValues = useMemo(
-    () => buildProductEditDefaults(product, stockLocations, inventoryItems),
-    [product, stockLocations, inventoryItems]
+    () => {
+      const base = buildProductEditDefaults(product, stockLocations, inventoryItems)
+      // Seed the tags field from the product's VENDOR tags, not native
+      // product.tags. buildProductEditDefaults reads product.tags (ptag_…),
+      // which the vendor-tags save route rejects; vendorTagIds are the vptag_…
+      // ids the picker manages.
+      return { ...base, tags: vendorTagIds }
+    },
+    [product, stockLocations, inventoryItems, vendorTagIds]
   )
 
   const form = useExtendableForm({
@@ -561,6 +575,13 @@ export const EditProductForm = ({
           // so the cache holds fresh server state.
           await queryClient.invalidateQueries({
             queryKey: productsQueryKeys.detail(product.id),
+          })
+          // The tag save posts to the vendor-tags route directly (not via the
+          // mutation hook), so invalidate that query too — otherwise the form
+          // re-seeds tags from a stale cache and just-saved tag changes flicker
+          // back to their old values on remount.
+          await queryClient.invalidateQueries({
+            queryKey: ["products", "detail", product.id, "vendor-tags"],
           })
           // If anything structural was created or deleted, the form still holds
           // id-less new entries (and stale variants_to_delete). Re-seed the form
