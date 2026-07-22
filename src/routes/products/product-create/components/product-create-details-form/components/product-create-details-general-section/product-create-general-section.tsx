@@ -1,6 +1,7 @@
 import { Input } from "@medusajs/ui"
 import { RichTextEditor } from "../../../../../../../components/common/rich-text-editor/rich-text-editor"
-import { UseFormReturn } from "react-hook-form"
+import { UseFormReturn, useWatch } from "react-hook-form"
+import { useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 
 import { Form } from "../../../../../../../components/common/form"
@@ -11,10 +12,29 @@ type ProductCreateGeneralSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
 }
 
+// URL-safe kebab-case handle from a free-text title.
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+
 export const ProductCreateGeneralSection = ({
   form,
 }: ProductCreateGeneralSectionProps) => {
   const { t } = useTranslation()
+
+  // Auto-fill the handle from the title until the vendor edits it by hand.
+  const title = useWatch({ control: form.control, name: "title" })
+  const handleManuallyEdited = useRef(false)
+
+  useEffect(() => {
+    if (handleManuallyEdited.current) return
+    form.setValue("handle", slugify(title || ""))
+    // Only react to title changes; setValue is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title])
 
   return (
     <div id="general" className="flex flex-col gap-y-6">
@@ -63,7 +83,14 @@ export const ProductCreateGeneralSection = ({
                     {t("fields.handle")}
                   </Form.Label>
                   <Form.Control>
-                    <HandleInput {...field} placeholder="winter-jacket" />
+                    <HandleInput
+                      {...field}
+                      onChange={(e) => {
+                        handleManuallyEdited.current = true
+                        field.onChange(e)
+                      }}
+                      placeholder="winter-jacket"
+                    />
                   </Form.Control>
                 </Form.Item>
               )

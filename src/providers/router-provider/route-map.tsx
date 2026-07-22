@@ -241,10 +241,6 @@ export const RouteMap: RouteObject[] = [
                 lazy: () => import("../../routes/products/product-list"),
                 children: [
                   {
-                    path: "create",
-                    lazy: () => import("../../routes/products/product-create"),
-                  },
-                  {
                     path: "import",
                     lazy: () => import("../../routes/products/product-import"),
                   },
@@ -253,6 +249,10 @@ export const RouteMap: RouteObject[] = [
                     lazy: () => import("../../routes/products/product-export"),
                   },
                 ],
+              },
+              {
+                path: "create",
+                lazy: () => import("../../routes/products/product-create"),
               },
               {
                 path: ":id",
@@ -275,7 +275,7 @@ export const RouteMap: RouteObject[] = [
                 children: [
                   {
                     path: "",
-                    lazy: () => import("../../routes/products/product-detail"),
+                    lazy: () => import("../../routes/products/product-edit"),
                     children: [
                       {
                         path: "additional-attributes",
@@ -283,11 +283,6 @@ export const RouteMap: RouteObject[] = [
                           import(
                             "../../routes/products/product-additional-attributes"
                           ),
-                      },
-                      {
-                        path: "edit",
-                        lazy: () =>
-                          import("../../routes/products/product-edit"),
                       },
                       {
                         path: "edit-variant",
@@ -410,6 +405,11 @@ export const RouteMap: RouteObject[] = [
                           ),
                       },
                     ],
+                  },
+                  {
+                    path: "edit",
+                    lazy: () =>
+                      import("../../routes/products/product-edit"),
                   },
                 ],
               },
@@ -983,14 +983,6 @@ export const RouteMap: RouteObject[] = [
               breadcrumb: () => <StoreSettingsBreadcrumb />,
             },
             children: [
-              {
-                path: "edit",
-                lazy: () => import("../../routes/store/store-edit"),
-              },
-              {
-                path: "edit-company",
-                lazy: () => import("../../routes/store/store-edit-company"),
-              },
               {
                 path: "currencies",
                 lazy: () => import("../../routes/store/store-add-currencies"),

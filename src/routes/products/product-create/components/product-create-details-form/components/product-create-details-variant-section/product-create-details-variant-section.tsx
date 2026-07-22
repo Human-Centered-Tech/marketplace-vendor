@@ -3,7 +3,6 @@ import {
   Alert,
   Button,
   Checkbox,
-  Heading,
   Hint,
   IconButton,
   InlineTip,
@@ -195,7 +194,7 @@ export const ProductCreateVariantsSection = ({
       })
     })
 
-    form.setValue("variants", newVariants)
+    form.setValue("variants", newVariants, { shouldDirty: true })
   }
 
   const handleRemoveOption = (index: number) => {
@@ -250,7 +249,7 @@ export const ProductCreateVariantsSection = ({
       })
     })
 
-    form.setValue("variants", newVariants)
+    form.setValue("variants", newVariants, { shouldDirty: true })
   }
 
   const handleRankChange = (
@@ -293,7 +292,7 @@ export const ProductCreateVariantsSection = ({
           }
         })
 
-        form.setValue("variants", update)
+        form.setValue("variants", update, { shouldDirty: true })
         break
       }
       case false: {
@@ -304,7 +303,9 @@ export const ProductCreateVariantsSection = ({
           }
         })
 
-        form.setValue("variants", decorateVariantsWithDefaultValues(update))
+        form.setValue("variants", decorateVariantsWithDefaultValues(update), {
+          shouldDirty: true,
+        })
         break
       }
       case "indeterminate":
@@ -313,12 +314,16 @@ export const ProductCreateVariantsSection = ({
   }
 
   const createDefaultOptionAndVariant = () => {
-    form.setValue("options", [
-      {
-        title: "Default option",
-        values: ["Default option value"],
-      },
-    ])
+    form.setValue(
+      "options",
+      [
+        {
+          title: "Default option",
+          values: ["Default option value"],
+        },
+      ],
+      { shouldDirty: true }
+    )
     form.setValue(
       "variants",
       decorateVariantsWithDefaultValues([
@@ -332,14 +337,14 @@ export const ProductCreateVariantsSection = ({
           inventory: [{ inventory_item_id: "", required_quantity: "" }],
           is_default: true,
         },
-      ])
+      ]),
+      { shouldDirty: true }
     )
   }
 
   return (
     <div id="variants" className="flex flex-col gap-y-8">
       <div className="flex flex-col gap-y-6">
-        <Heading level="h2">{t("products.create.variants.header")}</Heading>
         <SwitchBox
           control={form.control}
           name="enable_variants"
@@ -347,13 +352,17 @@ export const ProductCreateVariantsSection = ({
           description={t("products.create.variants.subHeadingDescription")}
           onCheckedChange={(checked) => {
             if (checked) {
-              form.setValue("options", [
-                {
-                  title: "",
-                  values: [],
-                },
-              ])
-              form.setValue("variants", [])
+              form.setValue(
+                "options",
+                [
+                  {
+                    title: "",
+                    values: [],
+                  },
+                ],
+                { shouldDirty: true }
+              )
+              form.setValue("variants", [], { shouldDirty: true })
             } else {
               createDefaultOptionAndVariant()
             }
