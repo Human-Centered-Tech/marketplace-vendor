@@ -1,4 +1,4 @@
-import Medusa, { FetchError } from "@medusajs/js-sdk"
+import Medusa from "@medusajs/js-sdk"
 
 // Runtime config is injected by scripts/launch-vendor.js into /runtime-config.js
 // at container start, so a static production build can still pick up the
@@ -49,11 +49,7 @@ export const batchUpdateProductsQuery = async (
   })
   if (!response.ok) {
     const err = await response.json().catch(() => ({}))
-    throw new FetchError(
-      err.message || "Batch update failed",
-      response.statusText,
-      response.status
-    )
+    throw new Error(err.message || "Batch update failed")
   }
   return response.json()
 }
@@ -73,11 +69,7 @@ export const importProductsQuery = async (file: File) => {
   })
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
-    throw new FetchError(
-      errorData.message || `Import failed with status ${response.status}`,
-      response.statusText,
-      response.status
-    )
+    throw new Error(errorData.message || `Import failed with status ${response.status}`)
   }
   return response.json()
 }
@@ -102,10 +94,8 @@ export const uploadFilesQuery = async (files: any[]) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
-    throw new FetchError(
-      errorData.message || `Upload failed with status ${response.status}`,
-      response.statusText,
-      response.status
+    throw new Error(
+      errorData.message || `Upload failed with status ${response.status}`
     )
   }
 
@@ -151,17 +141,8 @@ export const fetchQuery = async (
   })
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    // Throw a FetchError (not a plain Error) so the HTTP status survives. The
-    // route ErrorBoundary and the query-client auth handler both key off
-    // `error.status` — a statusless Error is what made an expired session
-    // (401) fall through to the generic "unexpected error" screen instead of
-    // redirecting to login.
-    throw new FetchError(
-      errorData.message || "Unknown server error",
-      response.statusText,
-      response.status
-    )
+    const errorData = await response.json()
+    throw new Error(errorData.message || "Nieznany błąd serwera")
   }
 
   return response.json()
