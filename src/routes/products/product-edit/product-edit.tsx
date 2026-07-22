@@ -5,6 +5,7 @@ import { SingleColumnPageSkeleton } from "../../../components/common/skeleton/sk
 import { useStockLocations, useStore } from "../../../hooks/api"
 import { useMultipleInventoryItemLevels } from "../../../hooks/api/inventory"
 import { useProduct } from "../../../hooks/api/products"
+import { useProductVendorTags } from "../../../hooks/api/product-vendor-tags"
 import { PRODUCT_DETAIL_FIELDS } from "../product-detail/constants"
 import { EditProductForm } from "./components/edit-product-form"
 
@@ -25,6 +26,15 @@ export const ProductEdit = () => {
   })
 
   const { store, isPending: isStorePending } = useStore()
+
+  // The product's vendor tags (vptag_…) — seed the tags field from these, not
+  // native product.tags, so saves target the right namespace.
+  const {
+    product_tags: vendorTags,
+    isPending: isVendorTagsPending,
+    isError: isVendorTagsError,
+    error: vendorTagsError,
+  } = useProductVendorTags(id!)
 
   const { stock_locations, isPending: isLocationsPending } = useStockLocations({
     limit: 9999,
@@ -53,8 +63,8 @@ export const ProductEdit = () => {
       "id,location_id,stocked_quantity,reserved_quantity,*stock_locations",
   })
 
-  if (isError || isInventoryError) {
-    throw error || inventoryError
+  if (isError || isInventoryError || isVendorTagsError) {
+    throw error || inventoryError || vendorTagsError
   }
 
   const ready =
@@ -62,27 +72,36 @@ export const ProductEdit = () => {
     !isStorePending &&
     !isLocationsPending &&
     !isInventoryPending &&
+    !isVendorTagsPending &&
     !!product &&
     !!stock_locations &&
-    !!inventoryItemsWithLevels
+    !!inventoryItemsWithLevels &&
+    !!vendorTags
 
   if (!ready) {
     return <SingleColumnPageSkeleton sections={6} />
   }
+
+  const vendorTagIds = (vendorTags ?? []).map((t) => t.id)
 
   return (
     <>
       <EditProductForm
         // Re-seed the form when the product changes server-side (a modal
         // deep-link edit, or our own save) so freshly created variants carry
-        // their real ids. saveNonce covers count-neutral saves (swaps).
+        // their real ids. saveNonce covers count-neutral saves (swaps); the
+        // vendor-tag signature re-seeds when tags change (they live on a
+        // separate query that our save invalidates).
         key={`${product.id}:${product.variants?.length ?? 0}:${
           product.images?.length ?? 0
-        }:${product.options?.length ?? 0}:${saveNonce}`}
+        }:${product.options?.length ?? 0}:${saveNonce}:${vendorTagIds.join(
+          "-"
+        )}`}
         product={product}
         store={store}
         stockLocations={stock_locations}
         inventoryItems={inventoryItemsWithLevels}
+        vendorTagIds={vendorTagIds}
         onSaved={() => setSaveNonce((n) => n + 1)}
       />
       {/* Hosts any deep-linked modal child routes (media, prices, stock, …)
