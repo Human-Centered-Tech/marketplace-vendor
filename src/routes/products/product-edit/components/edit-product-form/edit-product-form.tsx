@@ -1,7 +1,7 @@
 import { HttpTypes } from "@medusajs/types"
 import { Button, Heading, Input, Text, Textarea, toast } from "@medusajs/ui"
 import { useMemo, useState } from "react"
-import { UseFormReturn } from "react-hook-form"
+import { UseFormReturn, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
@@ -30,8 +30,13 @@ import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { InventoryItemWithLevels } from "../../../../../types/inventory"
 import { ExtendedAdminProduct } from "../../../../../types/products"
 import { ProductCreateOrganizationSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-section"
+import {
+  ProductColorSwatches,
+  getColorOptionValues,
+} from "../../../common/components/product-color-swatches"
 import { ProductCreateSchemaType } from "../../../product-create/types"
 import {
+  COLOR_HEX_KEY,
   CURRENCY_CODE,
   ProductEditSchema,
   SHIPPING_RETURN_POLICY_KEY,
@@ -95,6 +100,13 @@ export const EditProductForm = ({
     configs,
     data: product,
   })
+
+  // Color swatches — shown only when the product has a color option.
+  const watchedOptions =
+    useWatch({ control: form.control, name: "options" }) ?? []
+  const watchedColorHex =
+    useWatch({ control: form.control, name: "color_hex" }) ?? {}
+  const colorValues = getColorOptionValues(watchedOptions as any)
 
   // Baselines for dirty-aware, minimal-payload saves.
   const originalVariants = useMemo(
@@ -175,6 +187,18 @@ export const EditProductForm = ({
     const finalPolicy = (values.shipping_return_policy ?? "").trim()
     if (finalPolicy) {
       metadataObject[SHIPPING_RETURN_POLICY_KEY] = finalPolicy
+    }
+    // Color swatches — keep only entries for values that still exist on the
+    // color option, and only valid #rrggbb hexes.
+    const colorValues = new Set(getColorOptionValues(values.options))
+    const colorHex: Record<string, string> = {}
+    for (const [value, hex] of Object.entries(values.color_hex ?? {})) {
+      if (colorValues.has(value) && /^#[0-9a-fA-F]{6}$/.test(hex)) {
+        colorHex[value] = hex
+      }
+    }
+    if (Object.keys(colorHex).length) {
+      metadataObject[COLOR_HEX_KEY] = colorHex
     }
 
     await updateProduct(
@@ -714,6 +738,15 @@ export const EditProductForm = ({
             store={store}
             stockLocations={stockLocations}
             onModalOpenChange={setVariationsModalOpen}
+          />
+
+          {/* Color swatches — only when there's a color option */}
+          <ProductColorSwatches
+            values={colorValues}
+            colorHex={watchedColorHex as Record<string, string>}
+            onChange={(next) =>
+              form.setValue("color_hex", next, { shouldDirty: true })
+            }
           />
 
           {/* Metadata */}

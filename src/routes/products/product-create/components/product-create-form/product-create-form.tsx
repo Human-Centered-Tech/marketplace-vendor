@@ -24,6 +24,10 @@ import {
 import { ProductCreateDetailsForm } from "../product-create-details-form"
 import { ProductCreateInventoryKitForm } from "../product-create-inventory-kit-form"
 import { ProductCreateOrganizeForm } from "../product-create-organize-form"
+import {
+  ProductColorSwatches,
+  getColorOptionValues,
+} from "../../../common/components/product-color-swatches"
 import { ProductCreateVariantsPricingSection } from "../product-create-variants-pricing-section"
 
 const SAVE_DRAFT_BUTTON = "save-draft-button"
@@ -81,6 +85,12 @@ export const ProductCreateForm = ({
     [watchedVariants]
   )
 
+  // Color swatches — shown only when there's a color option.
+  const watchedOptions = useWatch({ control: form.control, name: "options" })
+  const watchedColorHex =
+    useWatch({ control: form.control, name: "color_hex" }) ?? {}
+  const colorValues = getColorOptionValues(watchedOptions ?? [])
+
   const handleSubmit = form.handleSubmit(async (values, e) => {
     let isDraftSubmission = false
 
@@ -136,6 +146,16 @@ export const ProductCreateForm = ({
 
     const vendorTagIds = payload.tags || []
 
+    // Color swatches → product.metadata.color_hex (only current color values +
+    // valid #rrggbb hexes).
+    const colorValueSet = new Set(getColorOptionValues(values.options))
+    const colorHexMeta: Record<string, string> = {}
+    for (const [value, hex] of Object.entries(values.color_hex ?? {})) {
+      if (colorValueSet.has(value) && /^#[0-9a-fA-F]{6}$/.test(hex)) {
+        colorHexMeta[value] = hex
+      }
+    }
+
     await mutateAsync(
       {
         ...payload,
@@ -151,6 +171,10 @@ export const ProductCreateForm = ({
         shipping_profile_id: undefined,
         enable_variants: undefined,
         additional_data: undefined,
+        color_hex: undefined,
+        metadata: Object.keys(colorHexMeta).length
+          ? { color_hex: colorHexMeta }
+          : undefined,
         categories: payload.categories.map((cat) => ({
           id: cat,
         })),
@@ -228,6 +252,13 @@ export const ProductCreateForm = ({
           <ProductCreateDetailsForm form={form} />
           <ProductCreateOrganizeForm form={form} />
           <ProductCreateVariantsPricingSection form={form} store={store} />
+          <ProductColorSwatches
+            values={colorValues}
+            colorHex={watchedColorHex as Record<string, string>}
+            onChange={(next) =>
+              form.setValue("color_hex", next, { shouldDirty: true })
+            }
+          />
           {showInventoryTab && <ProductCreateInventoryKitForm form={form} />}
           <StickySaveBar
             form={form}
