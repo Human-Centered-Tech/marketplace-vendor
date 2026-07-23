@@ -102,10 +102,44 @@ export const ProductListTable = () => {
     const keys = Object.keys(rowSelection)
     if (keys.length === 0) return
 
+    // Guard: a product with no USD price can't render or be bought, so
+    // publishing it just makes it silently vanish from the storefront (the
+    // "shows N listings but empty shop" trap). Don't publish priceless
+    // products — publish the priced ones and tell the seller which need a
+    // price. Data is already loaded (variants.prices) so no extra fetch.
+    const hasUsdPrice = (p?: ExtendedAdminProduct) =>
+      (p?.variants ?? []).some((v) =>
+        (v.prices ?? []).some(
+          (pr) => pr.currency_code === "usd" && pr.amount != null
+        )
+      )
+    const priceless = products.filter(
+      (p) => keys.includes(p.id) && !hasUsdPrice(p)
+    )
+    const publishable = keys.filter(
+      (id) => !priceless.some((p) => p.id === id)
+    )
+
+    if (priceless.length) {
+      const names = priceless
+        .map((p) => p.title)
+        .filter(Boolean)
+        .slice(0, 4)
+        .join(", ")
+      toast.warning("Set a price before publishing", {
+        description: `${priceless.length} selected product${
+          priceless.length > 1 ? "s have" : " has"
+        } no price and won't publish — a product with no price is invisible in your store. Add a price to: ${names}${
+          priceless.length > 4 ? ", …" : ""
+        }.`,
+      })
+    }
+    if (publishable.length === 0) return
+
     const res = await prompt({
       title: t("products.bulkPublish.title"),
       description: t("products.bulkPublish.description", {
-        count: keys.length,
+        count: publishable.length,
       }),
       confirmText: t("products.bulkPublish.confirm"),
       cancelText: t("actions.cancel"),
@@ -114,12 +148,12 @@ export const ProductListTable = () => {
     if (!res) return
 
     await bulkUpdate(
-      { update: keys.map((id) => ({ id, status: "published" })) },
+      { update: publishable.map((id) => ({ id, status: "published" })) },
       {
         onSuccess: () => {
           setRowSelection({})
           toast.success(
-            t("products.bulkPublish.success", { count: keys.length })
+            t("products.bulkPublish.success", { count: publishable.length })
           )
         },
         onError: (error) => {
