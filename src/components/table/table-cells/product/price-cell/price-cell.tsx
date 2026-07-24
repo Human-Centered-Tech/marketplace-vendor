@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next"
+import { StatusBadge, Tooltip } from "@medusajs/ui"
 
 import { PlaceholderCell } from "../../common/placeholder-cell"
 
@@ -41,8 +42,19 @@ export const PriceCell = ({ variants, currency = "usd" }: PriceCellProps) => {
     }
   }
 
+  // Variants exist but none has a USD price. This is the trap behind
+  // "published product shows 'N listings' but an empty storefront": a product
+  // with no price can't be rendered/bought, so it silently disappears from the
+  // shop. Make it loud here (and block publishing it — see the product list's
+  // bulk-publish guard) so the seller knows to set a price.
   if (amounts.length === 0) {
-    return <PlaceholderCell />
+    return (
+      <div className="flex h-full w-full items-center overflow-hidden">
+        <Tooltip content="This product has no price. Set a price so it can appear in your store.">
+          <StatusBadge color="orange">No price</StatusBadge>
+        </Tooltip>
+      </div>
+    )
   }
 
   const min = Math.min(...amounts)
