@@ -1,6 +1,7 @@
 import { HttpTypes } from "@medusajs/types"
+import { Input, Text } from "@medusajs/ui"
 import { useMemo } from "react"
-import { UseFormReturn, useWatch } from "react-hook-form"
+import { Controller, UseFormReturn, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
 import { InlineEditCard } from "../../../../../components/common/inline-edit"
@@ -12,6 +13,11 @@ import { ProductCreatePriceField } from "./product-create-price-field"
 type ProductCreateVariantsPricingSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
   store?: HttpTypes.AdminStore
+  /**
+   * Name of the location the starting stock lands in, shown next to the
+   * Quantity field. Omitted → the field is hidden (no location to write to).
+   */
+  stockLocationName?: string
 }
 
 type VariantWithIndex = ProductCreateVariantSchema & {
@@ -21,6 +27,7 @@ type VariantWithIndex = ProductCreateVariantSchema & {
 export const ProductCreateVariantsPricingSection = ({
   form,
   store,
+  stockLocationName,
 }: ProductCreateVariantsPricingSectionProps) => {
   const { t } = useTranslation()
 
@@ -93,6 +100,42 @@ export const ProductCreateVariantsPricingSection = ({
                 stacked
               />
             ))}
+            {/*
+              Starting stock. Mirrors the same field on the edit form's
+              newly-added variants — it isn't sent with the create call (stock
+              levels can't exist before the variant does), it's applied in a
+              second pass once the server returns real ids.
+            */}
+            {stockLocationName ? (
+              <div className="flex flex-col gap-y-1 px-6 py-4">
+                <Text
+                  size="xsmall"
+                  leading="compact"
+                  className="text-ui-fg-muted"
+                >
+                  {`Quantity — ${stockLocationName}`}
+                </Text>
+                <Controller
+                  control={form.control}
+                  name={`variants.${v.originalIndex}.new_stock`}
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <Input
+                      {...field}
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="0"
+                      className="max-w-[10rem]"
+                      value={value ?? ""}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "")
+                        onChange(digits === "" ? null : Number(digits))
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            ) : null}
           </InlineEditCard>
         )
       })}

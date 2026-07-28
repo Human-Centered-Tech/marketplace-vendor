@@ -29,6 +29,7 @@ import { queryClient } from "../../../../../lib/query-client"
 import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
 import { InventoryItemWithLevels } from "../../../../../types/inventory"
 import { ExtendedAdminProduct } from "../../../../../types/products"
+import { applyNewVariantStock } from "../../../common/utils/apply-new-variant-stock"
 import { ProductCreateOrganizationSection } from "../../../product-create/components/product-create-organize-form/components/product-create-organize-section"
 import {
   ProductColorSwatches,
@@ -360,66 +361,22 @@ export const EditProductForm = ({
           }
 
           // --- Starting stock for new variants (captured in the modal) ---
-          // Created variants get their inventory item (and often a zero level)
-          // lazily, so refetch to map combo → inventory_item_id, then per item
-          // decide create-vs-update against the primary location's level.
           const newWithStock = newVariants.filter(
             (v) => v.new_stock != null && String(v.new_stock).trim() !== ""
           )
           if (newWithStock.length && stockLocations.length) {
             try {
-              const { product: fresh } = await fetchQuery(
-                `/vendor/products/${product.id}`,
-                { method: "GET", query: { fields: "*variants.inventory_items" } }
-              )
-              const primaryLocation = stockLocations[0].id
-              const create: HttpTypes.AdminBatchInventoryItemsLocationLevels["create"] =
-                []
-              const update: HttpTypes.AdminBatchInventoryItemsLocationLevels["update"] =
-                []
-              for (const nv of newWithStock) {
-                const title = nv.title || Object.values(nv.options).join(" / ")
-                const freshVariant = (fresh?.variants ?? []).find(
-                  (fv: any) => fv.title === title
-                )
-                const invId =
-                  freshVariant?.inventory_items?.[0]?.inventory_item_id
-                if (!invId) {
-                  continue
-                }
-                const entry = {
-                  inventory_item_id: invId,
-                  location_id: primaryLocation,
-                  stocked_quantity: castNumber(nv.new_stock as any),
-                }
-                // A manage_inventory variant may already have a zero level at
-                // the location — update it instead of creating a duplicate.
-                let hasLevel = false
-                try {
-                  const res = await fetchQuery(
-                    `/vendor/inventory-items/${invId}/location-levels`,
-                    { method: "GET" }
-                  )
-                  hasLevel = (res?.location_levels ?? []).some(
-                    (l: any) => l.location_id === primaryLocation
-                  )
-                } catch {
-                  // treat as no level
-                }
-                if (hasLevel) {
-                  update.push(entry)
-                } else {
-                  create.push(entry)
-                }
-              }
-              if (create.length || update.length) {
-                await updateStockLevels({
-                  create,
-                  update,
-                  delete: [],
-                  force: true,
-                })
-              }
+              await applyNewVariantStock({
+                productId: product.id,
+                locationId: stockLocations[0].id,
+                entries: newWithStock.map((v) => ({
+                  // Same fallback the variant was CREATED with above, so the
+                  // title we match on is the title the server stored.
+                  title: v.title || Object.values(v.options).join(" / "),
+                  quantity: castNumber(v.new_stock as string | number),
+                })),
+                updateStockLevels,
+              })
             } catch (err) {
               toast.error(
                 `Variants added, but their starting stock didn't set: ${
