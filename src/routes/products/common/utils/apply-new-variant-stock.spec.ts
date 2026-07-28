@@ -110,7 +110,7 @@ describe("applyNewVariantStock", () => {
     })
   })
 
-  it("updates instead of creating when the subscriber already made a zero level", async () => {
+  it("updates instead of creating when a zero level already exists", async () => {
     stubServer({
       variants: [{ title: "S / Red", inventoryItemId: "iitem_1" }],
       itemsWithExistingLevel: ["iitem_1"],
@@ -249,6 +249,80 @@ describe("applyNewVariantStock", () => {
         stocked_quantity: 1,
       },
     ])
+  })
+
+  it("retries when a level appears between the probe and the batch", async () => {
+    // Reproduces the staging failure: the probe saw no level, so the entry was
+    // sent as a create; the level existed by the time the batch landed, and the
+    // endpoint rejected the WHOLE request, losing every quantity in it.
+    let levelExists = false
+    let batchCalls = 0
+
+    mockFetch.mockImplementation(async (path: string) => {
+      if (path.startsWith("/vendor/products/")) {
+        return {
+          product: {
+            variants: [
+              {
+                title: "S / Red",
+                inventory_items: [{ inventory_item_id: "iitem_1" }],
+              },
+            ],
+          },
+        }
+      }
+      const levels = levelExists ? [{ location_id: LOCATION }] : []
+      // The server creates the level asynchronously — it lands right after our
+      // first probe reads "absent".
+      levelExists = true
+      return { location_levels: levels }
+    })
+
+    const updateStockLevels = vi.fn(async (payload: any) => {
+      batchCalls++
+      if (payload.create.length) {
+        throw new Error(
+          "Inventory level with inventory_item_id: iitem_1 already exists."
+        )
+      }
+      return {}
+    })
+
+    await applyNewVariantStock({
+      productId: "prod_1",
+      locationId: LOCATION,
+      entries: [{ title: "S / Red", quantity: 12 }],
+      updateStockLevels,
+    })
+
+    expect(batchCalls).toBe(2)
+    // Second attempt re-probed, saw the settled state, and sent an update.
+    expect(updateStockLevels.mock.calls[1][0]).toMatchObject({
+      create: [],
+      update: [
+        {
+          inventory_item_id: "iitem_1",
+          location_id: LOCATION,
+          stocked_quantity: 12,
+        },
+      ],
+    })
+  })
+
+  it("surfaces the error when the retry also fails", async () => {
+    stubServer({ variants: [{ title: "S / Red", inventoryItemId: "iitem_1" }] })
+    const updateStockLevels = vi.fn().mockRejectedValue(new Error("nope"))
+
+    await expect(
+      applyNewVariantStock({
+        productId: "prod_1",
+        locationId: LOCATION,
+        entries: [{ title: "S / Red", quantity: 12 }],
+        updateStockLevels,
+      })
+    ).rejects.toThrow("nope")
+
+    expect(updateStockLevels).toHaveBeenCalledTimes(2)
   })
 
   it("throws when no variant matches, rather than silently saving nothing", async () => {
