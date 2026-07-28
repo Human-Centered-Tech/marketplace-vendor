@@ -309,7 +309,38 @@ describe("applyNewVariantStock", () => {
     })
   })
 
-  it("surfaces the error when the retry also fails", async () => {
+  it("gives up asking and sends everything as an update on the last attempt", async () => {
+    // The probe keeps insisting there's no level, but the endpoint keeps
+    // saying there is — the case a plain re-probe can't escape.
+    stubServer({ variants: [{ title: "S / Red", inventoryItemId: "iitem_1" }] })
+    const updateStockLevels = vi.fn(async (payload: any) => {
+      if (payload.create.length) {
+        throw new Error("already exists")
+      }
+      return {}
+    })
+
+    await applyNewVariantStock({
+      productId: "prod_1",
+      locationId: LOCATION,
+      entries: [{ title: "S / Red", quantity: 12 }],
+      updateStockLevels,
+    })
+
+    expect(updateStockLevels).toHaveBeenCalledTimes(3)
+    expect(updateStockLevels.mock.calls[2][0]).toMatchObject({
+      create: [],
+      update: [
+        {
+          inventory_item_id: "iitem_1",
+          location_id: LOCATION,
+          stocked_quantity: 12,
+        },
+      ],
+    })
+  })
+
+  it("surfaces the error when every attempt fails", async () => {
     stubServer({ variants: [{ title: "S / Red", inventoryItemId: "iitem_1" }] })
     const updateStockLevels = vi.fn().mockRejectedValue(new Error("nope"))
 
@@ -322,7 +353,7 @@ describe("applyNewVariantStock", () => {
       })
     ).rejects.toThrow("nope")
 
-    expect(updateStockLevels).toHaveBeenCalledTimes(2)
+    expect(updateStockLevels).toHaveBeenCalledTimes(3)
   })
 
   it("throws when no variant matches, rather than silently saving nothing", async () => {

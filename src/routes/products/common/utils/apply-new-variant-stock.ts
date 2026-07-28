@@ -2,6 +2,13 @@ import { HttpTypes } from "@medusajs/types"
 
 import { fetchQuery } from "../../../../lib/client"
 
+/**
+ * Pause between attempts, to let the server finish creating the levels it
+ * makes for brand-new variants. Observed settling within ~800ms of the create
+ * call returning.
+ */
+const SETTLE_MS = 600
+
 export type NewVariantStockEntry = {
   /**
    * The variant's title, used to match it against the freshly-refetched
@@ -87,25 +94,28 @@ export const applyNewVariantStock = async ({
   // Probed in parallel. Doing this serially costs one full round trip per
   // variant, which is several seconds on a product with a big option matrix
   // (prod has 58 products with 26+ variants, topping out at 60).
-  const probeAndSend = async () => {
-    const hasLevel = await Promise.all(
-      targets.map(async (target) => {
-        try {
-          const res = await fetchQuery(
-            `/vendor/inventory-items/${target.inventoryItemId}/location-levels`,
-            { method: "GET" }
-          )
-          return (res?.location_levels ?? []).some(
-            (level: { location_id: string }) => level.location_id === locationId
-          )
-        } catch {
-          // Treat an unreadable item as "no level" — a failed create is
-          // recoverable (the vendor can set stock on the edit page), a failed
-          // update on a row that doesn't exist is not.
-          return false
-        }
-      })
-    )
+  const probeAndSend = async (assumeAllExist = false) => {
+    const hasLevel = assumeAllExist
+      ? targets.map(() => true)
+      : await Promise.all(
+          targets.map(async (target) => {
+            try {
+              const res = await fetchQuery(
+                `/vendor/inventory-items/${target.inventoryItemId}/location-levels`,
+                { method: "GET" }
+              )
+              return (res?.location_levels ?? []).some(
+                (level: { location_id: string }) =>
+                  level.location_id === locationId
+              )
+            } catch {
+              // Treat an unreadable item as "no level" — a failed create is
+              // recoverable (the vendor can set stock on the edit page), a
+              // failed update on a row that doesn't exist is not.
+              return false
+            }
+          })
+        )
 
     const create: HttpTypes.AdminBatchInventoryItemsLocationLevels["create"] = []
     const update: HttpTypes.AdminBatchInventoryItemsLocationLevels["update"] = []
@@ -135,12 +145,29 @@ export const applyNewVariantStock = async ({
   // staging with a 9-variant product: probes at T+0.6s saw some items with no
   // level, the batch at T+0.7s got a 400, all nine quantities dropped.
   //
-  // Re-probe and retry once. The race only ever resolves one way (levels get
-  // created, never removed), so the second pass sees settled state and sends
-  // updates for everything.
-  try {
-    await probeAndSend()
-  } catch {
-    await probeAndSend()
+  // Escalate rather than retry once, because a re-probe can lose the same race
+  // a second time. The state only ever converges (levels get created, never
+  // removed), so the last attempt stops asking and treats every level as
+  // existing — which is what a collision already told us.
+  //
+  //   1. probe and split
+  //   2. settle, re-probe and split
+  //   3. settle, send everything as an update
+  const attempts = [
+    () => probeAndSend(),
+    () => probeAndSend(),
+    () => probeAndSend(true),
+  ]
+
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      await attempts[i]()
+      return
+    } catch (err) {
+      if (i === attempts.length - 1) {
+        throw err
+      }
+      await new Promise((resolve) => setTimeout(resolve, SETTLE_MS))
+    }
   }
 }
