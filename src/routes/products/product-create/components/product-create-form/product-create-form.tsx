@@ -254,7 +254,7 @@ export const ProductCreateForm = ({
               })
             } catch (err) {
               toast.error(
-                `Product created, but its starting stock didn't save — set it on the product page. ${
+                `Product created, but its starting stock didn't fully save. ${
                   err instanceof Error ? err.message : ""
                 }`.trim()
               )

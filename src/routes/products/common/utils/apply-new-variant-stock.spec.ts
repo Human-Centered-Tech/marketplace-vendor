@@ -223,7 +223,7 @@ describe("applyNewVariantStock", () => {
     expect(updateStockLevels.mock.calls[0][0].create).toHaveLength(1)
   })
 
-  it("applies the variants it can match and skips the ones it can't", async () => {
+  it("applies what it can match, then reports what it couldn't by name", async () => {
     stubServer({
       variants: [
         { title: "S / Red", inventoryItemId: "iitem_1" },
@@ -232,16 +232,21 @@ describe("applyNewVariantStock", () => {
     })
     const updateStockLevels = vi.fn()
 
-    await applyNewVariantStock({
-      productId: "prod_1",
-      locationId: LOCATION,
-      entries: [
-        { title: "S / Red", quantity: 1 },
-        { title: "M / Red", quantity: 2 },
-      ],
-      updateStockLevels,
-    })
+    // The matched variant still gets its stock...
+    await expect(
+      applyNewVariantStock({
+        productId: "prod_1",
+        locationId: LOCATION,
+        entries: [
+          { title: "S / Red", quantity: 1 },
+          { title: "M / Red", quantity: 2 },
+        ],
+        updateStockLevels,
+      })
+      // ...and the unmatched one is named, rather than vanishing silently.
+    ).rejects.toThrow(/didn't apply to "M \/ Red"/)
 
+    expect(updateStockLevels).toHaveBeenCalledTimes(1)
     expect(updateStockLevels.mock.calls[0][0].create).toEqual([
       {
         inventory_item_id: "iitem_1",
@@ -249,6 +254,47 @@ describe("applyNewVariantStock", () => {
         stocked_quantity: 1,
       },
     ])
+  })
+
+  it("refuses when two entries share a title", async () => {
+    const updateStockLevels = vi.fn()
+
+    await expect(
+      applyNewVariantStock({
+        productId: "prod_1",
+        locationId: LOCATION,
+        entries: [
+          { title: "S / Red", quantity: 1 },
+          { title: "S / Red", quantity: 2 },
+        ],
+        updateStockLevels,
+      })
+    ).rejects.toThrow(/share the name "S \/ Red"/)
+
+    // Refused before touching the server — no guessing which one won.
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(updateStockLevels).not.toHaveBeenCalled()
+  })
+
+  it("refuses when the saved product has two variants with the same title", async () => {
+    stubServer({
+      variants: [
+        { title: "S / Red", inventoryItemId: "iitem_1" },
+        { title: "S / Red", inventoryItemId: "iitem_2" },
+      ],
+    })
+    const updateStockLevels = vi.fn()
+
+    await expect(
+      applyNewVariantStock({
+        productId: "prod_1",
+        locationId: LOCATION,
+        entries: [{ title: "S / Red", quantity: 1 }],
+        updateStockLevels,
+      })
+    ).rejects.toThrow(/more than one variant named "S \/ Red"/)
+
+    expect(updateStockLevels).not.toHaveBeenCalled()
   })
 
   it("retries when a level appears between the probe and the batch", async () => {
@@ -369,7 +415,8 @@ describe("applyNewVariantStock", () => {
         entries: [{ title: "S / Red", quantity: 12 }],
         updateStockLevels,
       })
-    ).rejects.toThrow(/Couldn't match/)
+      // Names the variant rather than reporting a generic failure.
+    ).rejects.toThrow(/didn't apply to "S \/ Red"/)
 
     expect(updateStockLevels).not.toHaveBeenCalled()
   })

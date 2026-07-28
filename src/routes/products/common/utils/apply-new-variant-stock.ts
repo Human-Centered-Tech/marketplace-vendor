@@ -9,6 +9,28 @@ import { fetchQuery } from "../../../../lib/client"
  */
 const SETTLE_MS = 600
 
+/** Values appearing more than once, each listed once, in first-seen order. */
+const findDuplicates = (values: string[]): string[] => {
+  const seen = new Set<string>()
+  const repeated = new Set<string>()
+  for (const value of values) {
+    if (seen.has(value)) {
+      repeated.add(value)
+    }
+    seen.add(value)
+  }
+  return [...repeated]
+}
+
+/** `"A", "B" and "C"` — for naming variants back to the vendor in an error. */
+const quoteList = (values: string[]): string => {
+  const quoted = values.map((v) => `"${v}"`)
+  if (quoted.length <= 1) {
+    return quoted.join("")
+  }
+  return `${quoted.slice(0, -1).join(", ")} and ${quoted[quoted.length - 1]}`
+}
+
 export type NewVariantStockEntry = {
   /**
    * The variant's title, used to match it against the freshly-refetched
@@ -51,39 +73,86 @@ export const applyNewVariantStock = async ({
     return
   }
 
+  // Everything below keys on title, so a repeated title can only be guessed at:
+  // one variant would take another's quantity and one would get none, quietly.
+  // On create, titles are the option combination and so are distinct unless a
+  // value itself contains " / "; in the edit form's add-variations modal they're
+  // free text and can genuinely repeat. Refuse instead of guessing.
+  const duplicateEntryTitles = findDuplicates(entries.map((e) => e.title))
+  if (duplicateEntryTitles.length) {
+    throw new Error(
+      `two variants share the name ${quoteList(duplicateEntryTitles)} — ` +
+        `rename one and set its stock on the product page`
+    )
+  }
+
   // Refetch to learn each new variant's inventory item id.
   const { product } = await fetchQuery(`/vendor/products/${productId}`, {
     method: "GET",
     query: { fields: "*variants.inventory_items" },
   })
 
+  const serverVariants = (product?.variants ?? []) as Array<{
+    title?: string
+    inventory_items?: Array<{ inventory_item_id?: string }>
+  }>
+
+  // Same hazard from the other side: two saved variants sharing a title makes
+  // the lookup ambiguous, whatever the entries look like.
+  const wanted = new Set(entries.map((e) => e.title))
+  const duplicateSavedTitles = findDuplicates(
+    serverVariants
+      .map((v) => v.title)
+      .filter((t): t is string => !!t && wanted.has(t))
+  )
+  if (duplicateSavedTitles.length) {
+    throw new Error(
+      `the product has more than one variant named ${quoteList(
+        duplicateSavedTitles
+      )} — set its stock on the product page`
+    )
+  }
+
   const inventoryItemByTitle = new Map<string, string>()
-  for (const variant of product?.variants ?? []) {
+  for (const variant of serverVariants) {
     const inventoryItemId = variant?.inventory_items?.[0]?.inventory_item_id
     if (variant?.title && inventoryItemId) {
       inventoryItemByTitle.set(variant.title, inventoryItemId)
     }
   }
 
-  const targets = entries
-    .map((entry) => ({
-      quantity: entry.quantity,
-      inventoryItemId: inventoryItemByTitle.get(entry.title),
-    }))
-    .filter(
-      (target): target is { quantity: number; inventoryItemId: string } =>
-        !!target.inventoryItemId
-    )
+  const resolved = entries.map((entry) => ({
+    title: entry.title,
+    quantity: entry.quantity,
+    inventoryItemId: inventoryItemByTitle.get(entry.title),
+  }))
 
-  // Nothing matched: the titles we're keyed on don't line up with what the
-  // server stored, or the variants have no inventory items. Throw rather than
-  // return quietly — silently dropping a quantity the vendor typed reads as
-  // "saved as 0", which is worse than an error they can act on. A partial
-  // match still proceeds with whatever resolved.
+  const targets = resolved.filter(
+    (
+      target
+    ): target is { title: string; quantity: number; inventoryItemId: string } =>
+      !!target.inventoryItemId
+  )
+  const unmatched = resolved
+    .filter((target) => !target.inventoryItemId)
+    .map((target) => target.title)
+
+  // Reported AFTER the write, not instead of it: the variants we did resolve
+  // should still get their stock. But they must be reported — a quantity the
+  // vendor typed disappearing without a word reads as "saved as 0", and until
+  // now only the all-missing case said anything at all.
+  const reportUnmatched = () => {
+    if (unmatched.length) {
+      throw new Error(
+        `stock didn't apply to ${quoteList(unmatched)} — ` +
+          `set it on the product page`
+      )
+    }
+  }
+
   if (!targets.length) {
-    throw new Error(
-      "Couldn't match the new variants to their inventory records"
-    )
+    reportUnmatched()
+    return
   }
 
   // A brand-new variant's zero-quantity level (inventory item × seller
@@ -160,14 +229,21 @@ export const applyNewVariantStock = async ({
   ]
 
   for (let i = 0; i < attempts.length; i++) {
+    let saved = false
     try {
       await attempts[i]()
-      return
+      saved = true
     } catch (err) {
       if (i === attempts.length - 1) {
         throw err
       }
       await new Promise((resolve) => setTimeout(resolve, SETTLE_MS))
+    }
+    // Outside the try on purpose: reportUnmatched throws, and inside it that
+    // would be caught as a failed write and retried.
+    if (saved) {
+      reportUnmatched()
+      return
     }
   }
 }
