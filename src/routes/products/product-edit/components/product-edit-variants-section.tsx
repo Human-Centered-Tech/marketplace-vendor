@@ -118,7 +118,6 @@ export const ProductEditVariantsSection = ({
     stock.forEach((s, i) => map.set(s.id, i))
     return map
   }, [stock])
-  const primaryLocationName = stockLocations?.[0]?.name
 
   // Titles of the product's real options (titled + at least one value) — used
   // to flag "incomplete" variants (leftovers missing a value for an option
@@ -551,7 +550,6 @@ export const ProductEditVariantsSection = ({
                   className="text-ui-fg-muted"
                 >
                   Quantity
-                  {primaryLocationName ? ` — ${primaryLocationName}` : ""}
                 </Text>
                 <Controller
                   control={form.control}
@@ -718,7 +716,6 @@ export const ProductEditVariantsSection = ({
         addedLabel={modalAddedLabel}
         currencyCode={currencyCodes[0] ?? CURRENCY_CODE}
         canStock={(stockLocations?.length ?? 0) > 0}
-        stockLocationName={stockLocations?.[0]?.name}
         onConfirm={handleAddVariations}
       />
     </div>

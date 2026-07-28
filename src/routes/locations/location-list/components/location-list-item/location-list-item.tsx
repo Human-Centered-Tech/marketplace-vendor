@@ -1,12 +1,11 @@
-import { Buildings, PencilSquare, Trash } from "@medusajs/icons"
+import { Buildings, PencilSquare } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Container, StatusBadge, Text, toast, usePrompt } from "@medusajs/ui"
+import { Container, StatusBadge, Text } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 
 import { ActionMenu } from "../../../../../components/common/action-menu"
 // import { BadgeListSummary } from "../../../../../components/common/badge-list-summary"
 import { LinkButton } from "../../../../../components/common/link-button"
-import { useDeleteStockLocation } from "../../../../../hooks/api/stock-locations"
 import { getFormattedAddress } from "../../../../../lib/addresses"
 import { FulfillmentSetType } from "../../../common/constants"
 
@@ -85,37 +84,6 @@ type LocationProps = {
 function LocationListItem(props: LocationProps) {
   const { location } = props
   const { t } = useTranslation()
-  const prompt = usePrompt()
-
-  const { mutateAsync: deleteLocation } = useDeleteStockLocation(location.id)
-
-  const handleDelete = async () => {
-    const result = await prompt({
-      title: t("general.areYouSure"),
-      description: t("stockLocations.delete.confirmation", {
-        name: location.name,
-      }),
-      confirmText: t("actions.remove"),
-      cancelText: t("actions.cancel"),
-    })
-
-    if (!result) {
-      return
-    }
-
-    await deleteLocation(undefined, {
-      onSuccess: () => {
-        toast.success(
-          t("shippingProfile.delete.successToast", {
-            name: location.name,
-          })
-        )
-      },
-      onError: (e) => {
-        toast.error(e.message)
-      },
-    })
-  }
 
   return (
     <Container className="flex flex-col divide-y p-0">
@@ -137,6 +105,15 @@ function LocationListItem(props: LocationProps) {
           </div>
 
           <div className="flex grow-0 items-center gap-4">
+            {/*
+              No Delete. A seller has exactly one stock location, and deleting
+              it cascades away the fulfillment set, service zones and shipping
+              options beneath — leaving carts with their products dead-ended on
+              "No shipping options are available for this address". That is how
+              Chain of Joy became unbuyable on 2026-07-03. The backend
+              middleware (reprovision-seller-shipping) re-provisions afterwards,
+              but a merchant should not be able to walk into it at all.
+            */}
             <ActionMenu
               groups={[
                 {
@@ -145,15 +122,6 @@ function LocationListItem(props: LocationProps) {
                       label: t("actions.edit"),
                       icon: <PencilSquare />,
                       to: `/settings/locations/${location.id}/edit`,
-                    },
-                  ],
-                },
-                {
-                  actions: [
-                    {
-                      label: t("actions.delete"),
-                      icon: <Trash />,
-                      onClick: handleDelete,
                     },
                   ],
                 },

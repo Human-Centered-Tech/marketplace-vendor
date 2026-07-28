@@ -16,7 +16,6 @@ type AddVariationsModalProps = {
   addedLabel?: string
   currencyCode: string
   canStock: boolean
-  stockLocationName?: string
   onConfirm: (selections: NewVariationSelection[]) => void
 }
 
@@ -36,7 +35,6 @@ export const AddVariationsModal = ({
   addedLabel,
   currencyCode,
   canStock,
-  stockLocationName,
   onConfirm,
 }: AddVariationsModalProps) => {
   const [addAll, setAddAll] = useState(false)
@@ -144,7 +142,7 @@ export const AddVariationsModal = ({
                           className="text-ui-fg-subtle"
                           leading="compact"
                         >
-                          Stock{stockLocationName ? ` — ${stockLocationName}` : ""}
+                          Stock
                         </Text>
                         <Input
                           type="text"

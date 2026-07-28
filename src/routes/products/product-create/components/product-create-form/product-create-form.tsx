@@ -302,7 +302,7 @@ export const ProductCreateForm = ({
           <ProductCreateVariantsPricingSection
             form={form}
             store={store}
-            stockLocationName={primaryLocation?.name}
+            hasStockLocation={!!primaryLocation}
           />
           <ProductColorSwatches
             values={colorValues}
