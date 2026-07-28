@@ -1116,10 +1116,9 @@ export const RouteMap: RouteObject[] = [
                 path: "",
                 lazy: () => import("../../routes/locations/location-list"),
               },
-              {
-                path: "create",
-                lazy: () => import("../../routes/locations/location-create"),
-              },
+              // "create" deliberately unregistered — a seller gets exactly one
+              // stock location, provisioned for them. The form component is
+              // still on disk at routes/locations/location-create.
               {
                 path: ":location_id",
                 lazy: async () => {

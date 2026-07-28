@@ -15,7 +15,6 @@ import {
 } from "@medusajs/ui"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
 
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { NoRecords } from "../../../../../components/common/empty-table-content"
@@ -27,7 +26,6 @@ import {
 } from "../../../../../hooks/api/fulfillment-sets"
 import {
   useCreateStockLocationFulfillmentSet,
-  useDeleteStockLocation,
 } from "../../../../../hooks/api/stock-locations"
 import { getFormattedAddress } from "../../../../../lib/addresses"
 import {
@@ -381,42 +379,12 @@ function FulfillmentSet(props: FulfillmentSetProps) {
   )
 }
 
+// No Delete here either — the list item is not the only door to it. Removing a
+// seller's only stock location cascades away its fulfillment set, service zones
+// and shipping options, dead-ending checkout for every cart holding their
+// products (Chain of Joy, 2026-07-03).
 const Actions = ({ location }: { location: VendorExtendedAdminStockLocation }) => {
-  const navigate = useNavigate()
   const { t } = useTranslation()
-  const { mutateAsync } = useDeleteStockLocation(location.id)
-  const prompt = usePrompt()
-
-  const handleDelete = async () => {
-    const res = await prompt({
-      title: t("general.areYouSure"),
-      description: t("stockLocations.delete.confirmation", {
-        name: location.name,
-      }),
-      verificationText: location.name,
-      verificationInstruction: t("general.typeToConfirm"),
-      confirmText: t("actions.delete"),
-      cancelText: t("actions.cancel"),
-    })
-
-    if (!res) {
-      return
-    }
-
-    await mutateAsync(undefined, {
-      onSuccess: () => {
-        toast.success(
-          t("stockLocations.create.successToast", {
-            name: location.name,
-          })
-        )
-        navigate("/settings/locations", { replace: true })
-      },
-      onError: (e) => {
-        toast.error(e.message)
-      },
-    })
-  }
 
   return (
     <ActionMenu
@@ -432,15 +400,6 @@ const Actions = ({ location }: { location: VendorExtendedAdminStockLocation }) =
               icon: <ArchiveBox />,
               label: t("stockLocations.edit.viewInventory"),
               to: `/inventory?location_id=${location.id}`,
-            },
-          ],
-        },
-        {
-          actions: [
-            {
-              icon: <Trash />,
-              label: t("actions.delete"),
-              onClick: handleDelete,
             },
           ],
         },

@@ -1,6 +1,5 @@
-import { Button, Container, Heading, Text } from "@medusajs/ui"
+import { Container, Heading, Text } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
 
 export const LocationListHeader = () => {
   const { t } = useTranslation()
@@ -13,9 +12,14 @@ export const LocationListHeader = () => {
           {t("stockLocations.list.description")}
         </Text>
       </div>
-      <Button size="small" className="shrink-0" variant="secondary" asChild>
-        <Link to="create">{t("actions.create")}</Link>
-      </Button>
+      {/*
+        No Create button. A seller gets exactly one stock location, provisioned
+        for them (ensureSellerFreeShipping) — extra ones only ever caused
+        confusion: the two prod sellers who made a second had zero stock and
+        zero shipping options on it, but their new products' stock still had to
+        pick a location. The create route is unregistered too; the form under
+        routes/locations/location-create is left in place, unrendered.
+      */}
     </Container>
   )
 }

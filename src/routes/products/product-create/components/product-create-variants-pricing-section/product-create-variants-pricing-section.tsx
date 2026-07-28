@@ -14,10 +14,15 @@ type ProductCreateVariantsPricingSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
   store?: HttpTypes.AdminStore
   /**
-   * Name of the location the starting stock lands in, shown next to the
-   * Quantity field. Omitted → the field is hidden (no location to write to).
+   * Whether the seller has a stock location to write the opening stock to.
+   * False → the Quantity field is hidden, there being nowhere to put it.
+   *
+   * Deliberately a boolean, not the location's name: sellers get exactly one
+   * location and never manage it, so naming it here only ever surfaced
+   * warehouse trivia — in prod that reads "<Shop> location" for 113 sellers and
+   * an arbitrary leftover ("Emily Dieter", "Joe Froula") for the other 26.
    */
-  stockLocationName?: string
+  hasStockLocation?: boolean
 }
 
 type VariantWithIndex = ProductCreateVariantSchema & {
@@ -27,7 +32,7 @@ type VariantWithIndex = ProductCreateVariantSchema & {
 export const ProductCreateVariantsPricingSection = ({
   form,
   store,
-  stockLocationName,
+  hasStockLocation,
 }: ProductCreateVariantsPricingSectionProps) => {
   const { t } = useTranslation()
 
@@ -106,14 +111,14 @@ export const ProductCreateVariantsPricingSection = ({
               levels can't exist before the variant does), it's applied in a
               second pass once the server returns real ids.
             */}
-            {stockLocationName ? (
+            {hasStockLocation ? (
               <div className="flex flex-col gap-y-1 px-6 py-4">
                 <Text
                   size="xsmall"
                   leading="compact"
                   className="text-ui-fg-muted"
                 >
-                  {`Quantity — ${stockLocationName}`}
+                  Quantity
                 </Text>
                 <Controller
                   control={form.control}
