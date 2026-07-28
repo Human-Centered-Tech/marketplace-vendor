@@ -379,7 +379,7 @@ export const EditProductForm = ({
               })
             } catch (err) {
               toast.error(
-                `Variants added, but their starting stock didn't set: ${
+                `Variants added, but their starting stock didn't fully set: ${
                   err instanceof Error ? err.message : "unknown error"
                 }`
               )
