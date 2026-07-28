@@ -32,6 +32,10 @@ const ProductCreateVariantSchema = z.object({
   options: z.record(z.string(), z.string()),
   variant_rank: z.number(),
   prices: z.record(z.string(), optionalFloat).optional(),
+  // Starting stock, applied after the product is created (stock levels can't
+  // exist until the variant does). Stripped from the create payload — see
+  // normalizeProductFormValues / product-create-form.
+  new_stock: z.union([z.number(), z.string(), z.null()]).optional(),
   inventory: z
     .array(
       z.object({

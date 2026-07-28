@@ -14,9 +14,12 @@ import {
   useExtendableForm,
 } from "../../../../../extensions"
 import { useRegions } from "../../../../../hooks/api"
+import { useBatchInventoryItemsLocationLevels } from "../../../../../hooks/api/inventory"
 import { usePricePreferences } from "../../../../../hooks/api/price-preferences"
 import { useCreateProduct } from "../../../../../hooks/api/products"
+import { castNumber } from "../../../../../lib/cast-number"
 import { fetchQuery, uploadFilesQuery } from "../../../../../lib/client"
+import { applyNewVariantStock } from "../../../common/utils/apply-new-variant-stock"
 import {
   PRODUCT_CREATE_FORM_DEFAULTS,
   ProductCreateSchema,
@@ -36,11 +39,13 @@ type ProductCreateFormProps = {
   defaultChannel?: HttpTypes.AdminSalesChannel
   store?: HttpTypes.AdminStore
   pricePreferences?: HttpTypes.AdminPricePreference[]
+  stockLocations?: HttpTypes.AdminStockLocation[]
 }
 
 export const ProductCreateForm = ({
   defaultChannel,
   store,
+  stockLocations,
 }: ProductCreateFormProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -69,6 +74,11 @@ export const ProductCreateForm = ({
   })
 
   const { mutateAsync, isPending } = useCreateProduct()
+  const { mutateAsync: updateStockLevels } =
+    useBatchInventoryItemsLocationLevels()
+
+  // Sellers have exactly one stock location today; starting stock goes there.
+  const primaryLocation = stockLocations?.[0]
 
   /**
    * TODO: Important to revisit this - use variants watch so high in the tree can cause needless rerenders of the entire page
@@ -146,6 +156,21 @@ export const ProductCreateForm = ({
 
     const vendorTagIds = payload.tags || []
 
+    // Starting stock for the variants being created. Matched back to the
+    // server's variants by title in applyNewVariantStock, so read it from the
+    // same list (and with the same filter) the payload is built from.
+    const stockEntries = payload.variants
+      .filter(
+        (variant) =>
+          variant.should_create &&
+          variant.new_stock != null &&
+          String(variant.new_stock).trim() !== ""
+      )
+      .map((variant) => ({
+        title: variant.title,
+        quantity: castNumber(variant.new_stock as string | number),
+      }))
+
     // Color swatches → product.metadata.color_hex (only current color values +
     // valid #rrggbb hexes).
     const colorValueSet = new Set(getColorOptionValues(values.options))
@@ -192,6 +217,8 @@ export const ProductCreateForm = ({
           is_default: undefined,
           inventory_kit: undefined,
           inventory: undefined,
+          // Applied after creation, not part of the create payload.
+          new_stock: undefined,
           prices: Object.keys(variant.prices || {}).map((key) => ({
             currency_code: key,
             amount: parseFloat(variant.prices?.[key] as string),
@@ -213,6 +240,27 @@ export const ProductCreateForm = ({
               toast.error(err.message || "Failed to assign tags")
             }
           }
+
+          // Starting stock — best effort. The product already exists by now, so
+          // a failure here isn't rolled back: we say so plainly and still land
+          // the vendor on the edit page, where the stock section is ready.
+          if (stockEntries.length && primaryLocation) {
+            try {
+              await applyNewVariantStock({
+                productId: data.product.id,
+                locationId: primaryLocation.id,
+                entries: stockEntries,
+                updateStockLevels,
+              })
+            } catch (err) {
+              toast.error(
+                `Product created, but its starting stock didn't save — set it on the product page. ${
+                  err instanceof Error ? err.message : ""
+                }`.trim()
+              )
+            }
+          }
+
           toast.success(
             t("products.create.successToast", {
               title: data.product.title,
@@ -251,7 +299,11 @@ export const ProductCreateForm = ({
           </div>
           <ProductCreateDetailsForm form={form} />
           <ProductCreateOrganizeForm form={form} />
-          <ProductCreateVariantsPricingSection form={form} store={store} />
+          <ProductCreateVariantsPricingSection
+            form={form}
+            store={store}
+            stockLocationName={primaryLocation?.name}
+          />
           <ProductColorSwatches
             values={colorValues}
             colorHex={watchedColorHex as Record<string, string>}
