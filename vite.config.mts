@@ -24,6 +24,52 @@ export default defineConfig(({ mode }) => {
   const MEDUSA_PROJECT = env.VITE_MEDUSA_PROJECT || null
   const sources = MEDUSA_PROJECT ? [MEDUSA_PROJECT] : []
 
+  /**
+   * Security headers, applied to BOTH the dev server and `vite preview` — the
+   * latter is what serves production traffic (scripts/launch-vendor.js), so the
+   * deployed vendor portal previously sent none of these at all.
+   *
+   * This matters more here than on most SPAs: the seller session token lives in
+   * localStorage, so it is readable by any script that executes on this origin.
+   * CSP is the compensating control for that, which is why it is being added
+   * even in report-only form.
+   *
+   * CSP is deliberately REPORT-ONLY: it blocks nothing yet, it only reports.
+   * Promote it to the enforcing `Content-Security-Policy` header in a follow-up,
+   * after watching the console for violations against the real app.
+   *
+   * `connect-src` can only list the BUILD-TIME backend. The deployed backend is
+   * injected at container start into dist/runtime-config.js, so it may differ;
+   * add that origin before enforcing.
+   */
+  const CSP_REPORT_ONLY = [
+    "default-src 'self'",
+    "script-src 'self'",
+    // Vite and Tailwind both inject inline <style> blocks.
+    "style-src 'self' 'unsafe-inline'",
+    // Product, seller, and directory media come from arbitrary CDNs.
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src 'self' ${BACKEND_URL} ${STOREFRONT_URL}`,
+    // Shopify-import walkthrough video (src/routes/imports/imports.tsx).
+    "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ")
+
+  const SECURITY_HEADERS = {
+    // Enforcing. The vendor portal is never meant to be framed; this is the real
+    // clickjacking control (CSP frame-ancestors above is report-only for now).
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    // Ignored by browsers over plain HTTP, so local dev is unaffected.
+    // No `preload` — that is a one-way door and belongs to whoever owns the domain.
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Content-Security-Policy-Report-Only": CSP_REPORT_ONLY,
+  }
+
   return {
     plugins: [
       inspect(),
@@ -47,11 +93,13 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: parseInt(process.env.PORT || '5173'),
       open: false,
+      headers: SECURITY_HEADERS,
       allowedHosts: PUBLIC_BASE_URL ? [PUBLIC_BASE_URL.replace('https://', '').replace('http://', '').split('/')[0]] : [],
     },
     preview: {
       host: true,
       port: parseInt(process.env.PORT || '4173'),
+      headers: SECURITY_HEADERS,
       allowedHosts: PUBLIC_BASE_URL ? [PUBLIC_BASE_URL.replace('https://', '').replace('http://', '').split('/')[0]] : [],
     },
     optimizeDeps: {
