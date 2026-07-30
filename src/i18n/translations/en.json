@@ -417,7 +417,7 @@
       },
       "errors": {
         "variants": "Please select at least one option.",
-        "options": "Please create at least one option.",
+        "options": "Please create at least one option type.",
         "uniqueSku": "SKU must be unique."
       },
       "inventory": {
@@ -443,8 +443,8 @@
           "tip": "Options left unchecked won't be created. You can always create and edit options afterwards, but this list matches the values you entered above."
         },
         "productOptions": {
-          "label": "Product options",
-          "hint": "Define the options for the product, e.g. color, size, etc."
+          "label": "Option types",
+          "hint": "Define the option types for the product, e.g. color, size, etc."
         }
       },
       "successToast": "Product {{title}} was successfully created."
@@ -632,7 +632,7 @@
         "label": "Weight"
       },
       "options": {
-        "label": "Product options",
+        "label": "Option types",
         "hint": "Options are used to define the color, size, etc. of the product",
         "add": "Add option",
         "optionTitle": "Option title",
