@@ -50,7 +50,6 @@ const StockLocationSchema = z.object({
   name: z.string().optional(),
   level_id: z.string().optional(),
   quantity: z.union([z.number(), z.string(), z.null()]).optional(),
-  checked: z.boolean(),
 })
 
 const StockVariantSchema = z.object({
@@ -179,7 +178,6 @@ const buildStockDefaults = (
           typeof level?.stocked_quantity === "number"
             ? level.stocked_quantity
             : null,
-        checked: !!level,
       }
     })
 
