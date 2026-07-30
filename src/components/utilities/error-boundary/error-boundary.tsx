@@ -1,7 +1,9 @@
 import { ExclamationCircle } from "@medusajs/icons"
 import { Text } from "@medusajs/ui"
+import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Navigate, useLocation, useRouteError } from "react-router-dom"
+import * as Sentry from "@sentry/react"
 
 import { isFetchError } from "../../../lib/is-fetch-error"
 
@@ -9,6 +11,16 @@ export const ErrorBoundary = () => {
   const error = useRouteError()
   const location = useLocation()
   const { t } = useTranslation()
+
+  // react-router renders this element instead of rethrowing, so Sentry's global
+  // handlers never see route/render errors — report them here. Skip 401s: those
+  // are an expected, handled case (we redirect to /login just below).
+  useEffect(() => {
+    if (isFetchError(error) && error.status === 401) {
+      return
+    }
+    Sentry.captureException(error)
+  }, [error])
 
   let code: number | null = null
 
