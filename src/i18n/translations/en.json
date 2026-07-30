@@ -429,7 +429,7 @@
       "variants": {
         "header": "Options",
         "subHeadingTitle": "Yes, this is a product with options",
-        "subHeadingDescription": "When unchecked, we will create a default variant for you",
+        "subHeadingDescription": "When unchecked, we will create a default option for you.",
         "optionTitle": {
           "placeholder": "Size"
         },
