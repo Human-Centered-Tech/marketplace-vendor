@@ -241,12 +241,12 @@ export const ProductEditVariantsSection = ({
       )
       if (orphaned.length) {
         const confirmed = await prompt({
-          title: "Add this option type?",
+          title: "Add this option?",
           description: `${orphaned
             .map((o) => o.title || comboLabel(o.options))
             .join(
               ", "
-            )} don't have a value for this option type, so they can't stay as-is. They'll be removed; recreate them below with the new option type. This can't be undone.`,
+            )} don't have a value for this option, so they can't stay as-is. They'll be permanently deleted — including their SKU, price, and stock — and you can recreate them below with the new option. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -354,8 +354,8 @@ export const ProductEditVariantsSection = ({
     )
     if (willDelete.length) {
       const confirmed = await prompt({
-        title: "Remove option type?",
-        description: `Removing this option type will permanently delete ${willDelete
+        title: "Remove option?",
+        description: `Removing this option will permanently delete ${willDelete
           .map((a) => a.title || comboLabel(a.options))
           .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
         confirmText: t("actions.delete", "Remove"),
@@ -400,7 +400,7 @@ export const ProductEditVariantsSection = ({
     <div className="flex flex-col gap-y-3">
       {/* Options editor */}
       <InlineEditCard
-        title={t("products.fields.options.label", "Option types")}
+        title={t("products.fields.options.label", "Product options")}
         description="Edit option values (e.g. add a new color). New combinations appear below to fill in. Removing a value that an existing option uses will ask before deleting it."
       >
         <div className="flex flex-col gap-y-4 px-6 py-4">
@@ -461,7 +461,7 @@ export const ProductEditVariantsSection = ({
             onClick={handleAddOption}
           >
             <Plus />
-            Add option type
+            Add option
           </Button>
         </div>
       </InlineEditCard>
@@ -495,8 +495,8 @@ export const ProductEditVariantsSection = ({
                     className="text-ui-fg-subtle"
                   >
                     Missing a value for {missingOptions.join(", ")} — a leftover
-                    from before that option type was added. Remove it and
-                    recreate it with all option types.
+                    from before that option was added. Remove it and
+                    recreate it with all options.
                   </Text>
                 </div>
                 <Badge size="2xsmall" color="orange" className="ml-auto">
