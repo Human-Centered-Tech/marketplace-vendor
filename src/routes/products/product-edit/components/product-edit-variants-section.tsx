@@ -206,7 +206,7 @@ export const ProductEditVariantsSection = ({
           title: "Remove option value?",
           description: `Removing ${removed
             .map((r) => `"${r}"`)
-            .join(", ")} will permanently delete ${affected.length} existing variant(s): ${affected
+            .join(", ")} will permanently delete ${affected.length} existing option(s): ${affected
             .map((a) => a.title || comboLabel(a.options))
             .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
           confirmText: t("actions.delete", "Remove"),
@@ -242,7 +242,7 @@ export const ProductEditVariantsSection = ({
       if (orphaned.length) {
         const confirmed = await prompt({
           title: "Add this option?",
-          description: `Your existing variant(s) — ${orphaned
+          description: `Your existing option(s) — ${orphaned
             .map((o) => o.title || comboLabel(o.options))
             .join(
               ", "
@@ -355,7 +355,7 @@ export const ProductEditVariantsSection = ({
     if (willDelete.length) {
       const confirmed = await prompt({
         title: "Remove option?",
-        description: `Removing this option will permanently delete ${willDelete.length} existing variant(s): ${willDelete
+        description: `Removing this option will permanently delete ${willDelete.length} existing option(s): ${willDelete
           .map((a) => a.title || comboLabel(a.options))
           .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
         confirmText: t("actions.delete", "Remove"),
@@ -377,7 +377,7 @@ export const ProductEditVariantsSection = ({
       return
     }
     const confirmed = await prompt({
-      title: "Remove variant?",
+      title: "Remove this option?",
       description: `"${label}" and its SKU, price, and stock will be permanently removed. This can't be undone.`,
       confirmText: t("actions.delete", "Remove"),
       cancelText: t("actions.cancel", "Cancel"),
@@ -468,13 +468,11 @@ export const ProductEditVariantsSection = ({
 
       {/* Options — one card per combination */}
       <div className="flex items-center justify-between pt-2">
-        {/* Literal rather than t("products.variants.header"): that key is
-            shared with the product detail page, which still says "Variants". */}
-        <Heading level="h2">Options</Heading>
+        <Heading level="h2">{t("products.variants.header", "Options")}</Heading>
       </div>
 
       {variants.map((v, i) => {
-        const label = v.title || comboLabel(v.options) || `Variant ${i + 1}`
+        const label = v.title || comboLabel(v.options) || `Option ${i + 1}`
         const isExisting = !!v.id
         const missingOptions = isExisting
           ? currentOptionTitles.filter((tt) => !(v.options && tt in v.options))
@@ -489,7 +487,7 @@ export const ProductEditVariantsSection = ({
               <div className="flex items-center gap-x-3 px-6 py-3">
                 <div className="flex flex-col">
                   <Text size="small" leading="compact" weight="plus">
-                    Incomplete variant
+                    Incomplete option
                   </Text>
                   <Text
                     size="xsmall"
@@ -686,7 +684,7 @@ export const ProductEditVariantsSection = ({
                   disabled={existingCount <= 1}
                   onClick={() => handleRemoveExisting(v.id as string, label)}
                 >
-                  {t("products.variants.actions.remove", "Remove variant")}
+                  {t("products.variants.actions.remove", "Remove option")}
                 </Button>
               ) : (
                 <Button
