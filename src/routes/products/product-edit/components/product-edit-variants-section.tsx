@@ -206,7 +206,7 @@ export const ProductEditVariantsSection = ({
           title: "Remove option value?",
           description: `Removing ${removed
             .map((r) => `"${r}"`)
-            .join(", ")} will permanently delete ${affected.length} existing option(s): ${affected
+            .join(", ")} will permanently delete ${affected
             .map((a) => a.title || comboLabel(a.options))
             .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
           confirmText: t("actions.delete", "Remove"),
@@ -241,12 +241,12 @@ export const ProductEditVariantsSection = ({
       )
       if (orphaned.length) {
         const confirmed = await prompt({
-          title: "Add this option?",
-          description: `Your existing option(s) — ${orphaned
+          title: "Add this option type?",
+          description: `${orphaned
             .map((o) => o.title || comboLabel(o.options))
             .join(
               ", "
-            )} — don't have a value for this option, so they can't stay as-is. They'll be removed; recreate them below with the new option. This can't be undone.`,
+            )} don't have a value for this option type, so they can't stay as-is. They'll be removed; recreate them below with the new option type. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -354,8 +354,8 @@ export const ProductEditVariantsSection = ({
     )
     if (willDelete.length) {
       const confirmed = await prompt({
-        title: "Remove option?",
-        description: `Removing this option will permanently delete ${willDelete.length} existing option(s): ${willDelete
+        title: "Remove option type?",
+        description: `Removing this option type will permanently delete ${willDelete
           .map((a) => a.title || comboLabel(a.options))
           .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
         confirmText: t("actions.delete", "Remove"),
@@ -377,7 +377,7 @@ export const ProductEditVariantsSection = ({
       return
     }
     const confirmed = await prompt({
-      title: "Remove this option?",
+      title: `Remove "${label}"?`,
       description: `"${label}" and its SKU, price, and stock will be permanently removed. This can't be undone.`,
       confirmText: t("actions.delete", "Remove"),
       cancelText: t("actions.cancel", "Cancel"),
@@ -400,7 +400,7 @@ export const ProductEditVariantsSection = ({
     <div className="flex flex-col gap-y-3">
       {/* Options editor */}
       <InlineEditCard
-        title={t("products.fields.options.label", "Options")}
+        title={t("products.fields.options.label", "Option types")}
         description="Edit option values (e.g. add a new color). New combinations appear below to fill in. Removing a value that an existing option uses will ask before deleting it."
       >
         <div className="flex flex-col gap-y-4 px-6 py-4">
@@ -461,7 +461,7 @@ export const ProductEditVariantsSection = ({
             onClick={handleAddOption}
           >
             <Plus />
-            Add option
+            Add option type
           </Button>
         </div>
       </InlineEditCard>
@@ -487,7 +487,7 @@ export const ProductEditVariantsSection = ({
               <div className="flex items-center gap-x-3 px-6 py-3">
                 <div className="flex flex-col">
                   <Text size="small" leading="compact" weight="plus">
-                    Incomplete option
+                    Missing an option value
                   </Text>
                   <Text
                     size="xsmall"
@@ -495,8 +495,8 @@ export const ProductEditVariantsSection = ({
                     className="text-ui-fg-subtle"
                   >
                     Missing a value for {missingOptions.join(", ")} — a leftover
-                    from before that option was added. Remove it and recreate it
-                    with all options.
+                    from before that option type was added. Remove it and
+                    recreate it with all option types.
                   </Text>
                 </div>
                 <Badge size="2xsmall" color="orange" className="ml-auto">
@@ -684,7 +684,7 @@ export const ProductEditVariantsSection = ({
                   disabled={existingCount <= 1}
                   onClick={() => handleRemoveExisting(v.id as string, label)}
                 >
-                  {t("products.variants.actions.remove", "Remove option")}
+                  {t("actions.remove", "Remove")}
                 </Button>
               ) : (
                 <Button
