@@ -427,8 +427,8 @@
         "quantityPlaceholder": "How many of these are needed for the kit?"
       },
       "variants": {
-        "header": "Variants",
-        "subHeadingTitle": "Yes, this is a product with variants",
+        "header": "Options",
+        "subHeadingTitle": "Yes, this is a product with options",
         "subHeadingDescription": "When unchecked, we will create a default variant for you",
         "optionTitle": {
           "placeholder": "Size"
