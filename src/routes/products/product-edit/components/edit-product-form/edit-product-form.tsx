@@ -575,9 +575,9 @@ export const EditProductForm = ({
       message =
         "Every option must keep at least one value, and a product needs at " +
         "least one option. Leave one option with a value (a product can't " +
-        "have zero options/variants)."
+        "have zero options)."
     } else if (errs.variants) {
-      message = "A product needs at least one variant."
+      message = "A product needs at least one option."
     }
     toast.error(message)
   })
