@@ -416,20 +416,20 @@
         "inventory": "Inventory kits"
       },
       "errors": {
-        "variants": "Please select at least one variant.",
+        "variants": "Please select at least one option.",
         "options": "Please create at least one option.",
         "uniqueSku": "SKU must be unique."
       },
       "inventory": {
         "heading": "Inventory kits",
-        "label": "Add inventory items to the variant's inventory kit.",
+        "label": "Add inventory items to the option's inventory kit.",
         "itemPlaceholder": "Select inventory item",
         "quantityPlaceholder": "How many of these are needed for the kit?"
       },
       "variants": {
-        "header": "Variants",
-        "subHeadingTitle": "Yes, this is a product with variants",
-        "subHeadingDescription": "When unchecked, we will create a default variant for you",
+        "header": "Options",
+        "subHeadingTitle": "Yes, this is a product with options",
+        "subHeadingDescription": "When unchecked, we will create a default option for you.",
         "optionTitle": {
           "placeholder": "Size"
         },
@@ -437,14 +437,14 @@
           "placeholder": "Small, Medium, Large"
         },
         "productVariants": {
-          "label": "Product variants",
-          "hint": "This ranking will affect the variants' order in your storefront.",
-          "alert": "Add options to create variants.",
-          "tip": "Variants left unchecked won't be created. You can always create and edit variants afterwards but this list fits the variations in your product options."
+          "label": "Options to create",
+          "hint": "This ranking will affect the options' order in your storefront.",
+          "alert": "Add option values to create options.",
+          "tip": "Options left unchecked won't be created. You can always create and edit options afterwards, but this list matches the values you entered above."
         },
         "productOptions": {
           "label": "Product options",
-          "hint": "Define the options for the product, e.g. color, size, etc."
+          "hint": "What varies about this product? e.g. size, color, scent."
         }
       },
       "successToast": "Product {{title}} was successfully created."
@@ -520,18 +520,18 @@
     },
     "deleteWarning": "You are about to delete the product {{title}}. This action cannot be undone.",
     "variants": {
-      "header": "Variants",
+      "header": "Options",
       "empty": {
-        "heading": "No variants",
-        "description": "There are no variants to display."
+        "heading": "No options",
+        "description": "There are no options to display."
       },
       "filtered": {
         "heading": "No results",
-        "description": "No variants match the current filter criteria."
+        "description": "No options match the current filter criteria."
       },
       "editStocksAndPrices": {
         "header": "Edit stock levels & prices",
-        "description": "Edit the stock levels and prices for the product variants.",
+        "description": "Edit the stock levels and prices for the product options.",
         "successToast": "Stock levels and prices were successfully updated."
       }
     },

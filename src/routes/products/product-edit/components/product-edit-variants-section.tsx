@@ -3,7 +3,6 @@ import { Plus, XMarkMini } from "@medusajs/icons"
 import {
   Badge,
   Button,
-  Checkbox,
   Heading,
   IconButton,
   Input,
@@ -205,7 +204,7 @@ export const ProductEditVariantsSection = ({
           title: "Remove option value?",
           description: `Removing ${removed
             .map((r) => `"${r}"`)
-            .join(", ")} will permanently delete ${affected.length} existing variant(s): ${affected
+            .join(", ")} will permanently delete ${affected
             .map((a) => a.title || comboLabel(a.options))
             .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
           confirmText: t("actions.delete", "Remove"),
@@ -241,11 +240,11 @@ export const ProductEditVariantsSection = ({
       if (orphaned.length) {
         const confirmed = await prompt({
           title: "Add this option?",
-          description: `Your existing variant(s) — ${orphaned
+          description: `${orphaned
             .map((o) => o.title || comboLabel(o.options))
             .join(
               ", "
-            )} — don't have a value for this option, so they can't stay as-is. They'll be removed; recreate them below with the new option. This can't be undone.`,
+            )} don't have a value for this option, so they can't stay as-is. They'll be permanently deleted — including their SKU, price, and stock — and you can recreate them below with the new option. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -354,7 +353,7 @@ export const ProductEditVariantsSection = ({
     if (willDelete.length) {
       const confirmed = await prompt({
         title: "Remove option?",
-        description: `Removing this option will permanently delete ${willDelete.length} existing variant(s): ${willDelete
+        description: `Removing this option will permanently delete ${willDelete
           .map((a) => a.title || comboLabel(a.options))
           .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
         confirmText: t("actions.delete", "Remove"),
@@ -376,7 +375,7 @@ export const ProductEditVariantsSection = ({
       return
     }
     const confirmed = await prompt({
-      title: "Remove variant?",
+      title: `Remove "${label}"?`,
       description: `"${label}" and its SKU, price, and stock will be permanently removed. This can't be undone.`,
       confirmText: t("actions.delete", "Remove"),
       cancelText: t("actions.cancel", "Cancel"),
@@ -399,8 +398,8 @@ export const ProductEditVariantsSection = ({
     <div className="flex flex-col gap-y-3">
       {/* Options editor */}
       <InlineEditCard
-        title={t("products.fields.options.label", "Options")}
-        description="Edit option values (e.g. add a new color). New combinations appear below to fill in. Removing a value that an existing variant uses will ask before deleting it."
+        title={t("products.fields.options.label", "Product options")}
+        description="Edit option values (e.g. add a new color). New combinations appear below to fill in. Removing a value that an existing option uses will ask before deleting it."
       >
         <div className="flex flex-col gap-y-4 px-6 py-4">
           <ul className="flex flex-col gap-y-3">
@@ -465,13 +464,13 @@ export const ProductEditVariantsSection = ({
         </div>
       </InlineEditCard>
 
-      {/* Variants — one card per combination */}
+      {/* Options — one card per combination */}
       <div className="flex items-center justify-between pt-2">
-        <Heading level="h2">{t("products.variants.header", "Variants")}</Heading>
+        <Heading level="h2">{t("products.variants.header", "Options")}</Heading>
       </div>
 
       {variants.map((v, i) => {
-        const label = v.title || comboLabel(v.options) || `Variant ${i + 1}`
+        const label = v.title || comboLabel(v.options) || `Option ${i + 1}`
         const isExisting = !!v.id
         const missingOptions = isExisting
           ? currentOptionTitles.filter((tt) => !(v.options && tt in v.options))
@@ -486,7 +485,7 @@ export const ProductEditVariantsSection = ({
               <div className="flex items-center gap-x-3 px-6 py-3">
                 <div className="flex flex-col">
                   <Text size="small" leading="compact" weight="plus">
-                    Incomplete variant
+                    Missing an option value
                   </Text>
                   <Text
                     size="xsmall"
@@ -494,8 +493,8 @@ export const ProductEditVariantsSection = ({
                     className="text-ui-fg-subtle"
                   >
                     Missing a value for {missingOptions.join(", ")} — a leftover
-                    from before that option was added. Remove it and recreate it
-                    with all options.
+                    from before that option was added. Remove it and
+                    recreate it with all options.
                   </Text>
                 </div>
                 <Badge size="2xsmall" color="orange" className="ml-auto">
@@ -606,19 +605,6 @@ export const ProductEditVariantsSection = ({
                         className="flex flex-col gap-y-3 px-6 py-4"
                       >
                         <div className="flex items-center gap-x-2">
-                          <Controller
-                            control={form.control}
-                            name={`stock.${sIdx}.locations.${lIdx}.checked`}
-                            render={({
-                              field: { value, onChange, ...field },
-                            }) => (
-                              <Checkbox
-                                {...field}
-                                checked={!!value}
-                                onCheckedChange={(c) => onChange(!!c)}
-                              />
-                            )}
-                          />
                           <div className="flex flex-col">
                             <Text
                               size="xsmall"
@@ -661,7 +647,6 @@ export const ProductEditVariantsSection = ({
                                   )
                                   onChange(digits === "" ? null : Number(digits))
                                 }}
-                                disabled={!location.checked}
                               />
                             )}
                           />
@@ -682,7 +667,7 @@ export const ProductEditVariantsSection = ({
                   disabled={existingCount <= 1}
                   onClick={() => handleRemoveExisting(v.id as string, label)}
                 >
-                  {t("products.variants.actions.remove", "Remove variant")}
+                  {t("actions.remove", "Remove")}
                 </Button>
               ) : (
                 <Button
