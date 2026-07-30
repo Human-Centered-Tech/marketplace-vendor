@@ -3,7 +3,6 @@ import { Plus, XMarkMini } from "@medusajs/icons"
 import {
   Badge,
   Button,
-  Checkbox,
   Heading,
   IconButton,
   Input,
@@ -606,19 +605,6 @@ export const ProductEditVariantsSection = ({
                         className="flex flex-col gap-y-3 px-6 py-4"
                       >
                         <div className="flex items-center gap-x-2">
-                          <Controller
-                            control={form.control}
-                            name={`stock.${sIdx}.locations.${lIdx}.checked`}
-                            render={({
-                              field: { value, onChange, ...field },
-                            }) => (
-                              <Checkbox
-                                {...field}
-                                checked={!!value}
-                                onCheckedChange={(c) => onChange(!!c)}
-                              />
-                            )}
-                          />
                           <div className="flex flex-col">
                             <Text
                               size="xsmall"
@@ -661,7 +647,6 @@ export const ProductEditVariantsSection = ({
                                   )
                                   onChange(digits === "" ? null : Number(digits))
                                 }}
-                                disabled={!location.checked}
                               />
                             )}
                           />

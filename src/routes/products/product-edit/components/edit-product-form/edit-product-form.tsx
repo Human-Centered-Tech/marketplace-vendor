@@ -444,26 +444,28 @@ export const EditProductForm = ({
               if (!variant.inventory_item_id) {
                 return
               }
-              variant.locations.forEach(
-                ({ checked, level_id, quantity, id }) => {
-                  const qty = quantity != null ? castNumber(quantity) : 0
-                  if (!level_id && checked) {
-                    payload.create.push({
-                      inventory_item_id: variant.inventory_item_id as string,
-                      location_id: id,
-                      stocked_quantity: qty,
-                    })
-                  } else if (level_id && !checked) {
-                    payload.delete.push(level_id)
-                  } else if (level_id && checked) {
-                    payload.update.push({
-                      inventory_item_id: variant.inventory_item_id as string,
-                      location_id: id,
-                      stocked_quantity: qty,
-                    })
-                  }
+              // Every seller has exactly one stock location, so a variant is
+              // always stocked there — create the level if it's missing,
+              // otherwise update the quantity. (The old per-location checkbox
+              // could also DELETE a level; nothing rendered unchecked in
+              // practice, and manage_inventory is the real "don't track this"
+              // switch.)
+              variant.locations.forEach(({ level_id, quantity, id }) => {
+                const qty = quantity != null ? castNumber(quantity) : 0
+                if (!level_id) {
+                  payload.create.push({
+                    inventory_item_id: variant.inventory_item_id as string,
+                    location_id: id,
+                    stocked_quantity: qty,
+                  })
+                } else {
+                  payload.update.push({
+                    inventory_item_id: variant.inventory_item_id as string,
+                    location_id: id,
+                    stocked_quantity: qty,
+                  })
                 }
-              )
+              })
             })
             if (
               payload.create.length ||
