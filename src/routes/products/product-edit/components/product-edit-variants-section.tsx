@@ -401,7 +401,7 @@ export const ProductEditVariantsSection = ({
       {/* Options editor */}
       <InlineEditCard
         title={t("products.fields.options.label", "Options")}
-        description="Edit option values (e.g. add a new color). New combinations appear below to fill in. Removing a value that an existing variant uses will ask before deleting it."
+        description="Edit option values (e.g. add a new color). New combinations appear below to fill in. Removing a value that an existing option uses will ask before deleting it."
       >
         <div className="flex flex-col gap-y-4 px-6 py-4">
           <ul className="flex flex-col gap-y-3">
@@ -466,9 +466,11 @@ export const ProductEditVariantsSection = ({
         </div>
       </InlineEditCard>
 
-      {/* Variants — one card per combination */}
+      {/* Options — one card per combination */}
       <div className="flex items-center justify-between pt-2">
-        <Heading level="h2">{t("products.variants.header", "Variants")}</Heading>
+        {/* Literal rather than t("products.variants.header"): that key is
+            shared with the product detail page, which still says "Variants". */}
+        <Heading level="h2">Options</Heading>
       </div>
 
       {variants.map((v, i) => {
