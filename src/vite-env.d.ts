@@ -17,6 +17,8 @@ declare const __PUBLISHABLE_API_KEY__: string | undefined
 declare const __TALK_JS_APP_ID__: string | undefined
 declare const __DISABLE_SELLERS_REGISTRATION__: string | undefined
 declare const __PAYMENTS_DISABLED__: string | undefined
+declare const __SENTRY_DSN__: string | undefined
+declare const __SENTRY_ENVIRONMENT__: string | undefined
 
 interface Window {
   __RUNTIME_CONFIG__?: {
@@ -24,5 +26,7 @@ interface Window {
     publishableApiKey?: string
     shopifyConnectEnabled?: boolean
     shopifyCustomAppConnectEnabled?: boolean
+    sentryDsn?: string
+    sentryEnvironment?: string
   }
 }

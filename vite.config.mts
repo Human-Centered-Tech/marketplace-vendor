@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => {
     env.VITE_DISABLE_SELLERS_REGISTRATION || "false"
   const PAYMENTS_DISABLED = env.VITE_PAYMENTS_DISABLED || "false"
   const PUBLIC_BASE_URL = env.VITE_PUBLIC_BASE_URL || ""
+  const SENTRY_DSN = env.VITE_SENTRY_DSN || ""
+  const SENTRY_ENVIRONMENT = env.VITE_SENTRY_ENVIRONMENT || "development"
 
   /**
    * Add this to your .env file to specify the project to load admin extensions from.
@@ -88,6 +90,8 @@ export default defineConfig(({ mode }) => {
         DISABLE_SELLERS_REGISTRATION
       ),
       __PAYMENTS_DISABLED__: JSON.stringify(PAYMENTS_DISABLED),
+      __SENTRY_DSN__: JSON.stringify(SENTRY_DSN),
+      __SENTRY_ENVIRONMENT__: JSON.stringify(SENTRY_ENVIRONMENT),
     },
     server: {
       host: true,

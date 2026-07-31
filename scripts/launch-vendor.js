@@ -77,6 +77,15 @@ async function launch() {
     // button above; flip via the env var on Railway, no rebuild needed.
     shopifyCustomAppConnectEnabled:
       process.env.SHOPIFY_CUSTOM_APP_CONNECT_ENABLED === 'true',
+    // Client-side Sentry. The DSN is a public client key, so it's fine to inject
+    // at runtime; leaving SENTRY_DSN unset keeps Sentry dormant (initSentry is a
+    // no-op). Environment defaults to the Railway environment name so staging
+    // and production errors are separable.
+    sentryDsn: process.env.SENTRY_DSN || '',
+    sentryEnvironment:
+      process.env.SENTRY_ENVIRONMENT ||
+      process.env.RAILWAY_ENVIRONMENT_NAME ||
+      'production',
   };
   fs.writeFileSync(
     path.join(distDir, 'runtime-config.js'),

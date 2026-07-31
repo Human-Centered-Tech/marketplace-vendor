@@ -3,6 +3,7 @@ import { Text } from "@medusajs/ui"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Navigate, useLocation, useRouteError } from "react-router-dom"
+import * as Sentry from "@sentry/react"
 
 import { isFetchError } from "../../../lib/is-fetch-error"
 import { fetchQuery } from "../../../lib/client"
@@ -12,6 +13,21 @@ export const ErrorBoundary = () => {
   const location = useLocation()
   const { t } = useTranslation()
 
+  // react-router renders this element instead of rethrowing, so Sentry's global
+  // handlers never see route/render errors — report them here. Skip 401s: those
+  // are an expected, handled case (we redirect to /login just below).
+  useEffect(() => {
+    if (isFetchError(error) && error.status === 401) {
+      return
+    }
+    Sentry.captureException(error)
+  }, [error])
+
+  // Kept alongside the Sentry capture above (merge 7/30): Sentry is the
+  // permanent channel, this POST is the temporary one added to chase the
+  // order-detail crash. Both skip 401 and neither can throw, so running both is
+  // harmless — drop this effect once that crash is confirmed fixed.
+  //
   // DIAGNOSTIC: report unhandled loader/render errors to the backend so the
   // real error + stack lands in server logs we can read (the vendor's browser
   // console isn't reachable to us). Extracts ONLY specific error fields — never
