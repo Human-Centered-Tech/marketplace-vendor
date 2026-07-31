@@ -25,6 +25,20 @@ export type SetupResponse = {
     listing_id: string | null
     owner_interview_populated: boolean
     parish_affiliated: boolean
+    // Whether the listing declares any states it serves. The public
+    // directory's state facet filters on this, so a listing without it is
+    // absent from most searches — which is why it gates go-live.
+    service_area_set: boolean
+    // Optional polish an auto-created draft starts without. `auto_created`
+    // scopes the optional step to listings WE made, so merchants who set
+    // theirs up before this flow existed never see a new unfinished task.
+    listing_completeness: {
+      auto_created: boolean
+      has_description: boolean
+      has_website: boolean
+      has_photos: boolean
+      has_hours: boolean
+    }
   }
   go_live: {
     subscription_status:

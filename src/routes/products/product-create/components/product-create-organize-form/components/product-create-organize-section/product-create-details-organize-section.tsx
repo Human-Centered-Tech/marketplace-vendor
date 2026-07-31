@@ -11,6 +11,7 @@ import { fetchQuery } from "../../../../../../../lib/client"
 import { ProductCreateSchemaType } from "../../../../types"
 import { CategoryCombobox } from "../../../../../common/components/category-combobox"
 import { SelectedFieldChips } from "../../../../../common/components/selected-field-chips"
+import { CategoryCoaching } from "../../../../../common/components/category-coaching"
 
 type ProductCreateOrganizationSectionProps = {
   form: UseFormReturn<ProductCreateSchemaType>
@@ -122,6 +123,7 @@ export const ProductCreateOrganizationSection = ({
                     <CategoryCombobox {...field} maxSelected={3} />
                     {/* <CategorySelect  /> */}
                   </Form.Control>
+                  <CategoryCoaching />
                   <Form.ErrorMessage />
                 </Form.Item>
               )

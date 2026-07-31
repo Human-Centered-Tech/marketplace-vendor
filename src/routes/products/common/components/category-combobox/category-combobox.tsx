@@ -361,7 +361,13 @@ export const CategoryCombobox = forwardRef<
         <div className="p-1">
           <div className="flex items-center justify-between px-2 py-1.5">
             <Text size="xsmall" leading="compact" className="text-ui-fg-muted">
-              Choose up to {max} categories
+              {/* Stated as a consequence, not a scold. An uncategorized product
+                  is invisible to anyone browsing — 202 were sitting that way at
+                  the 7/30 review — so the cost of skipping this is worth naming
+                  at the moment of the choice. */}
+              {value.length === 0
+                ? "No category yet — shoppers browsing by category won't see this product"
+                : `Choose up to ${max} categories`}
             </Text>
             <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
               {value.length}/{max}
