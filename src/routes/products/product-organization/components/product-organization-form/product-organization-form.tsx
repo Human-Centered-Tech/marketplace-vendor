@@ -6,6 +6,7 @@ import * as zod from "zod"
 
 import { Form } from "../../../../../components/common/form"
 import { Combobox } from "../../../../../components/inputs/combobox"
+import { CategoryCoaching } from "../../../common/components/category-coaching"
 import { RouteDrawer, useRouteModal } from "../../../../../components/modals"
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
 import {
@@ -223,6 +224,7 @@ export const ProductOrganizationForm = ({
                         searchValue={categories.searchValue}
                       />
                     </Form.Control>
+                    <CategoryCoaching />
                     <Form.ErrorMessage />
                   </Form.Item>
                 )
