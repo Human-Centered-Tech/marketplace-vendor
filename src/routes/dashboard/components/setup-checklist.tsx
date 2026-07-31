@@ -35,27 +35,57 @@ export const SetupChecklist = () => {
   if (isError || !data) return null
 
   const rows = buildRows(data)
-  const completedCount = rows.filter((r) => r.done).length
-  const totalSteps = rows.length
+  // Progress reflects REQUIRED steps only. An optional row that never gets
+  // done must not pin the checklist open forever at 7/8.
+  const requiredRows = rows.filter((r) => !r.optional)
+  const optionalRows = rows.filter((r) => r.optional)
+  const completedCount = requiredRows.filter((r) => r.done).length
+  const totalSteps = requiredRows.length
   const allDone = completedCount === totalSteps
+  const openOptional = optionalRows.filter((r) => !r.done)
 
   if (allDone && !showDetails) {
     return (
-      <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-green-700">✅</span>
-          <Text size="small" className="text-green-900">
-            {data.is_service
-              ? "Setup complete — your listing is fully configured."
-              : "Setup complete — your store is fully configured."}
-          </Text>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-green-700">✅</span>
+            <Text size="small" className="text-green-900">
+              {data.is_service
+                ? "Setup complete — your listing is fully configured."
+                : "Setup complete — your store is fully configured."}
+            </Text>
+          </div>
+          <button
+            onClick={() => setShowDetails(true)}
+            className="font-poppins text-sm text-green-800 underline hover:no-underline"
+          >
+            Show details
+          </button>
         </div>
-        <button
-          onClick={() => setShowDetails(true)}
-          className="font-poppins text-sm text-green-800 underline hover:no-underline"
-        >
-          Show details
-        </button>
+        {/* Optional work outlives the collapse. Setup is genuinely finished,
+            so the green bar is honest — but a suggestion hidden behind "Show
+            details" would never be seen. */}
+        {openOptional.map((row) => (
+          <div
+            key={row.label}
+            className="flex items-center justify-between rounded-lg border border-co-gold/40 bg-co-gold/5 px-4 py-2.5"
+          >
+            <div className="flex items-center gap-2">
+              <span>✨</span>
+              <Text size="small" className="text-co-text-primary">
+                {row.label} — {row.hint}
+              </Text>
+            </div>
+            {row.cta && (
+              <StepActionLink
+                cta={row.cta}
+                label={row.cta.label}
+                className={primaryCtaClassName(false)}
+              />
+            )}
+          </div>
+        ))}
       </div>
     )
   }
@@ -152,6 +182,13 @@ type Row = {
   // CTA creates at /create, but Edit must reopen the existing listing at
   // /edit). Falls back to `cta` when unset.
   editCta?: StepCta
+  // Nice-to-have work that must NOT hold setup open. Optional rows are
+  // excluded from the completed/total counts and from `allDone`, so a
+  // merchant can still reach "Setup complete" with one outstanding; they
+  // render in their own group that survives the collapsed state, instead of
+  // being hidden behind "Show details" the moment everything required is
+  // finished.
+  optional?: boolean
 }
 
 const Section = ({ title, rows }: { title: string; rows: Row[] }) => (
@@ -368,6 +405,21 @@ const buildRows = (data: SetupResponse): Row[] => {
   const tier = data.go_live?.subscription_tier
   const isFeatured = tier === "featured" || tier === "enterprise"
 
+  // "Polished enough" = a description plus at least one other enriching
+  // field. Deliberately loose: this is a nudge, not a spec, and every field
+  // here is settable from the storefront listing editor — the rule that
+  // store_information broke by requiring a description the service settings
+  // card didn't render.
+  const lc = co.listing_completeness ?? {
+    auto_created: false,
+    has_description: false,
+    has_website: false,
+    has_photos: false,
+    has_hours: false,
+  }
+  const listingPolished =
+    lc.has_description && (lc.has_photos || lc.has_website || lc.has_hours)
+
   const payoutsDone = sb.payouts === "active"
   const payoutsLabel =
     sb.payouts === "pending"
@@ -472,6 +524,25 @@ const buildRows = (data: SetupResponse): Row[] => {
         storefrontHandoff: "/user/directory/edit",
       },
     },
+    // Service area — required, and blocks go-live. The public directory
+    // filters by state (falling back to the shopper's own), so a listing
+    // without one is missing from most searches. Only shown once a listing
+    // exists; before that the row above is the actionable step.
+    ...(co.listing_exists
+      ? [
+          {
+            section: "catholic_owned",
+            label: "Set your service area",
+            hint: "The states you serve — this is how customers find you.",
+            done: co.service_area_set,
+            cta: {
+              label: "Set",
+              href: "/user/directory/service-area",
+              storefrontHandoff: "/user/directory/service-area",
+            },
+          } as Row,
+        ]
+      : []),
     // Owner interview only displays on Featured/Enterprise listings, so only
     // surface the checklist step for those tiers (matches the form + display).
     ...(isFeatured
@@ -503,5 +574,35 @@ const buildRows = (data: SetupResponse): Row[] => {
       disabled: goLiveBlocked,
       cta: { label: isService ? "Activate" : "Go live", href: "/go-live" },
     },
+
+    // --- Optional: flesh out the auto-created draft ---
+    // We create a bare listing at signup (name, contact details, service
+    // area) so nobody starts at a blank form. Everything that makes it
+    // compelling — the description, photos, hours, website — is offered
+    // AFTER they've paid, as a suggestion rather than a gate.
+    //
+    // Two conditions, both load-bearing:
+    //   subscription_status "active" — don't nag someone mid-setup with
+    //     polish while they still have required steps to finish.
+    //   auto_created — scopes this to listings WE made. Without it, every
+    //     one of the thousands of pre-existing listings (most have no
+    //     description) would sprout a new unfinished task, which is exactly
+    //     the "step I can't get rid of" complaint this work came out of.
+    ...(gl.subscription_status === "active" && lc.auto_created
+      ? [
+          {
+            section: "catholic_owned",
+            label: "Finish your listing",
+            hint: "Add a description and photos — listings with them get far more clicks.",
+            done: listingPolished,
+            optional: true,
+            cta: {
+              label: "Add details",
+              href: "/user/directory/edit",
+              storefrontHandoff: "/user/directory/edit",
+            },
+          } as Row,
+        ]
+      : []),
   ]
 }
