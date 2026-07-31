@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from "@medusajs/ui"
+import { Button, toast } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 import { useMemo } from "react"
 import { useForm } from "react-hook-form"
@@ -156,6 +156,9 @@ export const PricingEdit = ({
     await mutateAsync(cleanData, {
       onSuccess: () => {
         handleSuccess("..")
+      },
+      onError: (e) => {
+        toast.error(e.message)
       },
     })
   })

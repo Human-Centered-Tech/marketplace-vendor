@@ -8,6 +8,7 @@ import {
   Text,
   Tooltip,
   clx,
+  toast,
   usePrompt,
 } from "@medusajs/ui"
 import { useState } from "react"
@@ -76,6 +77,9 @@ export const ProductMediaSection = ({ product }: ProductMedisaSectionProps) => {
       {
         onSuccess: () => {
           setSelection({})
+        },
+        onError: (e) => {
+          toast.error(e.message)
         },
       }
     )

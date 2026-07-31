@@ -1,5 +1,5 @@
 import { PencilSquare, Plus, Trash } from "@medusajs/icons"
-import { Badge, Container, Heading, usePrompt } from "@medusajs/ui"
+import { Badge, Container, Heading, toast, usePrompt } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { SectionRow } from "../../../../../components/common/section"
@@ -32,7 +32,11 @@ const OptionActions = ({
       return
     }
 
-    await mutateAsync()
+    await mutateAsync(undefined, {
+      onError: (e) => {
+        toast.error(e.message)
+      },
+    })
   }
 
   return (

@@ -1,5 +1,5 @@
 import { Component, PencilSquare, Trash } from "@medusajs/icons"
-import { Badge, Container, Heading, usePrompt } from "@medusajs/ui"
+import { Badge, Container, Heading, toast, usePrompt } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
@@ -38,6 +38,9 @@ export function VariantGeneralSection({ variant }: VariantGeneralSectionProps) {
     await mutateAsync(undefined, {
       onSuccess: () => {
         navigate("..", { replace: true })
+      },
+      onError: (e) => {
+        toast.error(e.message)
       },
     })
   }

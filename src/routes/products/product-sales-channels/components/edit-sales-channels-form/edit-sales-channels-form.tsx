@@ -1,4 +1,4 @@
-import { Button, createDataTableColumnHelper } from "@medusajs/ui"
+import { Button, createDataTableColumnHelper, toast } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 import { RowSelectionState } from "@tanstack/react-table"
 import { useEffect, useMemo, useState } from "react"
@@ -96,6 +96,9 @@ export const EditSalesChannelsForm = ({
       {
         onSuccess: () => {
           handleSuccess()
+        },
+        onError: (e) => {
+          toast.error(e.message)
         },
       }
     )

@@ -8,6 +8,7 @@ import {
   createDataTableCommandHelper,
   createDataTableFilterHelper,
   DataTableAction,
+  toast,
   Tooltip,
   usePrompt,
 } from "@medusajs/ui"
@@ -99,7 +100,14 @@ const useColumns = (product: ExtendedAdminProduct) => {
         return
       }
 
-      await mutateAsync({ variantId: id })
+      await mutateAsync(
+        { variantId: id },
+        {
+          onError: (e) => {
+            toast.error(e.message)
+          },
+        }
+      )
     },
     [mutateAsync, prompt, t]
   )
