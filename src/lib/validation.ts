@@ -46,7 +46,15 @@ export const optionalFloat = z
         return true
       }
 
-      return castNumber(value) >= 0
+      const amount = castNumber(value)
+      // Number.isFinite is load-bearing, not belt-and-braces. A bare
+      // `castNumber(value) >= 0` accepted two bad values:
+      //   null -> castNumber returns null, and `null >= 0` is TRUE in JS
+      //   NaN  -> from an unparseable string
+      // Both serialize to `null` in JSON, and the API then rejects the whole
+      // product with "Expected type: 'number' ... got: 'null'" — a 400 the
+      // vendor sees as an unexplained failure instead of a field error.
+      return Number.isFinite(amount) && amount >= 0
     },
     {
       message: i18next.t("validation.mustBePositive"),

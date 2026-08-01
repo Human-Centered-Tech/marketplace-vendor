@@ -83,20 +83,35 @@ export const normalizeVariants = (
       ),
     prices: Object.entries(variant.prices || {})
       .map(([key, value]) => {
-        if (value === "" || value === undefined) {
+        // `== null` catches null as well as undefined — the previous
+        // `=== undefined` let null through, and castNumber returns null
+        // unchanged (it only converts strings).
+        if (value === "" || value == null) {
+          return undefined
+        }
+
+        const amount = castNumber(value)
+        // Never put a non-finite amount on the wire. JSON.stringify turns NaN
+        // into `null`, so an unparseable price made the API reject the ENTIRE
+        // product with "Expected type: 'number' for field
+        // 'variants, 0, prices, 0, amount', got: 'null'" (Sentry
+        // VENDOR-DASHBOARD-3). Dropping the bad price is strictly better than
+        // failing the whole create; validation above should have caught it
+        // first and shown the vendor a field-level error.
+        if (!Number.isFinite(amount)) {
           return undefined
         }
 
         if (key.startsWith("reg_")) {
           return {
             currency_code: regionsCurrencyMap[key],
-            amount: castNumber(value),
+            amount,
             rules: { region_id: key },
           } as HttpTypes.AdminCreateProductVariantPrice
         } else {
           return {
             currency_code: key,
-            amount: castNumber(value),
+            amount,
           } as HttpTypes.AdminCreateProductVariantPrice
         }
       })
