@@ -160,7 +160,8 @@ const useColumns = (product: ExtendedAdminProduct) => {
           {
             icon: <Trash />,
             label: t("actions.delete"),
-            onClick: () => handleDelete(variant.id, variant.title!),
+            onClick: () =>
+              handleDelete(variant.id, resolveVariantLabel(variant, product)),
           },
         ]
 

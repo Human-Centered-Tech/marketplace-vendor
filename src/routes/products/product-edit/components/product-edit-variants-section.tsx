@@ -113,6 +113,16 @@ export const ProductEditVariantsSection = ({
   const variants = (useWatch({ control: form.control, name: "variants" }) ??
     []) as EditVariant[]
 
+  // How a variant should be NAMED in the UI. A product with no real options
+  // still carries one variant the create flow titled "Default variant" — show
+  // the product's name for it instead. Only when it is the only variant: an
+  // untitled card on a genuinely multi-option product still names itself by its
+  // option combination. Display only; the stored title is never rewritten.
+  const displayVariantName = (v: EditVariant, fallback: string) =>
+    variants.length === 1 && isPlaceholderVariantTitle(v.title)
+      ? productTitle || fallback
+      : v.title || comboLabel(v.options) || fallback
+
   // Stock lives in its own form array (seeded from the loaded product's
   // variants); index it by variant id so each variant card can render its own
   // per-location Count rows.
@@ -212,7 +222,7 @@ export const ProductEditVariantsSection = ({
           description: `Removing ${removed
             .map((r) => `"${r}"`)
             .join(", ")} will permanently delete ${affected
-            .map((a) => a.title || comboLabel(a.options))
+            .map((a) => displayVariantName(a, "this option"))
             .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
           confirmText: t("actions.delete", "Remove"),
           cancelText: t("actions.cancel", "Cancel"),
@@ -248,10 +258,16 @@ export const ProductEditVariantsSection = ({
         const confirmed = await prompt({
           title: "Add this option?",
           description: `${orphaned
-            .map((o) => o.title || comboLabel(o.options))
-            .join(
-              ", "
-            )} don't have a value for this option, so they can't stay as-is. They'll be permanently deleted — including their SKU, price, and stock — and you can recreate them below with the new option. This can't be undone.`,
+            .map((o) => displayVariantName(o, "this option"))
+            .join(", ")} ${
+            orphaned.length === 1
+              ? "doesn't have a value for this option, so it can't stay as-is. It'll"
+              : "don't have a value for this option, so they can't stay as-is. They'll"
+          } be permanently deleted — including ${
+            orphaned.length === 1 ? "its" : "their"
+          } SKU, price, and stock — and you can recreate ${
+            orphaned.length === 1 ? "it" : "them"
+          } below with the new option. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -361,7 +377,7 @@ export const ProductEditVariantsSection = ({
       const confirmed = await prompt({
         title: "Remove option?",
         description: `Removing this option will permanently delete ${willDelete
-          .map((a) => a.title || comboLabel(a.options))
+          .map((a) => displayVariantName(a, "this option"))
           .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
         confirmText: t("actions.delete", "Remove"),
         cancelText: t("actions.cancel", "Cancel"),
@@ -484,9 +500,7 @@ export const ProductEditVariantsSection = ({
         // back to its option combination.
         const isLonePlaceholder =
           variants.length === 1 && isPlaceholderVariantTitle(v.title)
-        const label = isLonePlaceholder
-          ? productTitle || "—"
-          : v.title || comboLabel(v.options) || `Option ${i + 1}`
+        const label = displayVariantName(v, `Option ${i + 1}`)
         const isExisting = !!v.id
         const missingOptions = isExisting
           ? currentOptionTitles.filter((tt) => !(v.options && tt in v.options))

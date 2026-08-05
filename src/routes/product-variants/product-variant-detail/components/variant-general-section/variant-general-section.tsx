@@ -7,6 +7,7 @@ import { ActionMenu } from "../../../../../components/common/action-menu"
 import { SectionRow } from "../../../../../components/common/section"
 import { useDeleteVariant } from "../../../../../hooks/api/products"
 import { ExtendedAdminProductVariant } from "../../../../../types/products"
+import { resolveVariantLabel } from "../../../../../lib/variant-label"
 
 type VariantGeneralSectionProps = {
   variant: ExtendedAdminProductVariant
@@ -25,7 +26,7 @@ export function VariantGeneralSection({ variant }: VariantGeneralSectionProps) {
     const res = await prompt({
       title: t("general.areYouSure"),
       description: t("products.variant.deleteWarning", {
-        title: variant.title,
+        title: resolveVariantLabel(variant, (variant as any).product),
       }),
       confirmText: t("actions.delete"),
       cancelText: t("actions.cancel"),
@@ -47,7 +48,7 @@ export function VariantGeneralSection({ variant }: VariantGeneralSectionProps) {
       <div className="flex items-center justify-between px-6 py-4">
         <div>
           <div className="flex items-center gap-2">
-            <Heading>{variant.title}</Heading>
+            <Heading>{resolveVariantLabel(variant, (variant as any).product)}</Heading>
             {hasInventoryKit && (
               <span className="text-ui-fg-muted font-normal">
                 <Component />
