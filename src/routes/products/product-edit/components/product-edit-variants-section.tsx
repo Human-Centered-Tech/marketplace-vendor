@@ -381,7 +381,11 @@ export const ProductEditVariantsSection = ({
     // value(s) just added (not every pre-existing gap in the matrix), and that
     // aren't already a variant.
     if (added.length) {
-      const perms = getPermutations(nextOptions)
+      // Build the offered combinations from the option set we KEPT. Using the
+      // raw one here is what put the retired axis back into every new combo —
+      // the placeholder was correctly dropped from the product, then handed
+      // straight back through the modal as "Default option value / Red".
+      const perms = getPermutations(dropPlaceholderOptions(nextOptions))
       const existing = new Set(
         (form.getValues("variants") ?? []).map((v) => comboKey(v.options))
       )
@@ -458,8 +462,9 @@ export const ProductEditVariantsSection = ({
   const handleRemoveOption = async (index: number) => {
     const nextOptions = options.filter((_, i) => i !== index)
     // Any existing variant that won't map to a permutation of the remaining
-    // options gets deleted — confirm first.
-    const perms = getPermutations(nextOptions)
+    // options gets deleted — confirm first. Compare against the set we'll
+    // actually keep, so the warning describes the real outcome.
+    const perms = getPermutations(dropPlaceholderOptions(nextOptions))
     const willDelete = variants.filter(
       (v) => v.id && !exactMatch(v.options, perms)
     )

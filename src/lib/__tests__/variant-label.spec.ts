@@ -200,3 +200,51 @@ describe("dropPlaceholderOptions", () => {
     expect(titles(dropPlaceholderOptions(opts))).toEqual(["Size", "Color"])
   })
 })
+
+// Mirrors getPermutations from the edit section. The bug this guards: the
+// placeholder was correctly dropped from the product, then handed straight back
+// through the "Add variations" modal, so every new combination rendered as
+// "Default option value / Red".
+const getPermutations = (data: { title: string; values: string[] }[]) => {
+  const clean = data.filter((o) => o.title.trim() && o.values.length > 0)
+  if (!clean.length) return []
+  return clean.reduce<Record<string, string>[]>(
+    (acc, opt) => acc.flatMap((c) => opt.values.map((v) => ({ ...c, [opt.title]: v }))),
+    [{}]
+  )
+}
+const comboLabel = (o: Record<string, string>) => Object.values(o).join(" / ")
+
+describe("combinations offered after retiring the placeholder", () => {
+  const opts = [
+    { title: "Default option", values: ["Default option value"] },
+    { title: "Color", values: ["Red", "Blue"] },
+  ]
+
+  it("does NOT carry the placeholder into the new combinations", () => {
+    const labels = getPermutations(dropPlaceholderOptions(opts) as any).map(comboLabel)
+
+    expect(labels).toEqual(["Red", "Blue"])
+    labels.forEach((l) => expect(l).not.toContain("Default option value"))
+  })
+
+  it("would have carried it through without the cleanup (the regression)", () => {
+    const labels = getPermutations(opts).map(comboLabel)
+
+    expect(labels).toEqual([
+      "Default option value / Red",
+      "Default option value / Blue",
+    ])
+  })
+
+  it("still produces the full matrix for genuine multi-option products", () => {
+    const real = [
+      { title: "Size", values: ["S", "M"] },
+      { title: "Color", values: ["Red"] },
+    ]
+    expect(getPermutations(dropPlaceholderOptions(real) as any).map(comboLabel)).toEqual([
+      "S / Red",
+      "M / Red",
+    ])
+  })
+})
