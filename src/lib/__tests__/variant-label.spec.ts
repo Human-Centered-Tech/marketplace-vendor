@@ -148,3 +148,55 @@ describe("isPlaceholderOption", () => {
     expect(isPlaceholderOption("Title", ["Default Title"])).toBe(true)
   })
 })
+
+// dropPlaceholderOptions lives in the edit section (it needs EditOption), so the
+// rule is mirrored here — the keystroke sequence is what broke on staging.
+const dropPlaceholderOptions = (opts: { title: string; values?: string[] }[]) => {
+  const real = opts.filter((o) => !isPlaceholderOption(o.title, o.values ?? []))
+  const usable = real.filter(
+    (o) => o.title.trim() && (o.values?.length ?? 0) > 0
+  )
+  return usable.length > 0 ? real : opts
+}
+
+describe("dropPlaceholderOptions", () => {
+  const ph = { title: "Default option", values: ["Default option value"] }
+  const titles = (o: { title: string }[]) => o.map((x) => x.title)
+
+  it.each(["", "S", "Si", "Size"])(
+    "keeps the placeholder while a replacement is only part-typed (%j)",
+    (typed) => {
+      const out = dropPlaceholderOptions([ph, { title: typed, values: [] }])
+      expect(titles(out)).toContain("Default option")
+    }
+  )
+
+  it("retires the placeholder once the new option has a value", () => {
+    const out = dropPlaceholderOptions([ph, { title: "Size", values: ["Large"] }])
+    expect(titles(out)).toEqual(["Size"])
+  })
+
+  it("keeps the work-in-progress option, not just the usable ones", () => {
+    const out = dropPlaceholderOptions([
+      ph,
+      { title: "Size", values: ["Large"] },
+      { title: "Colo", values: [] },
+    ])
+    expect(titles(out)).toEqual(["Size", "Colo"])
+  })
+
+  it("never strips the last option", () => {
+    expect(titles(dropPlaceholderOptions([ph]))).toEqual(["Default option"])
+    expect(
+      titles(dropPlaceholderOptions([{ title: "Title", values: ["Default Title"] }]))
+    ).toEqual(["Title"])
+  })
+
+  it("leaves genuine multi-option products alone", () => {
+    const opts = [
+      { title: "Size", values: ["S", "M"] },
+      { title: "Color", values: ["Red"] },
+    ]
+    expect(titles(dropPlaceholderOptions(opts))).toEqual(["Size", "Color"])
+  })
+})

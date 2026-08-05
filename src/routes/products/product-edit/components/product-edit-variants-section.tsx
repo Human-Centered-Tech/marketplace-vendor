@@ -87,7 +87,22 @@ const dropPlaceholderOptions = <T extends { title: string; values?: string[] }>(
 ): T[] => {
   const real = opts.filter((o) => !isPlaceholderOption(o.title, o.values ?? []))
 
-  return real.length > 0 ? real : opts
+  // Retire only once a real axis is USABLE — a title and at least one value.
+  //
+  // The title input fires on every keystroke, so a half-typed option counts as
+  // "not a placeholder" from its first character. Retiring on that basis made
+  // the Default option card vanish the instant a merchant started naming its
+  // replacement, before the replacement could do anything. getPermutations
+  // ignores a valueless option anyway, so retiring early only opens a window
+  // where the product has no usable axis at all.
+  //
+  // Returns `real` (not `usable`) so the option still being typed survives —
+  // we're dropping the placeholder, not tidying the merchant's work in progress.
+  const usable = real.filter(
+    (o) => o.title.trim() && (o.values?.length ?? 0) > 0
+  )
+
+  return usable.length > 0 ? real : opts
 }
 
 /**
