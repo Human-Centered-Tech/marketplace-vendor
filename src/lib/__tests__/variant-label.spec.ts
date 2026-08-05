@@ -135,4 +135,16 @@ describe("isPlaceholderOption", () => {
   it("treats a titled axis with no values as not-a-placeholder", () => {
     expect(isPlaceholderOption("Size", [])).toBe(false)
   })
+
+  // The option title input fires per keystroke, so a merchant typing a real
+  // option named "Title" must not have the row dropped before they can add
+  // values to it.
+  it("does not flag a values-less \"Title\" being typed", () => {
+    expect(isPlaceholderOption("Title", [])).toBe(false)
+    expect(isPlaceholderOption("Title", ["Hardcover"])).toBe(false)
+  })
+
+  it("still flags a Shopify Title once its generated value is present", () => {
+    expect(isPlaceholderOption("Title", ["Default Title"])).toBe(true)
+  })
 })

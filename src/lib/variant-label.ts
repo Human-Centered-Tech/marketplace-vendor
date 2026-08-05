@@ -115,7 +115,12 @@ export const isPlaceholderOption = (
   if (t === "default option") {
     return true
   }
-  if (t === "title" && (vals.length === 0 || vals.every(isPlaceholderOptionValue))) {
+  // Requires an actual placeholder value, NOT merely "no values yet". The option
+  // title input fires on every keystroke, so a merchant part-way through typing
+  // a real option called "Title" would otherwise have the row pulled out from
+  // under them. No option in production has zero values, so nothing real is
+  // lost by insisting on one.
+  if (t === "title" && vals.length > 0 && vals.every(isPlaceholderOptionValue)) {
     return true
   }
   // Renamed axis whose only value is still the generated placeholder.
