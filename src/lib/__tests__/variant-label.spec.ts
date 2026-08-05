@@ -248,3 +248,65 @@ describe("combinations offered after retiring the placeholder", () => {
     ])
   })
 })
+
+// The edit screen renders only non-placeholder option rows, pairing the index
+// BEFORE filtering — every handler addresses an option by its position in the
+// real array, so filtering first would rename or delete the wrong one.
+const visibleOptionRows = (opts: { title: string; values?: string[] }[]) =>
+  opts
+    .map((option, index) => ({ option, index }))
+    .filter(
+      ({ option }) => !isPlaceholderOption(option.title, option.values ?? [])
+    )
+
+describe("which option rows the merchant sees", () => {
+  it("shows nothing for a simple product", () => {
+    expect(
+      visibleOptionRows([
+        { title: "Default option", values: ["Default option value"] },
+      ])
+    ).toEqual([])
+  })
+
+  it("hides the placeholder but keeps real options", () => {
+    const rows = visibleOptionRows([
+      { title: "Default option", values: ["Default option value"] },
+      { title: "Size", values: ['15" x 15"'] },
+      { title: "Version", values: ["Original"] },
+    ])
+    expect(rows.map((r) => r.option.title)).toEqual(["Size", "Version"])
+  })
+
+  it("keeps the ORIGINAL index so handlers address the right option", () => {
+    const rows = visibleOptionRows([
+      { title: "Default option", values: ["Default option value"] },
+      { title: "Size", values: ["L"] },
+    ])
+    // Size is at position 1 in the real array, not 0.
+    expect(rows[0].index).toBe(1)
+  })
+
+  it("hides a renamed placeholder too", () => {
+    expect(
+      visibleOptionRows([
+        { title: "The Annunciation Rosary", values: ["Default option value"] },
+      ])
+    ).toEqual([])
+  })
+
+  it("shows every row on a genuine multi-option product", () => {
+    const rows = visibleOptionRows([
+      { title: "Size", values: ["S", "M"] },
+      { title: "Color", values: ["Red"] },
+    ])
+    expect(rows.map((r) => r.index)).toEqual([0, 1])
+  })
+
+  it("shows a half-typed option so it can be finished", () => {
+    const rows = visibleOptionRows([
+      { title: "Default option", values: ["Default option value"] },
+      { title: "Colo", values: [] },
+    ])
+    expect(rows.map((r) => r.option.title)).toEqual(["Colo"])
+  })
+})

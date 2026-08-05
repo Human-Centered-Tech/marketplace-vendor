@@ -540,7 +540,27 @@ export const ProductEditVariantsSection = ({
       >
         <div className="flex flex-col gap-y-4 px-6 py-4">
           <ul className="flex flex-col gap-y-3">
-            {options.map((option, index) => (
+            {/*
+              The generated placeholder axis is never shown. It exists because
+              Medusa needs a variant to hang stock, price and SKU off, not
+              because the merchant chose it — and every confusing thing about
+              this screen came from letting them edit it: renaming it (which
+              defeats the storefront's filter and leaks "Default option value"
+              onto live product pages), typing into it, or watching it turn up
+              inside their combinations. A simple product now shows this card
+              with just its description and "Add option".
+
+              Pairs the index BEFORE filtering: every handler here addresses an
+              option by its position in the real `options` array, so filtering
+              first would rename or delete the wrong one.
+            */}
+            {options
+              .map((option, index) => ({ option, index }))
+              .filter(
+                ({ option }) =>
+                  !isPlaceholderOption(option.title, option.values ?? [])
+              )
+              .map(({ option, index }) => (
               <li
                 key={index}
                 className="bg-ui-bg-component shadow-elevation-card-rest grid grid-cols-[1fr_28px] items-center gap-2 rounded-xl p-2"
