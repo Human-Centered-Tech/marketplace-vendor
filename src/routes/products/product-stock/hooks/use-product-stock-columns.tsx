@@ -10,6 +10,7 @@ import { DataGridReadOnlyCell } from "../../../../components/data-grid/component
 import { DataGridDuplicateCell } from "../../../../components/data-grid/components/data-grid-duplicate-cell"
 import { DataGridTogglableNumberCell } from "../../../../components/data-grid/components/data-grid-toggleable-number-cell"
 import { ProductStockSchema } from "../schema"
+import { resolveVariantLabel } from "../../../../lib/variant-label"
 import { isProductVariant } from "../utils"
 import { ProductStockGridRow } from "../../../../types/products"
 
@@ -65,7 +66,7 @@ export const useProductStockColumns = (
               <DataGridReadOnlyCell context={context}>
                 <div className="flex items-center gap-x-2">
                   <Thumbnail size="small" src={item.product?.thumbnail} />
-                  <span>{item.title || "-"}</span>
+                  <span>{resolveVariantLabel(item, item.product)}</span>
                 </div>
               </DataGridReadOnlyCell>
             )

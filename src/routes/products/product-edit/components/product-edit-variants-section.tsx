@@ -22,6 +22,9 @@ import { ChipInput } from "../../../../components/inputs/chip-input"
 import { ProductCreatePriceField } from "../../product-create/components/product-create-variants-pricing-section/product-create-price-field"
 import { CURRENCY_CODE, ProductEditSchemaType } from "../constants"
 import {
+  isPlaceholderVariantTitle,
+} from "../../../../lib/variant-label"
+import {
   AddVariationsModal,
   NewVariationSelection,
 } from "./add-variations-modal"
@@ -104,8 +107,21 @@ export const ProductEditVariantsSection = ({
 
   const options = (useWatch({ control: form.control, name: "options" }) ??
     []) as EditOption[]
+  const productTitle = (
+    useWatch({ control: form.control, name: "title" }) ?? ""
+  ).trim()
   const variants = (useWatch({ control: form.control, name: "variants" }) ??
     []) as EditVariant[]
+
+  // How a variant should be NAMED in the UI. A product with no real options
+  // still carries one variant the create flow titled "Default variant" — show
+  // the product's name for it instead. Only when it is the only variant: an
+  // untitled card on a genuinely multi-option product still names itself by its
+  // option combination. Display only; the stored title is never rewritten.
+  const displayVariantName = (v: EditVariant, fallback: string) =>
+    variants.length === 1 && isPlaceholderVariantTitle(v.title)
+      ? productTitle || fallback
+      : v.title || comboLabel(v.options) || fallback
 
   // Stock lives in its own form array (seeded from the loaded product's
   // variants); index it by variant id so each variant card can render its own
@@ -205,7 +221,7 @@ export const ProductEditVariantsSection = ({
           description: `Removing ${removed
             .map((r) => `"${r}"`)
             .join(", ")} will permanently delete ${affected
-            .map((a) => a.title || comboLabel(a.options))
+            .map((a) => displayVariantName(a, "this option"))
             .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
           confirmText: t("actions.delete", "Remove"),
           cancelText: t("actions.cancel", "Cancel"),
@@ -241,10 +257,16 @@ export const ProductEditVariantsSection = ({
         const confirmed = await prompt({
           title: "Add this option?",
           description: `${orphaned
-            .map((o) => o.title || comboLabel(o.options))
-            .join(
-              ", "
-            )} don't have a value for this option, so they can't stay as-is. They'll be permanently deleted — including their SKU, price, and stock — and you can recreate them below with the new option. This can't be undone.`,
+            .map((o) => displayVariantName(o, "this option"))
+            .join(", ")} ${
+            orphaned.length === 1
+              ? "doesn't have a value for this option, so it can't stay as-is. It'll"
+              : "don't have a value for this option, so they can't stay as-is. They'll"
+          } be permanently deleted — including ${
+            orphaned.length === 1 ? "its" : "their"
+          } SKU, price, and stock — and you can recreate ${
+            orphaned.length === 1 ? "it" : "them"
+          } below with the new option. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -354,7 +376,7 @@ export const ProductEditVariantsSection = ({
       const confirmed = await prompt({
         title: "Remove option?",
         description: `Removing this option will permanently delete ${willDelete
-          .map((a) => a.title || comboLabel(a.options))
+          .map((a) => displayVariantName(a, "this option"))
           .join(", ")} — including their SKU, price, and stock. This can't be undone.`,
         confirmText: t("actions.delete", "Remove"),
         cancelText: t("actions.cancel", "Cancel"),
@@ -470,7 +492,14 @@ export const ProductEditVariantsSection = ({
       </div>
 
       {variants.map((v, i) => {
-        const label = v.title || comboLabel(v.options) || `Option ${i + 1}`
+        // A product with no real options still needs one variant, which the
+        // create flow titles "Default variant". Show the product name on that
+        // lone card instead of the placeholder. Only when it IS the only
+        // variant — an untitled card on a multi-option product still falls
+        // back to its option combination.
+        const isLonePlaceholder =
+          variants.length === 1 && isPlaceholderVariantTitle(v.title)
+        const label = displayVariantName(v, `Option ${i + 1}`)
         const isExisting = !!v.id
         const missingOptions = isExisting
           ? currentOptionTitles.filter((tt) => !(v.options && tt in v.options))
@@ -515,13 +544,22 @@ export const ProductEditVariantsSection = ({
               </div>
             )}
 
-            <InlineTextField
-              control={form.control}
-              name={`variants.${i}.title`}
-              label={t("fields.title")}
-              stacked
-              inputProps={{ className: "max-w-[10rem]" }}
-            />
+            {/* The title field is hidden for a lone placeholder variant: it
+                holds internal scaffolding ("Default variant") that means
+                nothing to the merchant, and leaving it out means the field can
+                never be dirtied — so saving can't rewrite the stored title,
+                which the storefront relies on to hide these rows. SKU and price
+                below stay editable. It reappears as soon as real options
+                exist. */}
+            {!isLonePlaceholder && (
+              <InlineTextField
+                control={form.control}
+                name={`variants.${i}.title`}
+                label={t("fields.title")}
+                stacked
+                inputProps={{ className: "max-w-[10rem]" }}
+              />
+            )}
             <InlineTextField
               control={form.control}
               name={`variants.${i}.sku`}

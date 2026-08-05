@@ -22,6 +22,7 @@ import { useDataTableDateFilters } from "../../../../../components/data-table/he
 import { useDeleteVariantLazy } from "../../../../../hooks/api/products"
 import { PRODUCT_VARIANT_IDS_KEY } from "../../../common/constants"
 import { useInventoryItemLevels } from "../../../../../hooks/api"
+import { resolveVariantLabel } from "../../../../../lib/variant-label"
 
 type ProductVariantSectionProps = {
   product: ExtendedAdminProduct
@@ -159,7 +160,8 @@ const useColumns = (product: ExtendedAdminProduct) => {
           {
             icon: <Trash />,
             label: t("actions.delete"),
-            onClick: () => handleDelete(variant.id, variant.title!),
+            onClick: () =>
+              handleDelete(variant.id, resolveVariantLabel(variant, product)),
           },
         ]
 
@@ -258,6 +260,11 @@ const useColumns = (product: ExtendedAdminProduct) => {
     return [
       columnHelper.accessor("title", {
         header: t("fields.title"),
+        // Single-variant products carry a "Default variant" placeholder that
+        // means nothing to a merchant — show the product name instead. Sorting
+        // still keys off the stored title; harmless here, since a product with
+        // a placeholder variant has only that one row.
+        cell: ({ row }) => resolveVariantLabel(row.original, product),
         enableSorting: true,
         sortAscLabel: t("filters.sorting.alphabeticallyAsc"),
         sortDescLabel: t("filters.sorting.alphabeticallyDesc"),

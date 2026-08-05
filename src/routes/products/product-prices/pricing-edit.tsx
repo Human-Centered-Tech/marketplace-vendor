@@ -13,6 +13,7 @@ import { useRegions } from "../../../hooks/api/regions"
 import { castNumber } from "../../../lib/cast-number"
 import { VariantPricingForm } from "../common/variant-pricing-form"
 import { ExtendedAdminProduct } from "../../../types/products"
+import { resolveVariantLabel } from "../../../lib/variant-label"
 
 export const UpdateVariantPricesSchema = zod.object({
   variants: zod.array(
@@ -65,7 +66,7 @@ export const PricingEdit = ({
   const form = useForm<UpdateVariantPricesSchemaType>({
     defaultValues: {
       variants: variants?.map((variant) => ({
-        title: variant.title,
+        title: resolveVariantLabel(variant, product),
         prices:
           variant.prices?.reduce(
             (acc, price) => {

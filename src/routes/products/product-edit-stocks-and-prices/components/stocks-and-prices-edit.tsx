@@ -9,6 +9,7 @@ import { KeyboundForm } from "../../../../components/utilities/keybound-form"
 import { useForm } from "react-hook-form"
 import { StocksAndPricesEditForm } from "./stocks-and-prices-edit-form.tsx"
 import { useUpdateProductVariantsBatch } from "../../../../hooks/api/products.tsx"
+import { resolveVariantLabel } from "../../../../lib/variant-label"
 import { useBatchInventoryItemsLocationLevels } from "../../../../hooks/api/inventory.tsx"
 import { InventoryItemWithLevels } from "../../../../types/inventory"
 import {
@@ -65,7 +66,7 @@ const createFormValues = (
 
       const data = {
         id: variant.id,
-        title: variant.title,
+        title: resolveVariantLabel(variant, product),
         inventory_item_id: variant.inventory_items?.[0]?.inventory_item_id,
         prices,
         locations,
