@@ -356,17 +356,28 @@ export const ProductEditVariantsSection = ({
             ? `This product doesn't use options yet — it has a single default entry, and that entry is what currently holds its SKU, price, and stock. Adding "${
                 option.title
               }" deletes the default option and that entry along with it, so you'll set the SKU, price, and stock again on the combinations you build below. This can't be undone.`
-            : `${orphaned
-                .map((o) => displayVariantName(o, "this option"))
+            : // Say VARIANT, and name the option being added. A variant is
+              // usually titled after an option value ("M"), so "M will be
+              // permanently deleted" reads as though the M value — or the whole
+              // option holding it — is going away. Neither is: options and their
+              // values are untouched, and only the row that can't fit the new
+              // matrix is removed. Spell that out rather than leaving the
+              // merchant to infer which kind of thing "M" refers to.
+              `The variant${orphaned.length === 1 ? "" : "s"} ${orphaned
+                .map((o) => `"${displayVariantName(o, "this one")}"`)
                 .join(", ")} ${
-                orphaned.length === 1
-                  ? "doesn't have a value for this option, so it can't stay as-is. It'll"
-                  : "don't have a value for this option, so they can't stay as-is. They'll"
+                orphaned.length === 1 ? "has" : "have"
+              } no value for "${option.title}", so ${
+                orphaned.length === 1 ? "it can't" : "they can't"
+              } stay as-is. ${
+                orphaned.length === 1 ? "It'll" : "They'll"
               } be permanently deleted — including ${
                 orphaned.length === 1 ? "its" : "their"
-              } SKU, price, and stock — and you can recreate ${
+              } SKU, price, and stock — and you'll rebuild ${
                 orphaned.length === 1 ? "it" : "them"
-              } below with the new option. This can't be undone.`,
+              } below as combinations that include "${
+                option.title
+              }". Your options and their values aren't affected. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
