@@ -22,6 +22,7 @@ import { ChipInput } from "../../../../components/inputs/chip-input"
 import { ProductCreatePriceField } from "../../product-create/components/product-create-variants-pricing-section/product-create-price-field"
 import { CURRENCY_CODE, ProductEditSchemaType } from "../constants"
 import {
+  isPlaceholderOption,
   isPlaceholderVariantTitle,
 } from "../../../../lib/variant-label"
 import {
@@ -67,6 +68,27 @@ const getPermutations = (
 
 const comboLabel = (options: Record<string, string>) =>
   Object.values(options).join(" / ")
+
+/**
+ * Remove the generated placeholder axis once the product has a real option.
+ *
+ * Without this, "Default option" keeps its place in the Cartesian product and
+ * gets compounded into every future combination — a merchant who adds Size to a
+ * simple product ends up with cards reading "Default option value / Small",
+ * forever, on a product they thought they'd cleaned up. It also contradicts the
+ * confirmation they just accepted, which says the default is going away.
+ *
+ * Never strips the last option: Medusa hangs stock, price and SKU off a
+ * variant, and a variant needs an option to belong to. A product whose ONLY
+ * option is the placeholder keeps it — that's the placeholder doing its job.
+ */
+const dropPlaceholderOptions = <T extends { title: string; values?: string[] }>(
+  opts: T[]
+): T[] => {
+  const real = opts.filter((o) => !isPlaceholderOption(o.title, o.values ?? []))
+
+  return real.length > 0 ? real : opts
+}
 
 /**
  * Live combination grid for an existing product.
@@ -194,6 +216,36 @@ export const ProductEditVariantsSection = ({
     form.setValue("variants", kept, { shouldDirty: true })
   }
 
+  /**
+   * Commit an option change: retire the placeholder axis if the product now has
+   * a real option, drop its key from every variant's option map so nothing is
+   * left pointing at an axis that no longer exists, then rebuild.
+   *
+   * Always goes through here rather than calling reconcile directly, so the
+   * option list and the variant maps can't disagree about which axes exist.
+   */
+  const applyOptions = (nextOptions: EditOption[]) => {
+    const cleaned = dropPlaceholderOptions(nextOptions)
+    const retired = nextOptions
+      .filter((o) => !cleaned.includes(o))
+      .map((o) => o.title)
+
+    if (retired.length) {
+      const stripped = (form.getValues("variants") ?? []).map((v) => {
+        if (!v.options) {
+          return v
+        }
+        const next = { ...v.options }
+        retired.forEach((title) => delete next[title])
+        return { ...v, options: next }
+      })
+      form.setValue("variants", stripped, { shouldDirty: true })
+    }
+
+    form.setValue("options", cleaned, { shouldDirty: true })
+    reconcile(cleaned)
+  }
+
   const queueDeletion = (ids: string[]) => {
     if (!ids.length) {
       return
@@ -248,7 +300,10 @@ export const ProductEditVariantsSection = ({
     // them so we don't leave stale "Red" cards next to the new "Red / Small"
     // combinations. (Adding to an existing option orphans nothing.)
     if (added.length) {
-      const perms = getPermutations(nextOptions)
+      // Match against the option set we'll actually keep — the placeholder axis
+      // is on its way out, so permutations that still include it would describe
+      // a shape that never exists.
+      const perms = getPermutations(dropPlaceholderOptions(nextOptions))
       const alreadyQueued = new Set(form.getValues("variants_to_delete") ?? [])
       const orphaned = (form.getValues("variants") ?? []).filter(
         (v) =>
@@ -267,7 +322,11 @@ export const ProductEditVariantsSection = ({
             orphaned.length === 1 ? "its" : "their"
           } SKU, price, and stock — and you can recreate ${
             orphaned.length === 1 ? "it" : "them"
-          } below with the new option. This can't be undone.`,
+          } below with the new option.${
+            dropPlaceholderOptions(nextOptions).length < nextOptions.length
+              ? " The placeholder option this product started with is removed at the same time, so it won't show up in the new combinations."
+              : ""
+          } This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -285,7 +344,7 @@ export const ProductEditVariantsSection = ({
 
     // Keep existing / drop removed + just-queued orphans. New combos are NOT
     // auto-added here.
-    reconcile(nextOptions)
+    applyOptions(nextOptions)
 
     // Additions → pop the modal with only the combinations that involve the
     // value(s) just added (not every pre-existing gap in the matrix), and that
@@ -356,7 +415,7 @@ export const ProductEditVariantsSection = ({
     const nextOptions = options.map((o, i) =>
       i === index ? { ...o, title: nextTitle } : o
     )
-    reconcile(nextOptions)
+    applyOptions(nextOptions)
   }
 
   const handleAddOption = () => {
@@ -387,8 +446,7 @@ export const ProductEditVariantsSection = ({
       }
       queueDeletion(willDelete.map((a) => a.id as string))
     }
-    form.setValue("options", nextOptions, { shouldDirty: true })
-    reconcile(nextOptions)
+    applyOptions(nextOptions)
   }
 
   // --- Variant row handlers ------------------------------------------------
