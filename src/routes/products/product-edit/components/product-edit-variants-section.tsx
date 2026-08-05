@@ -210,8 +210,16 @@ export const ProductEditVariantsSection = ({
     const perms = getPermutations(nextOptions)
     const toDelete = new Set(form.getValues("variants_to_delete") ?? [])
 
+    // Read from the form, NOT the `variants` useWatch snapshot. That snapshot is
+    // whatever the last render saw, so anything written since — the option keys
+    // applyOptions just stripped, or the combinations the modal just added —
+    // would be rebuilt away the next time an option changed. Two symptoms of the
+    // same staleness: the retired axis surviving in variant maps, and freshly
+    // added combination cards disappearing on the next keystroke.
+    const current = (form.getValues("variants") ?? []) as EditVariant[]
+
     const kept: EditVariant[] = []
-    variants.forEach((v) => {
+    current.forEach((v) => {
       if (v.id && toDelete.has(v.id)) {
         return // queued for deletion — drop from the working set
       }
