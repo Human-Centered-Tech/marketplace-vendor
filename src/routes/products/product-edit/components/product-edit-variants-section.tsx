@@ -22,6 +22,9 @@ import { ChipInput } from "../../../../components/inputs/chip-input"
 import { ProductCreatePriceField } from "../../product-create/components/product-create-variants-pricing-section/product-create-price-field"
 import { CURRENCY_CODE, ProductEditSchemaType } from "../constants"
 import {
+  isPlaceholderVariantTitle,
+} from "../../../../lib/variant-label"
+import {
   AddVariationsModal,
   NewVariationSelection,
 } from "./add-variations-modal"
@@ -104,6 +107,9 @@ export const ProductEditVariantsSection = ({
 
   const options = (useWatch({ control: form.control, name: "options" }) ??
     []) as EditOption[]
+  const productTitle = (
+    useWatch({ control: form.control, name: "title" }) ?? ""
+  ).trim()
   const variants = (useWatch({ control: form.control, name: "variants" }) ??
     []) as EditVariant[]
 
@@ -470,7 +476,16 @@ export const ProductEditVariantsSection = ({
       </div>
 
       {variants.map((v, i) => {
-        const label = v.title || comboLabel(v.options) || `Option ${i + 1}`
+        // A product with no real options still needs one variant, which the
+        // create flow titles "Default variant". Show the product name on that
+        // lone card instead of the placeholder. Only when it IS the only
+        // variant — an untitled card on a multi-option product still falls
+        // back to its option combination.
+        const isLonePlaceholder =
+          variants.length === 1 && isPlaceholderVariantTitle(v.title)
+        const label = isLonePlaceholder
+          ? productTitle || "—"
+          : v.title || comboLabel(v.options) || `Option ${i + 1}`
         const isExisting = !!v.id
         const missingOptions = isExisting
           ? currentOptionTitles.filter((tt) => !(v.options && tt in v.options))
@@ -515,13 +530,22 @@ export const ProductEditVariantsSection = ({
               </div>
             )}
 
-            <InlineTextField
-              control={form.control}
-              name={`variants.${i}.title`}
-              label={t("fields.title")}
-              stacked
-              inputProps={{ className: "max-w-[10rem]" }}
-            />
+            {/* The title field is hidden for a lone placeholder variant: it
+                holds internal scaffolding ("Default variant") that means
+                nothing to the merchant, and leaving it out means the field can
+                never be dirtied — so saving can't rewrite the stored title,
+                which the storefront relies on to hide these rows. SKU and price
+                below stay editable. It reappears as soon as real options
+                exist. */}
+            {!isLonePlaceholder && (
+              <InlineTextField
+                control={form.control}
+                name={`variants.${i}.title`}
+                label={t("fields.title")}
+                stacked
+                inputProps={{ className: "max-w-[10rem]" }}
+              />
+            )}
             <InlineTextField
               control={form.control}
               name={`variants.${i}.sku`}
