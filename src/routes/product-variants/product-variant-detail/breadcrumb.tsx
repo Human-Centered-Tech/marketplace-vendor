@@ -2,6 +2,7 @@ import { HttpTypes } from "@medusajs/types"
 import { UIMatch } from "react-router-dom"
 import { useProductVariant } from "../../../hooks/api"
 import { VARIANT_DETAIL_FIELDS } from "./constants"
+import { resolveVariantLabel } from "../../../lib/variant-label"
 
 type ProductVariantDetailBreadcrumbProps =
   UIMatch<HttpTypes.AdminProductVariantResponse>
@@ -26,5 +27,5 @@ export const ProductVariantDetailBreadcrumb = (
     return null
   }
 
-  return <span>{variant.title}</span>
+  return <span>{resolveVariantLabel(variant, (variant as any).product)}</span>
 }
