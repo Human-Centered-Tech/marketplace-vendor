@@ -323,24 +323,41 @@ export const ProductEditVariantsSection = ({
         (v) =>
           v.id && !alreadyQueued.has(v.id) && !exactMatch(v.options, perms)
       )
+      // Two different situations wear the same dialog, and they need different
+      // words.
+      //
+      // Retiring the placeholder: the thing being deleted is the product's
+      // default entry, which is scaffolding the merchant never created. Naming
+      // it is actively harmful — everywhere else we render that row as the
+      // PRODUCT's name, so "Tree Ornament will be permanently deleted" reads
+      // like we're about to delete their product. Talk about the default
+      // option instead, and never put the product name in a deletion sentence.
+      //
+      // Genuine orphans: those are variants the merchant built and named
+      // ("Small", "Red"), so name them — that's the information they need.
+      const retiringPlaceholder =
+        dropPlaceholderOptions(nextOptions).length < nextOptions.length
+
       if (orphaned.length) {
         const confirmed = await prompt({
-          title: "Add this option?",
-          description: `${orphaned
-            .map((o) => displayVariantName(o, "this option"))
-            .join(", ")} ${
-            orphaned.length === 1
-              ? "doesn't have a value for this option, so it can't stay as-is. It'll"
-              : "don't have a value for this option, so they can't stay as-is. They'll"
-          } be permanently deleted — including ${
-            orphaned.length === 1 ? "its" : "their"
-          } SKU, price, and stock — and you can recreate ${
-            orphaned.length === 1 ? "it" : "them"
-          } below with the new option.${
-            dropPlaceholderOptions(nextOptions).length < nextOptions.length
-              ? " The placeholder option this product started with is removed at the same time, so it won't show up in the new combinations."
-              : ""
-          } This can't be undone.`,
+          title: retiringPlaceholder
+            ? "Replace the default option?"
+            : "Add this option?",
+          description: retiringPlaceholder
+            ? `This product doesn't use options yet — it has a single default entry, and that entry is what currently holds its SKU, price, and stock. Adding "${
+                option.title
+              }" deletes the default option and that entry along with it, so you'll set the SKU, price, and stock again on the combinations you build below. This can't be undone.`
+            : `${orphaned
+                .map((o) => displayVariantName(o, "this option"))
+                .join(", ")} ${
+                orphaned.length === 1
+                  ? "doesn't have a value for this option, so it can't stay as-is. It'll"
+                  : "don't have a value for this option, so they can't stay as-is. They'll"
+              } be permanently deleted — including ${
+                orphaned.length === 1 ? "its" : "their"
+              } SKU, price, and stock — and you can recreate ${
+                orphaned.length === 1 ? "it" : "them"
+              } below with the new option. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
