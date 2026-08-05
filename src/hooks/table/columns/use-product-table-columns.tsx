@@ -22,6 +22,10 @@ import {
   ProductStatusHeader,
 } from "../../../components/table/table-cells/product/product-status-cell"
 import {
+  SkuCell,
+  SkuHeader,
+} from "../../../components/table/table-cells/product/sku-cell"
+import {
   VariantCell,
   VariantHeader,
 } from "../../../components/table/table-cells/product/variant-cell"
@@ -36,6 +40,13 @@ export const useProductTableColumns = () => {
         id: "product",
         header: () => <ProductHeader />,
         cell: ({ row }) => <ProductCell product={row.original} />,
+      }),
+      // Display (not accessor): SKU lives on variants, so there's no product
+      // field to key off, and "variants" is already taken by the count column.
+      columnHelper.display({
+        id: "sku",
+        header: () => <SkuHeader />,
+        cell: ({ row }) => <SkuCell variants={row.original.variants} />,
       }),
       columnHelper.accessor("categories", {
         header: () => <CategoryHeader />,

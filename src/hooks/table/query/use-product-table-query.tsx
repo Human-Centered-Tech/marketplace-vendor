@@ -6,8 +6,13 @@ type UseProductTableQueryProps = {
   pageSize?: number
 }
 
+// An explicit `fields` param REPLACES the backend's defaults rather than adding
+// to them — /vendor/products defaults to `*variants` (every scalar variant
+// field), but naming `variants.id` here narrows the expansion to exactly what's
+// listed. So anything a column renders has to be requested by name:
+// variants.sku feeds the SKU column.
 const DEFAULT_FIELDS =
-  "id,title,handle,status,*collection,*sales_channels,variants.id,variants.prices.amount,variants.prices.currency_code,thumbnail,images.url"
+  "id,title,handle,status,*collection,*sales_channels,variants.id,variants.sku,variants.prices.amount,variants.prices.currency_code,thumbnail,images.url"
 
 export const useProductTableQuery = ({
   prefix,
