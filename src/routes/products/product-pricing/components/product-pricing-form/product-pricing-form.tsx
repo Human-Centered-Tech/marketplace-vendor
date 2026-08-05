@@ -12,6 +12,7 @@ import {
   ExtendedAdminProduct,
   ExtendedAdminProductVariant,
 } from "../../../../../types/products"
+import { resolveVariantLabel } from "../../../../../lib/variant-label"
 
 // Vendor catalog is USD-only today; amounts are stored in major units (dollars).
 const CURRENCY_CODE = "usd"
@@ -51,7 +52,8 @@ export const ProductPricingForm = ({
     defaultValues: {
       variants: (product.variants ?? []).map((variant) => ({
         id: variant.id,
-        title: variant.title || variant.sku || "Variant",
+        // Display only — handleSubmit sends id + prices, never title.
+        title: resolveVariantLabel(variant, product),
         amount: readUsdAmount(variant),
       })),
     },

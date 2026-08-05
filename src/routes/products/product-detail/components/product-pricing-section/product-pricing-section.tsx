@@ -8,6 +8,7 @@ import {
   ExtendedAdminProduct,
   ExtendedAdminProductVariant,
 } from "../../../../../types/products"
+import { resolveVariantLabel } from "../../../../../lib/variant-label"
 
 // Vendor catalog is USD-only today (see price-cell). If this ever goes
 // multi-currency, plumb the seller's preferred currency through here.
@@ -70,7 +71,7 @@ export const ProductPricingSection = ({
           return (
             <SectionRow
               key={variant.id}
-              title={variant.title || variant.sku || "Variant"}
+              title={resolveVariantLabel(variant, product)}
               value={
                 price == null ? (
                   <span className="text-ui-fg-muted">No price set</span>
