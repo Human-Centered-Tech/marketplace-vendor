@@ -7,6 +7,7 @@ import { SectionRow } from "../../../../../components/common/section"
 import { useInventoryItemLevels } from "../../../../../hooks/api"
 import { ExtendedAdminProduct } from "../../../../../types/products"
 import { ExtendedAdminProductVariant } from "../../../../../types/products"
+import { resolveVariantLabel } from "../../../../../lib/variant-label"
 
 type ProductStockSectionProps = {
   product: ExtendedAdminProduct
@@ -36,14 +37,20 @@ export const ProductStockSection = ({ product }: ProductStockSectionProps) => {
         </div>
       ) : (
         variants.map((variant) => (
-          <StockRow key={variant.id} variant={variant} />
+          <StockRow key={variant.id} variant={variant} product={product} />
         ))
       )}
     </Container>
   )
 }
 
-const StockRow = ({ variant }: { variant: ExtendedAdminProductVariant }) => {
+const StockRow = ({
+  variant,
+  product,
+}: {
+  variant: ExtendedAdminProductVariant
+  product: ExtendedAdminProduct
+}) => {
   // Some products have a single inventory_item per variant; kits have several.
   // For the at-a-glance display, sum across all inventory items + locations.
   // The "Edit stock" modal owns the per-location/per-item editing.
@@ -74,7 +81,7 @@ const StockRow = ({ variant }: { variant: ExtendedAdminProductVariant }) => {
 
   return (
     <SectionRow
-      title={variant.title || variant.sku || "Variant"}
+      title={resolveVariantLabel(variant, product)}
       value={value}
     />
   )
