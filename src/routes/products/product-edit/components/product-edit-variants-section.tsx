@@ -22,8 +22,13 @@ import { ChipInput } from "../../../../components/inputs/chip-input"
 import { ProductCreatePriceField } from "../../product-create/components/product-create-variants-pricing-section/product-create-price-field"
 import { CURRENCY_CODE, ProductEditSchemaType } from "../constants"
 import {
+  isPlaceholderOption,
   isPlaceholderVariantTitle,
 } from "../../../../lib/variant-label"
+import {
+  describeOpenOrderBlock,
+  useVariantsWithOpenOrders,
+} from "../hooks/use-variants-with-open-orders"
 import {
   AddVariationsModal,
   NewVariationSelection,
@@ -67,6 +72,42 @@ const getPermutations = (
 
 const comboLabel = (options: Record<string, string>) =>
   Object.values(options).join(" / ")
+
+/**
+ * Remove the generated placeholder axis once the product has a real option.
+ *
+ * Without this, "Default option" keeps its place in the Cartesian product and
+ * gets compounded into every future combination — a merchant who adds Size to a
+ * simple product ends up with cards reading "Default option value / Small",
+ * forever, on a product they thought they'd cleaned up. It also contradicts the
+ * confirmation they just accepted, which says the default is going away.
+ *
+ * Never strips the last option: Medusa hangs stock, price and SKU off a
+ * variant, and a variant needs an option to belong to. A product whose ONLY
+ * option is the placeholder keeps it — that's the placeholder doing its job.
+ */
+const dropPlaceholderOptions = <T extends { title: string; values?: string[] }>(
+  opts: T[]
+): T[] => {
+  const real = opts.filter((o) => !isPlaceholderOption(o.title, o.values ?? []))
+
+  // Retire only once a real axis is USABLE — a title and at least one value.
+  //
+  // The title input fires on every keystroke, so a half-typed option counts as
+  // "not a placeholder" from its first character. Retiring on that basis made
+  // the Default option card vanish the instant a merchant started naming its
+  // replacement, before the replacement could do anything. getPermutations
+  // ignores a valueless option anyway, so retiring early only opens a window
+  // where the product has no usable axis at all.
+  //
+  // Returns `real` (not `usable`) so the option still being typed survives —
+  // we're dropping the placeholder, not tidying the merchant's work in progress.
+  const usable = real.filter(
+    (o) => o.title.trim() && (o.values?.length ?? 0) > 0
+  )
+
+  return usable.length > 0 ? real : opts
+}
 
 /**
  * Live combination grid for an existing product.
@@ -172,8 +213,16 @@ export const ProductEditVariantsSection = ({
     const perms = getPermutations(nextOptions)
     const toDelete = new Set(form.getValues("variants_to_delete") ?? [])
 
+    // Read from the form, NOT the `variants` useWatch snapshot. That snapshot is
+    // whatever the last render saw, so anything written since — the option keys
+    // applyOptions just stripped, or the combinations the modal just added —
+    // would be rebuilt away the next time an option changed. Two symptoms of the
+    // same staleness: the retired axis surviving in variant maps, and freshly
+    // added combination cards disappearing on the next keystroke.
+    const current = (form.getValues("variants") ?? []) as EditVariant[]
+
     const kept: EditVariant[] = []
-    variants.forEach((v) => {
+    current.forEach((v) => {
       if (v.id && toDelete.has(v.id)) {
         return // queued for deletion — drop from the working set
       }
@@ -191,6 +240,79 @@ export const ProductEditVariantsSection = ({
 
     kept.forEach((v, i) => (v.variant_rank = i))
     form.setValue("variants", kept, { shouldDirty: true })
+  }
+
+  const { variantIdsWithOpenOrders } = useVariantsWithOpenOrders()
+
+  /**
+   * Refuse a change that would delete a variant an open order still needs.
+   *
+   * Deleting is normally safe — history is snapshotted on the line item — but
+   * fulfilment and allocation reach through to the LIVE variant, so removing one
+   * mid-order can leave the seller unable to ship. Checked against a list
+   * fetched once for the page, so this stays synchronous inside handlers that
+   * run on every keystroke.
+   *
+   * Advisory only: it guards this UI, not the API. A seller hitting the backend
+   * directly can still delete the variant.
+   */
+  const blockIfOpenOrders = async (
+    doomed: EditVariant[]
+  ): Promise<boolean> => {
+    const blocked = doomed
+      .filter((v) => v.id && variantIdsWithOpenOrders.has(v.id))
+      .map((v) => ({
+        label: displayVariantName(v, "this variant"),
+        orders: variantIdsWithOpenOrders.get(v.id as string) ?? [],
+      }))
+
+    const detail = describeOpenOrderBlock(blocked)
+    if (!detail) {
+      return false
+    }
+
+    await prompt({
+      title: "Finish these orders first",
+      description: `${detail}. Changing this product's options would delete ${
+        blocked.length === 1 ? "it" : "them"
+      }, and you need the variant in place to fulfil the order. Please fulfil any open orders containing ${
+        blocked.length === 1 ? "it" : "them"
+      } before changing the options here.`,
+      confirmText: t("actions.ok", "OK"),
+      cancelText: t("actions.cancel", "Close"),
+    })
+
+    return true
+  }
+
+  /**
+   * Commit an option change: retire the placeholder axis if the product now has
+   * a real option, drop its key from every variant's option map so nothing is
+   * left pointing at an axis that no longer exists, then rebuild.
+   *
+   * Always goes through here rather than calling reconcile directly, so the
+   * option list and the variant maps can't disagree about which axes exist.
+   */
+  const applyOptions = (nextOptions: EditOption[]) => {
+    const cleaned = dropPlaceholderOptions(nextOptions)
+    const retired = nextOptions
+      .filter((o) => !cleaned.includes(o))
+      .map((o) => o.title)
+
+    if (retired.length) {
+      const stripped = (form.getValues("variants") ?? []).map((v) => {
+        if (!v.options) {
+          return v
+        }
+        const next = { ...v.options }
+        retired.forEach((title) => delete next[title])
+        return { ...v, options: next }
+      })
+      form.setValue("variants", stripped, { shouldDirty: true })
+    }
+
+    form.setValue("options", cleaned, { shouldDirty: true })
+    reconcile(cleaned)
   }
 
   const queueDeletion = (ids: string[]) => {
@@ -216,6 +338,12 @@ export const ProductEditVariantsSection = ({
         (v) => v.id && removed.includes(v.options?.[option.title])
       )
       if (affected.length) {
+        if (await blockIfOpenOrders(affected)) {
+          form.setValue(`options.${index}.values`, [...(option.values ?? [])], {
+            shouldDirty: false,
+          })
+          return
+        }
         const confirmed = await prompt({
           title: "Remove option value?",
           description: `Removing ${removed
@@ -247,26 +375,67 @@ export const ProductEditVariantsSection = ({
     // them so we don't leave stale "Red" cards next to the new "Red / Small"
     // combinations. (Adding to an existing option orphans nothing.)
     if (added.length) {
-      const perms = getPermutations(nextOptions)
+      // Match against the option set we'll actually keep — the placeholder axis
+      // is on its way out, so permutations that still include it would describe
+      // a shape that never exists.
+      const perms = getPermutations(dropPlaceholderOptions(nextOptions))
       const alreadyQueued = new Set(form.getValues("variants_to_delete") ?? [])
       const orphaned = (form.getValues("variants") ?? []).filter(
         (v) =>
           v.id && !alreadyQueued.has(v.id) && !exactMatch(v.options, perms)
       )
+      // Two different situations wear the same dialog, and they need different
+      // words.
+      //
+      // Retiring the placeholder: the thing being deleted is the product's
+      // default entry, which is scaffolding the merchant never created. Naming
+      // it is actively harmful — everywhere else we render that row as the
+      // PRODUCT's name, so "Tree Ornament will be permanently deleted" reads
+      // like we're about to delete their product. Talk about the default
+      // option instead, and never put the product name in a deletion sentence.
+      //
+      // Genuine orphans: those are variants the merchant built and named
+      // ("Small", "Red"), so name them — that's the information they need.
+      const retiringPlaceholder =
+        dropPlaceholderOptions(nextOptions).length < nextOptions.length
+
       if (orphaned.length) {
+        if (await blockIfOpenOrders(orphaned)) {
+          form.setValue(`options.${index}.values`, [...(option.values ?? [])], {
+            shouldDirty: false,
+          })
+          return
+        }
         const confirmed = await prompt({
-          title: "Add this option?",
-          description: `${orphaned
-            .map((o) => displayVariantName(o, "this option"))
-            .join(", ")} ${
-            orphaned.length === 1
-              ? "doesn't have a value for this option, so it can't stay as-is. It'll"
-              : "don't have a value for this option, so they can't stay as-is. They'll"
-          } be permanently deleted — including ${
-            orphaned.length === 1 ? "its" : "their"
-          } SKU, price, and stock — and you can recreate ${
-            orphaned.length === 1 ? "it" : "them"
-          } below with the new option. This can't be undone.`,
+          title: retiringPlaceholder
+            ? "Replace the default option?"
+            : "Add this option?",
+          description: retiringPlaceholder
+            ? `This product doesn't use options yet — it has a single default entry, and that entry is what currently holds its SKU, price, and stock. Adding "${
+                option.title
+              }" deletes the default option and that entry along with it, so you'll set the SKU, price, and stock again on the combinations you build below. This can't be undone.`
+            : // Say VARIANT, and name the option being added. A variant is
+              // usually titled after an option value ("M"), so "M will be
+              // permanently deleted" reads as though the M value — or the whole
+              // option holding it — is going away. Neither is: options and their
+              // values are untouched, and only the row that can't fit the new
+              // matrix is removed. Spell that out rather than leaving the
+              // merchant to infer which kind of thing "M" refers to.
+              `The variant${orphaned.length === 1 ? "" : "s"} ${orphaned
+                .map((o) => `"${displayVariantName(o, "this one")}"`)
+                .join(", ")} ${
+                orphaned.length === 1 ? "has" : "have"
+              } no value for "${option.title}", so ${
+                orphaned.length === 1 ? "it can't" : "they can't"
+              } stay as-is. ${
+                orphaned.length === 1 ? "It'll" : "They'll"
+              } be permanently deleted — including ${
+                orphaned.length === 1 ? "its" : "their"
+              } SKU, price, and stock — and you'll rebuild ${
+                orphaned.length === 1 ? "it" : "them"
+              } below as combinations that include "${
+                option.title
+              }". Your options and their values aren't affected. This can't be undone.`,
           confirmText: t("actions.continue", "Continue"),
           cancelText: t("actions.cancel", "Cancel"),
         })
@@ -284,13 +453,17 @@ export const ProductEditVariantsSection = ({
 
     // Keep existing / drop removed + just-queued orphans. New combos are NOT
     // auto-added here.
-    reconcile(nextOptions)
+    applyOptions(nextOptions)
 
     // Additions → pop the modal with only the combinations that involve the
     // value(s) just added (not every pre-existing gap in the matrix), and that
     // aren't already a variant.
     if (added.length) {
-      const perms = getPermutations(nextOptions)
+      // Build the offered combinations from the option set we KEPT. Using the
+      // raw one here is what put the retired axis back into every new combo —
+      // the placeholder was correctly dropped from the product, then handed
+      // straight back through the modal as "Default option value / Red".
+      const perms = getPermutations(dropPlaceholderOptions(nextOptions))
       const existing = new Set(
         (form.getValues("variants") ?? []).map((v) => comboKey(v.options))
       )
@@ -355,7 +528,7 @@ export const ProductEditVariantsSection = ({
     const nextOptions = options.map((o, i) =>
       i === index ? { ...o, title: nextTitle } : o
     )
-    reconcile(nextOptions)
+    applyOptions(nextOptions)
   }
 
   const handleAddOption = () => {
@@ -367,12 +540,16 @@ export const ProductEditVariantsSection = ({
   const handleRemoveOption = async (index: number) => {
     const nextOptions = options.filter((_, i) => i !== index)
     // Any existing variant that won't map to a permutation of the remaining
-    // options gets deleted — confirm first.
-    const perms = getPermutations(nextOptions)
+    // options gets deleted — confirm first. Compare against the set we'll
+    // actually keep, so the warning describes the real outcome.
+    const perms = getPermutations(dropPlaceholderOptions(nextOptions))
     const willDelete = variants.filter(
       (v) => v.id && !exactMatch(v.options, perms)
     )
     if (willDelete.length) {
+      if (await blockIfOpenOrders(willDelete)) {
+        return
+      }
       const confirmed = await prompt({
         title: "Remove option?",
         description: `Removing this option will permanently delete ${willDelete
@@ -386,8 +563,7 @@ export const ProductEditVariantsSection = ({
       }
       queueDeletion(willDelete.map((a) => a.id as string))
     }
-    form.setValue("options", nextOptions, { shouldDirty: true })
-    reconcile(nextOptions)
+    applyOptions(nextOptions)
   }
 
   // --- Variant row handlers ------------------------------------------------
@@ -425,7 +601,27 @@ export const ProductEditVariantsSection = ({
       >
         <div className="flex flex-col gap-y-4 px-6 py-4">
           <ul className="flex flex-col gap-y-3">
-            {options.map((option, index) => (
+            {/*
+              The generated placeholder axis is never shown. It exists because
+              Medusa needs a variant to hang stock, price and SKU off, not
+              because the merchant chose it — and every confusing thing about
+              this screen came from letting them edit it: renaming it (which
+              defeats the storefront's filter and leaks "Default option value"
+              onto live product pages), typing into it, or watching it turn up
+              inside their combinations. A simple product now shows this card
+              with just its description and "Add option".
+
+              Pairs the index BEFORE filtering: every handler here addresses an
+              option by its position in the real `options` array, so filtering
+              first would rename or delete the wrong one.
+            */}
+            {options
+              .map((option, index) => ({ option, index }))
+              .filter(
+                ({ option }) =>
+                  !isPlaceholderOption(option.title, option.values ?? [])
+              )
+              .map(({ option, index }) => (
               <li
                 key={index}
                 className="bg-ui-bg-component shadow-elevation-card-rest grid grid-cols-[1fr_28px] items-center gap-2 rounded-xl p-2"

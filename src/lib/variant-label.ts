@@ -72,3 +72,57 @@ export const resolveVariantLabel = (
 
   return "—"
 }
+
+/**
+ * An option VALUE that carries no real buyer choice.
+ *
+ * Note "default option value" — that's what our create flow actually writes
+ * (routes/products/product-create/constants.ts). The storefront's filter only
+ * lists "default value" / "default title", so its value check has never matched
+ * our own data; today only its TITLE check does any work. That's exactly why
+ * this must match on value too: renaming "Default option" re-keys the variant
+ * map but leaves the value alone, and a title-only rule would sail straight
+ * past it.
+ */
+export const isPlaceholderOptionValue = (value?: string | null) => {
+  const v = normalize(value)
+
+  return (
+    v === "default option value" || v === "default value" || v === "default title"
+  )
+}
+
+/**
+ * An option axis that exists only because Medusa requires one, not because the
+ * merchant is offering a choice.
+ *
+ * Two ways to be one:
+ *   - the title is the generated placeholder ("Default option", or Shopify's
+ *     "Title" paired with a placeholder value), or
+ *   - the title has been renamed but the single generated VALUE survives, e.g.
+ *     "The Annunciation Rosary: Default option value".
+ *
+ * A real single-value option ("Size: 30\" x 24\"") is NOT a placeholder — the
+ * value is meaningful even though there's only one.
+ */
+export const isPlaceholderOption = (
+  title?: string | null,
+  values?: (string | null | undefined)[] | null
+): boolean => {
+  const t = normalize(title)
+  const vals = (values ?? []).map(normalize).filter((v) => v !== "")
+
+  if (t === "default option") {
+    return true
+  }
+  // Requires an actual placeholder value, NOT merely "no values yet". The option
+  // title input fires on every keystroke, so a merchant part-way through typing
+  // a real option called "Title" would otherwise have the row pulled out from
+  // under them. No option in production has zero values, so nothing real is
+  // lost by insisting on one.
+  if (t === "title" && vals.length > 0 && vals.every(isPlaceholderOptionValue)) {
+    return true
+  }
+  // Renamed axis whose only value is still the generated placeholder.
+  return vals.length > 0 && vals.every(isPlaceholderOptionValue)
+}
