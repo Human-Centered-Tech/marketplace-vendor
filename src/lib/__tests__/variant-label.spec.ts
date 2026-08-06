@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 
+import { describeOpenOrderBlock } from "../../routes/products/product-edit/hooks/use-variants-with-open-orders"
 import {
   isPlaceholderOption,
   isPlaceholderOptionValue,
@@ -308,5 +309,35 @@ describe("which option rows the merchant sees", () => {
       { title: "Colo", values: [] },
     ])
     expect(rows.map((r) => r.option.title)).toEqual(["Colo"])
+  })
+})
+
+// The guard that stops an option change from deleting a variant an open order
+// still needs. Fulfilment reaches through to the LIVE variant, so removing one
+// mid-order can leave the seller unable to ship.
+describe("describeOpenOrderBlock", () => {
+  it("returns null when nothing is blocked", () => {
+    expect(describeOpenOrderBlock([])).toBeNull()
+  })
+
+  it("names the variant and its order", () => {
+    expect(
+      describeOpenOrderBlock([{ label: "M", orders: ["#24"] }])
+    ).toBe('"M" is on #24')
+  })
+
+  it("lists every order a variant appears on", () => {
+    expect(
+      describeOpenOrderBlock([{ label: "M", orders: ["#10", "#24"] }])
+    ).toBe('"M" is on #10, #24')
+  })
+
+  it("joins multiple blocked variants", () => {
+    expect(
+      describeOpenOrderBlock([
+        { label: "M", orders: ["#24"] },
+        { label: "L", orders: ["#19"] },
+      ])
+    ).toBe('"M" is on #24; "L" is on #19')
   })
 })
