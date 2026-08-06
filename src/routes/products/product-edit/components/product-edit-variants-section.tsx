@@ -26,6 +26,10 @@ import {
   isPlaceholderVariantTitle,
 } from "../../../../lib/variant-label"
 import {
+  describeOpenOrderBlock,
+  useVariantsWithOpenOrders,
+} from "../hooks/use-variants-with-open-orders"
+import {
   AddVariationsModal,
   NewVariationSelection,
 } from "./add-variations-modal"
@@ -238,6 +242,49 @@ export const ProductEditVariantsSection = ({
     form.setValue("variants", kept, { shouldDirty: true })
   }
 
+  const { variantIdsWithOpenOrders } = useVariantsWithOpenOrders()
+
+  /**
+   * Refuse a change that would delete a variant an open order still needs.
+   *
+   * Deleting is normally safe — history is snapshotted on the line item — but
+   * fulfilment and allocation reach through to the LIVE variant, so removing one
+   * mid-order can leave the seller unable to ship. Checked against a list
+   * fetched once for the page, so this stays synchronous inside handlers that
+   * run on every keystroke.
+   *
+   * Advisory only: it guards this UI, not the API. A seller hitting the backend
+   * directly can still delete the variant.
+   */
+  const blockIfOpenOrders = async (
+    doomed: EditVariant[]
+  ): Promise<boolean> => {
+    const blocked = doomed
+      .filter((v) => v.id && variantIdsWithOpenOrders.has(v.id))
+      .map((v) => ({
+        label: displayVariantName(v, "this variant"),
+        orders: variantIdsWithOpenOrders.get(v.id as string) ?? [],
+      }))
+
+    const detail = describeOpenOrderBlock(blocked)
+    if (!detail) {
+      return false
+    }
+
+    await prompt({
+      title: "Finish these orders first",
+      description: `${detail}. Changing this product's options would delete ${
+        blocked.length === 1 ? "it" : "them"
+      }, and you need the variant in place to fulfil the order. Please fulfil any open orders containing ${
+        blocked.length === 1 ? "it" : "them"
+      } before changing the options here.`,
+      confirmText: t("actions.ok", "OK"),
+      cancelText: t("actions.cancel", "Close"),
+    })
+
+    return true
+  }
+
   /**
    * Commit an option change: retire the placeholder axis if the product now has
    * a real option, drop its key from every variant's option map so nothing is
@@ -291,6 +338,12 @@ export const ProductEditVariantsSection = ({
         (v) => v.id && removed.includes(v.options?.[option.title])
       )
       if (affected.length) {
+        if (await blockIfOpenOrders(affected)) {
+          form.setValue(`options.${index}.values`, [...(option.values ?? [])], {
+            shouldDirty: false,
+          })
+          return
+        }
         const confirmed = await prompt({
           title: "Remove option value?",
           description: `Removing ${removed
@@ -347,6 +400,12 @@ export const ProductEditVariantsSection = ({
         dropPlaceholderOptions(nextOptions).length < nextOptions.length
 
       if (orphaned.length) {
+        if (await blockIfOpenOrders(orphaned)) {
+          form.setValue(`options.${index}.values`, [...(option.values ?? [])], {
+            shouldDirty: false,
+          })
+          return
+        }
         const confirmed = await prompt({
           title: retiringPlaceholder
             ? "Replace the default option?"
@@ -488,6 +547,9 @@ export const ProductEditVariantsSection = ({
       (v) => v.id && !exactMatch(v.options, perms)
     )
     if (willDelete.length) {
+      if (await blockIfOpenOrders(willDelete)) {
+        return
+      }
       const confirmed = await prompt({
         title: "Remove option?",
         description: `Removing this option will permanently delete ${willDelete
