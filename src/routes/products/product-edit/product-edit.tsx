@@ -22,7 +22,12 @@ export const ProductEdit = () => {
   const [saveNonce, setSaveNonce] = useState(0)
 
   const { product, isLoading, isError, error } = useProduct(id!, {
-    fields: `${PRODUCT_DETAIL_FIELDS},*variants.inventory_items,*options,*options.values`,
+    // `*categories` is NOT optional here. An explicit fields param REPLACES the
+    // backend defaults rather than extending them, and /vendor/products never
+    // returns categories on its own — so without this the picker loads empty and
+    // the next save posts `categories: []`, silently unassigning every category
+    // the merchant had set.
+    fields: `${PRODUCT_DETAIL_FIELDS},*categories,*variants.inventory_items,*options,*options.values`,
   })
 
   const { store, isPending: isStorePending } = useStore()

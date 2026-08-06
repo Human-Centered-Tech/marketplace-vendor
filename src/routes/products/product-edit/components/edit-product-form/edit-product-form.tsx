@@ -224,7 +224,15 @@ export const EditProductForm = ({
         discountable: values.discountable,
         type_id: values.type_id || undefined,
         collection_id: values.collection_id || undefined,
-        categories: values.categories.map((id) => ({ id })),
+        // Only send categories when the API actually returned them. The form
+        // seeds `[]` from a missing field, and an unconditional send turns that
+        // absence into a deletion — which is exactly how every category got
+        // stripped on the first save after a page load. Belt-and-braces with
+        // the `*categories` fetch above: if the field ever goes missing again,
+        // the worst case is a stale picker, not data loss.
+        ...(Array.isArray((product as any)?.categories)
+          ? { categories: values.categories.map((id) => ({ id })) }
+          : {}),
         origin_country: values.origin_country || undefined,
         material: values.material || undefined,
         weight: parseDimension(values.weight),
