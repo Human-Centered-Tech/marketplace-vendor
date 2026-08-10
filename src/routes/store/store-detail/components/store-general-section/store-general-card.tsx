@@ -53,7 +53,7 @@ export const InlineStoreCard = ({
         name="cover_media"
         label="Cover photo"
         optional
-        hint="Hero banner shown at the top of your storefront page. Wide aspect ratio works best (≥ 1200×400)."
+        hint="Hero banner across the top of your storefront page. Use ~1600×640px and keep the subject centred — the banner spans the whole browser window, so it is nearly square on phones and very wide on large screens."
         previewUrl={coverMedia?.[0]?.url}
         onUploaded={onCoverUploaded}
         onRemove={onCoverRemove}
