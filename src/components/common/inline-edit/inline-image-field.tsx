@@ -67,7 +67,11 @@ export const InlineImageField = <T extends FieldValues>({
               uploadedImage={shownImage}
               multiple={false}
               label={t("products.media.uploadImagesLabel")}
-              hint={t("products.media.uploadImagesHint")}
+              // Only fall back to the product-image hint when the field hasn't
+              // given one. Logo and cover pass their own, and the product hint
+              // ("portrait 4:5") contradicted the wide-banner hint sitting
+              // directly above the dropzone.
+              hint={hint ? undefined : t("products.media.uploadImagesHint")}
               hasError={hasError}
               formats={formats}
               onUploaded={onUploaded}

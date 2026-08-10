@@ -205,7 +205,7 @@ export const ShopCollectionFormDrawer = ({
           </Field>
           <Field
             label="Cover image"
-            hint="Shown on the collection card on your shop page and at the top of the collection page"
+            hint="Shown on the collection card on your shop page and at the top of the collection page. Use ~1600×960px and keep the subject centred — the collection page crops it to a wider band."
           >
             <div className="flex items-start gap-4">
               {imageUrl ? (
