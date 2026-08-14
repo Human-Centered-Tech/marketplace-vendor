@@ -6,6 +6,9 @@ type AnalyticsResponse = {
   period_start: string
   days: number
   storefront_views: number
+  // Directory profile views (SOW §11.5) — a Business Owner's public profile
+  // is their directory listing; for listings-only members this is THE number.
+  listing_views: number
   product_views: number
   product_favorites: number
   button_clicks: number
@@ -44,7 +47,8 @@ export const AnalyticsPanel = () => {
         <Text className="text-ui-fg-subtle">Loading…</Text>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <Metric label="Profile views" value={data.listing_views ?? 0} />
             <Metric label="Storefront views" value={data.storefront_views} />
             <Metric label="Product views" value={data.product_views} />
             <Metric label="Favorites" value={data.product_favorites} />
