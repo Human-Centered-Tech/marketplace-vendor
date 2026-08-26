@@ -242,8 +242,18 @@ export const useCancelOrderFulfillment = (
   options?: UseMutationOptions<any, FetchError, any>
 ) => {
   return useMutation({
+    // Mercur-fork leftover (found 8/26 during the clawback-refund test): this
+    // called sdk.admin.order.cancelFulfillment — the ADMIN API — with a
+    // seller token from the vendor origin. CORS killed the preflight, so
+    // every fulfillment cancel died as "Failed to fetch": sellers could not
+    // cancel a fulfillment at all, and since order-cancel requires
+    // fulfillments canceled first, fulfilled orders were uncancelable from
+    // the dashboard. b2c-core ships the proper vendor route — use it.
     mutationFn: (payload: { no_notification?: boolean }) =>
-      sdk.admin.order.cancelFulfillment(orderId, fulfillmentId, payload),
+      fetchQuery(
+        `/vendor/orders/${orderId}/fulfillments/${fulfillmentId}/cancel`,
+        { method: "POST", body: payload }
+      ),
     onSuccess: (data: any, variables: any, context: any) => {
       queryClient.invalidateQueries({
         queryKey: ordersQueryKeys.all,
