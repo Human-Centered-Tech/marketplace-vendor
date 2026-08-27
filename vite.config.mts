@@ -20,6 +20,42 @@ export default defineConfig(({ mode }) => {
   const SENTRY_DSN = env.VITE_SENTRY_DSN || ""
   const SENTRY_ENVIRONMENT = env.VITE_SENTRY_ENVIRONMENT || "development"
 
+  // Hostnames the panel used to live on (comma-separated, no scheme). Any
+  // request arriving on one of these is 301'd to the same path on
+  // PUBLIC_BASE_URL, so links in old emails / bookmarks keep working after a
+  // domain move (v3-vendor → members, 2026-08). Unset = no redirects.
+  const hostOf = (url: string) =>
+    url.replace(/^https?:\/\//, "").split("/")[0].toLowerCase()
+  const PUBLIC_HOST = PUBLIC_BASE_URL ? hostOf(PUBLIC_BASE_URL) : ""
+  const LEGACY_HOSTS = (env.VITE_LEGACY_HOSTS || "")
+    .split(",")
+    .map((h) => hostOf(h.trim()))
+    .filter(Boolean)
+  // `vite preview` (which serves prod on Railway) rejects requests whose Host
+  // header isn't listed — the legacy hosts must be allowed or they 403 before
+  // the redirect can fire.
+  const allowedHosts = [PUBLIC_HOST, ...LEGACY_HOSTS].filter(Boolean)
+
+  const legacyHostRedirect = () => ({
+    name: "legacy-host-redirect",
+    configurePreviewServer(server: any) {
+      if (!PUBLIC_BASE_URL || LEGACY_HOSTS.length === 0) return
+      const target = PUBLIC_BASE_URL.replace(/\/+$/, "")
+      server.middlewares.use((req: any, res: any, next: any) => {
+        const host = String(req.headers.host || "")
+          .split(":")[0]
+          .toLowerCase()
+        if (!LEGACY_HOSTS.includes(host)) return next()
+        // URL fragments (e.g. /login#handoff=<sso-token>) never reach the
+        // server; browsers carry them across a 301 whose Location has none.
+        res.statusCode = 301
+        res.setHeader("Location", `${target}${req.url || "/"}`)
+        res.setHeader("Cache-Control", "public, max-age=3600")
+        res.end()
+      })
+    },
+  })
+
   /**
    * Add this to your .env file to specify the project to load admin extensions from.
    */
@@ -79,6 +115,7 @@ export default defineConfig(({ mode }) => {
       inject({
         sources,
       }),
+      legacyHostRedirect(),
     ],
     define: {
       __BASE__: JSON.stringify(BASE),
@@ -98,13 +135,13 @@ export default defineConfig(({ mode }) => {
       port: parseInt(process.env.PORT || '5173'),
       open: false,
       headers: SECURITY_HEADERS,
-      allowedHosts: PUBLIC_BASE_URL ? [PUBLIC_BASE_URL.replace('https://', '').replace('http://', '').split('/')[0]] : [],
+      allowedHosts,
     },
     preview: {
       host: true,
       port: parseInt(process.env.PORT || '4173'),
       headers: SECURITY_HEADERS,
-      allowedHosts: PUBLIC_BASE_URL ? [PUBLIC_BASE_URL.replace('https://', '').replace('http://', '').split('/')[0]] : [],
+      allowedHosts,
     },
     optimizeDeps: {
       entries: [],

@@ -656,13 +656,18 @@ const VendorPayout = ({ order }: { order: ExtendedAdminOrder }) => {
     ? parseFloat(commission.commission_value.amount as unknown as string) || 0
     : 0
 
-  // Item subtotal is the sum of this seller's line items at pre-tax,
-  // pre-discount price. shipping_subtotal is shipping fees they're owed
-  // (shipping that went to this seller's shipping profile). Tax is
-  // intentionally excluded — that goes to Catholic Owned for remittance.
-  const itemSubtotal = order.item_subtotal ?? order.subtotal ?? 0
-  const shippingSubtotal = order.shipping_subtotal ?? 0
-  const net = itemSubtotal + shippingSubtotal - commissionAmount
+  // GOODS ONLY. The payout engine (backend lib/payout.ts, verified against a
+  // real sweep 8/26: "goods 34 − commission 3.74; tax + shipping excluded")
+  // pays items minus commission — shipping and tax are collected by the
+  // platform and are never part of the seller's payout. This preview used to
+  // ADD shipping and, worse, fall back to order.subtotal (which already
+  // includes shipping), double-counting it: a $34+$12 order previewed $54.26
+  // while the engine correctly paid $30.26. Mirror the engine: items only,
+  // with a shipping-stripped fallback when item_subtotal is absent.
+  const itemSubtotal =
+    order.item_subtotal ??
+    Math.max((order.subtotal ?? 0) - (order.shipping_subtotal ?? 0), 0)
+  const net = Math.max(itemSubtotal - commissionAmount, 0)
 
   return (
     <div className="flex flex-col gap-y-2 px-6 py-4 bg-ui-bg-subtle rounded-b-xl">
@@ -675,8 +680,8 @@ const VendorPayout = ({ order }: { order: ExtendedAdminOrder }) => {
         </Text>
       </div>
       <Text size="xsmall" className="text-ui-fg-muted">
-        Items + shipping − Catholic Owned commission. Sales tax is collected
-        and remitted by Catholic Owned and is not part of your payout.
+        Items − Catholic Owned commission. Shipping and sales tax are
+        collected by Catholic Owned and are not part of your payout.
       </Text>
     </div>
   )
