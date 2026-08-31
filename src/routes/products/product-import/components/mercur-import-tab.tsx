@@ -72,9 +72,11 @@ export const MercurImportTab = () => {
           column (Sentry VENDOR-DASHBOARD-C).
         */}
         <Text size="small" className="text-ui-fg-subtle mt-2">
-          Tip: leave <span className="font-medium">Product Handle</span> blank
-          and we&apos;ll build the web address from the product title. If you do
-          fill it in, spaces, capitals and underscores are tidied up for you
+          Every row needs a <span className="font-medium">Product Handle</span>{" "}
+          (the web address) and a{" "}
+          <span className="font-medium">Variant Price USD</span> — a product
+          with no price stays hidden from shoppers. Write the handle however
+          you like: spaces, capitals and underscores are tidied up for you
           (&ldquo;Jesus Saves_Hockey&rdquo; becomes
           &ldquo;jesus-saves-hockey&rdquo;). Products import as drafts, so you
           can review before anything goes live.
