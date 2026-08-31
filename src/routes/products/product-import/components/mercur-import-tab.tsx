@@ -64,6 +64,21 @@ export const MercurImportTab = () => {
         <Text size="small" className="text-ui-fg-subtle">
           {t("products.import.upload.description")}
         </Text>
+        {/*
+          The Product Handle column is the product's web address. Merchants
+          hand-writing them with spaces or underscores used to have the whole
+          file rejected with a raw validation error naming no row. Handles are
+          tidied up automatically now — this just says so, so nobody fights the
+          column (Sentry VENDOR-DASHBOARD-C).
+        */}
+        <Text size="small" className="text-ui-fg-subtle mt-2">
+          Tip: leave <span className="font-medium">Product Handle</span> blank
+          and we&apos;ll build the web address from the product title. If you do
+          fill it in, spaces, capitals and underscores are tidied up for you
+          (&ldquo;Jesus Saves_Hockey&rdquo; becomes
+          &ldquo;jesus-saves-hockey&rdquo;). Products import as drafts, so you
+          can review before anything goes live.
+        </Text>
         <div className="mt-4">
           {filename ? (
             <FilePreview
