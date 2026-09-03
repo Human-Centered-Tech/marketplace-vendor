@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AdminPromotion } from "@medusajs/types"
-import { Button, Input, RadioGroup, Text } from "@medusajs/ui"
+import { Button, Input, RadioGroup, Text, toast } from "@medusajs/ui"
 import { useForm } from "react-hook-form"
 import { Trans, useTranslation } from "react-i18next"
 import * as zod from "zod"
@@ -55,6 +55,9 @@ export const EditPromotionDetailsForm = ({
       {
         onSuccess: () => {
           handleSuccess()
+        },
+        onError: (e) => {
+          toast.error(e.message)
         },
       }
     )

@@ -1,6 +1,14 @@
 import { PencilSquare, Trash } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Badge, Container, Copy, Heading, Text, usePrompt } from "@medusajs/ui"
+import {
+  Badge,
+  Container,
+  Copy,
+  Heading,
+  Text,
+  toast,
+  usePrompt,
+} from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
@@ -63,6 +71,9 @@ export const PromotionGeneralSection = ({
     await mutateAsync(undefined, {
       onSuccess: () => {
         navigate("/promotions", { replace: true })
+      },
+      onError: (e) => {
+        toast.error(e.message)
       },
     })
   }

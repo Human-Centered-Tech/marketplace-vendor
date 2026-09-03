@@ -1,3 +1,4 @@
+import { toast } from "@medusajs/ui"
 import debounceFn from "lodash/debounce"
 import { useCallback, useContext, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -105,6 +106,9 @@ export const useGlobalShortcuts = () => {
       onSuccess: () => {
         queryClient.clear()
         navigate("/login")
+      },
+      onError: (e) => {
+        toast.error(e.message)
       },
     })
   }
