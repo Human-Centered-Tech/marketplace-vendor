@@ -1,6 +1,13 @@
 import { Trash } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Button, Checkbox, Container, Heading, usePrompt } from "@medusajs/ui"
+import {
+  Button,
+  Checkbox,
+  Container,
+  Heading,
+  toast,
+  usePrompt,
+} from "@medusajs/ui"
 import { RowSelectionState, createColumnHelper } from "@tanstack/react-table"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -77,6 +84,9 @@ export const CustomerGroupCustomerSection = ({
     await mutateAsync(keys, {
       onSuccess: () => {
         setRowSelection({})
+      },
+      onError: (e) => {
+        toast.error(e.message)
       },
     })
   }
@@ -164,7 +174,11 @@ const CustomerActions = ({
       return
     }
 
-    await mutateAsync([customer.id])
+    await mutateAsync([customer.id], {
+      onError: (e) => {
+        toast.error(e.message)
+      },
+    })
   }
 
   return (

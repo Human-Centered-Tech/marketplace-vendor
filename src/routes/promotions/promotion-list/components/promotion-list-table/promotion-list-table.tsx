@@ -1,6 +1,6 @@
 import { PencilSquare, Trash } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Button, Container, Heading, usePrompt } from "@medusajs/ui"
+import { Button, Container, Heading, toast, usePrompt } from "@medusajs/ui"
 import { createColumnHelper } from "@tanstack/react-table"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
@@ -118,9 +118,10 @@ const PromotionActions = ({ promotion }: { promotion: HttpTypes.AdminPromotion }
           navigate("/promotions", { replace: true })
         },
       })
-    } catch {
-      throw new Error(
-        `Promotion with code ${promotion.code} could not be deleted`
+    } catch (e: any) {
+      toast.error(
+        e?.message ||
+          `Promotion with code ${promotion.code} could not be deleted`
       )
     }
   }

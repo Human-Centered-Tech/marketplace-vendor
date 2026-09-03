@@ -1,7 +1,7 @@
 import { PencilSquare, Trash } from "@medusajs/icons"
 
 import { InventoryTypes } from "@medusajs/types"
-import { usePrompt } from "@medusajs/ui"
+import { toast, usePrompt } from "@medusajs/ui"
 import { useTranslation } from "react-i18next"
 import { ActionMenu } from "../../../../../components/common/action-menu"
 import { useDeleteInventoryItemLevel } from "../../../../../hooks/api/inventory"
@@ -30,7 +30,11 @@ export const LocationActions = ({
       return
     }
 
-    await mutateAsync()
+    await mutateAsync(undefined, {
+      onError: (e) => {
+        toast.error(e.message)
+      },
+    })
   }
 
   return (

@@ -5,7 +5,15 @@ import {
   TriangleLeftMini,
   TriangleRightMini,
 } from "@medusajs/icons"
-import { Button, IconButton, Text, Tooltip, clx, usePrompt } from "@medusajs/ui"
+import {
+  Button,
+  IconButton,
+  Text,
+  Tooltip,
+  clx,
+  toast,
+  usePrompt,
+} from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -97,10 +105,17 @@ export const ProductMediaGallery = ({ product }: ProductMediaGalleryProps) => {
       setCurr((prev) => prev - 1)
     }
 
-    await mutateAsync({
-      images: mediaToKeep,
-      thumbnail: current.isThumbnail ? "" : undefined,
-    })
+    await mutateAsync(
+      {
+        images: mediaToKeep,
+        thumbnail: current.isThumbnail ? "" : undefined,
+      },
+      {
+        onError: (e) => {
+          toast.error(e.message)
+        },
+      }
+    )
   }
 
   useEffect(() => {
