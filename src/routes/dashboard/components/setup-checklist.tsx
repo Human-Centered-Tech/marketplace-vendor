@@ -474,16 +474,9 @@ const buildRows = (data: SetupResponse): Row[] => {
     },
   ]
   if (!isService) {
+    // No "locations & shipping" row: shipping is included in product prices
+    // and the seller's location/shipping chain is provisioned server-side.
     storeBasicsRows.push(
-      {
-        section: "store_basics",
-        label: "Set up locations & shipping",
-        hint: "Tell us where you ship from and your shipping rates.",
-        done: sb.locations_shipping,
-        cta: { label: "Set up", href: "/settings/locations" },
-        // Prefilled during onboarding — no re-edit affordance once complete.
-        hideEditWhenDone: true,
-      },
       {
         section: "store_basics",
         label: payoutsLabel,

@@ -16,8 +16,6 @@ import {
   usePromotions,
   useRegions,
   useSalesChannels,
-  useShippingProfiles,
-  useStockLocations,
   useUsers,
 } from "../../hooks/api"
 import { Shortcut, ShortcutType } from "../../providers/keybind-provider"
@@ -288,28 +286,8 @@ const useDynamicSearchResults = (
     }
   )
 
-  const locationResponse = useStockLocations(
-    {
-      q: debouncedSearch,
-      limit,
-      fields: "id,name",
-    },
-    {
-      enabled: isAreaEnabled(currentArea, "location"),
-      placeholderData: keepPreviousData,
-    }
-  )
-
-  const shippingProfileResponse = useShippingProfiles(
-    {
-      q: debouncedSearch,
-      fields: "id,name",
-    },
-    {
-      enabled: isAreaEnabled(currentArea, "shippingProfile"),
-      placeholderData: keepPreviousData,
-    }
-  )
+  // location / shippingProfile searches removed with the settings pages
+  // (sellers never configure shipping).
 
   // const publishableApiKeyResponse = useApiKeys(
   //   {
@@ -358,8 +336,6 @@ const useDynamicSearchResults = (
       salesChannel: salesChannelResponse,
       productType: productTypeResponse,
       productTag: productTagResponse,
-      location: locationResponse,
-      shippingProfile: shippingProfileResponse,
       // publishableApiKey: publishableApiKeyResponse,
       // secretApiKey: secretApiKeyResponse,
     }),
@@ -380,8 +356,6 @@ const useDynamicSearchResults = (
       salesChannelResponse,
       productTypeResponse,
       productTagResponse,
-      locationResponse,
-      shippingProfileResponse,
       // publishableApiKeyResponse,
       // secretApiKeyResponse,
     ]
@@ -631,24 +605,6 @@ const transformMap: TransformMap = {
       title: productTag.value,
       to: `/product-tags/${productTag.id}`,
       value: `productTag:${productTag.id}`,
-    }),
-  },
-  location: {
-    dataKey: "stock_locations",
-    transform: (location: HttpTypes.AdminStockLocation) => ({
-      id: location.id,
-      title: location.name,
-      to: `/locations/${location.id}`,
-      value: `location:${location.id}`,
-    }),
-  },
-  shippingProfile: {
-    dataKey: "shipping_profiles",
-    transform: (shippingProfile: HttpTypes.AdminShippingProfile) => ({
-      id: shippingProfile.id,
-      title: shippingProfile.name,
-      to: `/shipping-profiles/${shippingProfile.id}`,
-      value: `shippingProfile:${shippingProfile.id}`,
     }),
   },
   publishableApiKey: {

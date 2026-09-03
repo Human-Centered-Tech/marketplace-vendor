@@ -16,8 +16,8 @@ export const SEARCH_AREAS = [
   "salesChannel",
   "productType",
   "productTag",
-  "location",
-  "shippingProfile",
+  // "location" / "shippingProfile" removed — sellers never see shipping
+  // config (provisioned server-side); the pages are unregistered.
   "publishableApiKey",
   "secretApiKey",
   "command",

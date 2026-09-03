@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next"
 import * as zod from "zod"
 
 import { AdminOrder, HttpTypes } from "@medusajs/types"
-import { Alert, Button, Select, Switch, toast } from "@medusajs/ui"
-import { useForm, useWatch } from "react-hook-form"
+import { Alert, Button, Switch, toast } from "@medusajs/ui"
+import { useForm } from "react-hook-form"
 
 import { OrderLineItemDTO } from "@medusajs/types"
 import { Form } from "../../../../../components/common/form"
@@ -15,24 +15,27 @@ import {
 } from "../../../../../components/modals"
 import { KeyboundForm } from "../../../../../components/utilities/keybound-form"
 import { useCreateOrderFulfillment } from "../../../../../hooks/api/orders"
+import { useShippingSetup } from "../../../../../hooks/api/shipping-setup"
 import { useStockLocations } from "../../../../../hooks/api/stock-locations"
 import { getFulfillableQuantity } from "../../../../../lib/order-item"
 import { CreateFulfillmentSchema } from "./constants"
 import { OrderCreateFulfillmentItem } from "./order-create-fulfillment-item"
-import {
-  useReservationItems,
-  useShippingOptions,
-} from "../../../../../hooks/api"
-import {
-  isReturnOption,
-  isSameLocation,
-} from "../../../../../lib/shipping-options"
+import { useReservationItems } from "../../../../../hooks/api"
 
 type OrderCreateFulfillmentFormProps = {
   order: AdminOrder
   requiresShipping: boolean
 }
 
+/**
+ * Sellers bake shipping into the product price and just ship — they never
+ * pick a location, a shipping method or a shipping profile. So this dialog
+ * is only "which items, how many, notify the buyer?". The server
+ * (POST /vendor/shipping-setup, then the fulfillments route itself) owns the
+ * location/option/profile chain and repairs it when it has drifted, which is
+ * why nothing here filters items by shipping profile any more: that filter is
+ * what used to silently post an empty item list and fail.
+ */
 export function OrderCreateFulfillmentForm({
   order,
   requiresShipping,
@@ -42,6 +45,17 @@ export function OrderCreateFulfillmentForm({
 
   const { mutateAsync: createOrderFulfillment, isPending: isMutating } =
     useCreateOrderFulfillment(order.id)
+
+  const {
+    data: shippingSetup,
+    isLoading: isSetupLoading,
+    error: setupError,
+  } = useShippingSetup()
+
+  // Fallback only: if setup somehow fails but the seller does have a
+  // location, still let them try — the server validates ownership.
+  const { stock_locations = [] } = useStockLocations()
+  const locationId = shippingSetup?.location_id ?? stock_locations[0]?.id
 
   const { reservations: reservationsRaw } = useReservationItems()
 
@@ -77,76 +91,30 @@ export function OrderCreateFulfillmentForm({
     resolver: zodResolver(CreateFulfillmentSchema),
   })
 
-  const selectedLocationId = useWatch({
-    name: "location_id",
-    control: form.control,
-  })
-
-  const { stock_locations = [] } = useStockLocations()
-
-  const { shipping_options = [], isLoading: isShippingOptionsLoading } =
-    useShippingOptions({
-      fields: "+service_zone.fulfillment_set.location.id,*rules",
-    })
-
-  const filteredShippingOptions = shipping_options.filter(
-    (o) =>
-      o !== null && !isReturnOption(o) && isSameLocation(o, selectedLocationId)
-  )
-
-  const shippingOptionId = useWatch({
-    name: "shipping_option_id",
-    control: form.control,
-  })
-
   const handleSubmit = form.handleSubmit(async (data) => {
-    const selectedShippingOption = shipping_options.find(
-      (o) => o?.id === shippingOptionId
-    )
-
-    if (!selectedShippingOption) {
-      form.setError("shipping_option_id", {
-        type: "manual",
-        message: t("orders.fulfillment.error.noShippingOption"),
-      })
+    if (!locationId) {
+      toast.error(t("orders.fulfillment.error.setupUnavailable"))
       return
     }
 
-    if (!selectedLocationId) {
-      form.setError("location_id", {
+    const items = Object.entries(data.quantity)
+      .filter(([, value]) => !!value && value > 0)
+      .map(([id, quantity]) => ({ id, quantity }))
+
+    if (!items.length) {
+      form.setError("root", {
         type: "manual",
-        message: t("orders.fulfillment.error.noLocation"),
+        message: t("orders.fulfillment.error.noItems"),
       })
       return
     }
-
-    const selectedShippingProfileId =
-      selectedShippingOption?.shipping_profile_id
-
-    const itemShippingProfileMap = order.items.reduce(
-      (acc, item) => {
-        acc[item.id] = item.variant?.product?.shipping_profile?.id ?? null
-        return acc
-      },
-      {} as Record<string, string | null>
-    )
 
     const payload: HttpTypes.AdminCreateOrderFulfillment & {
       requires_shipping: boolean
     } = {
-      location_id: selectedLocationId,
-      requires_shipping: true,
-      // shipping_option_id: shippingOptionId,
-      // no_notification: !data.send_notification,
-      items: Object.entries(data.quantity)
-        .filter(
-          ([id, value]) =>
-            !!value && itemShippingProfileMap[id] === selectedShippingProfileId
-        )
-        .map(([id, quantity]) => ({
-          id,
-          quantity,
-        })),
+      location_id: locationId,
+      requires_shipping: requiresShipping,
+      items,
     }
 
     try {
@@ -158,30 +126,6 @@ export function OrderCreateFulfillmentForm({
       toast.error(e.message)
     }
   })
-
-  useEffect(() => {
-    if (stock_locations?.length && shipping_options?.length) {
-      const initialShippingOptionId =
-        order.shipping_methods?.[0]?.shipping_option_id
-
-      if (initialShippingOptionId) {
-        const shippingOption = shipping_options.find(
-          (o) => o?.id === initialShippingOptionId
-        )
-
-        if (shippingOption) {
-          const locationId =
-            shippingOption.service_zone.fulfillment_set.location.id
-
-          form.setValue("location_id", locationId)
-          form.setValue(
-            "shipping_option_id",
-            initialShippingOptionId || undefined
-          )
-        } // else -> TODO: what if original shipping option is deleted?
-      }
-    }
-  }, [stock_locations?.length, shipping_options?.length])
 
   const fulfilledQuantityArray = (order.items || []).map(
     (item) =>
@@ -219,9 +163,7 @@ export function OrderCreateFulfillmentForm({
     form.setValue("quantity", quantityMap)
   }, [...fulfilledQuantityArray, requiresShipping])
 
-  const differentOptionSelected =
-    shippingOptionId &&
-    order.shipping_methods?.[0]?.shipping_option_id !== shippingOptionId
+  const setupFailed = !isSetupLoading && !locationId
 
   return (
     <RouteFocusModal.Form form={form}>
@@ -235,113 +177,14 @@ export function OrderCreateFulfillmentForm({
           <div className="flex size-full flex-col items-center overflow-auto p-16">
             <div className="flex w-full max-w-[736px] flex-col justify-center px-2 pb-2">
               <div className="flex flex-col divide-y divide-dashed">
-                <div className="pb-8">
-                  <Form.Field
-                    control={form.control}
-                    name="location_id"
-                    render={({ field: { onChange, ref, ...field } }) => {
-                      return (
-                        <Form.Item>
-                          <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
-                            <div className="flex-1">
-                              <Form.Label>{t("fields.location")}</Form.Label>
-                              <Form.Hint>
-                                {t("orders.fulfillment.locationDescription")}
-                              </Form.Hint>
-                            </div>
-                            <div className="flex-1">
-                              <Form.Control>
-                                <Select onValueChange={onChange} {...field}>
-                                  <Select.Trigger
-                                    className="bg-ui-bg-base"
-                                    ref={ref}
-                                  >
-                                    <Select.Value />
-                                  </Select.Trigger>
-                                  <Select.Content>
-                                    {stock_locations.map((l) => (
-                                      <Select.Item key={l.id} value={l.id}>
-                                        {l.name}
-                                      </Select.Item>
-                                    ))}
-                                  </Select.Content>
-                                </Select>
-                              </Form.Control>
-                            </div>
-                          </div>
-                          <Form.ErrorMessage />
-                        </Form.Item>
-                      )
-                    }}
-                  />
-                </div>
-
-                <div className="py-8">
-                  <Form.Field
-                    control={form.control}
-                    name="shipping_option_id"
-                    render={({ field: { onChange, ref, ...field } }) => {
-                      return (
-                        <Form.Item>
-                          <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
-                            <div className="flex-1">
-                              <Form.Label>
-                                {t("fields.shippingMethod")}
-                              </Form.Label>
-                              <Form.Hint>
-                                {t("orders.fulfillment.methodDescription")}
-                              </Form.Hint>
-                            </div>
-                            <div className="flex-1">
-                              <Form.Control>
-                                <Select
-                                  onValueChange={onChange}
-                                  {...field}
-                                  disabled={!selectedLocationId}
-                                >
-                                  <Select.Trigger
-                                    className="bg-ui-bg-base"
-                                    ref={ref}
-                                  >
-                                    {isShippingOptionsLoading ? (
-                                      <span className="text-right">
-                                        {t("labels.loading")}
-                                        ...
-                                      </span>
-                                    ) : (
-                                      <Select.Value />
-                                    )}
-                                  </Select.Trigger>
-                                  <Select.Content>
-                                    {filteredShippingOptions.map((o) => (
-                                      <Select.Item key={o?.id} value={o?.id}>
-                                        {o?.name}
-                                      </Select.Item>
-                                    ))}
-                                  </Select.Content>
-                                </Select>
-                              </Form.Control>
-                            </div>
-                          </div>
-                          <Form.ErrorMessage />
-                        </Form.Item>
-                      )
-                    }}
-                  />
-
-                  {differentOptionSelected && (
-                    <Alert className="mt-4 p-4" variant="warning">
-                      <span className="-mt-[3px] block font-medium">
-                        {t("labels.beaware")}
-                      </span>
-                      <span className="text-ui-fg-muted">
-                        {t("orders.fulfillment.differentOptionSelected")}
-                      </span>
-                    </Alert>
-                  )}
-                </div>
+                {setupFailed && (
+                  <Alert variant="error" dismissible={false} className="mb-8">
+                    {setupError?.message ||
+                      t("orders.fulfillment.error.setupUnavailable")}
+                  </Alert>
+                )}
                 <div>
-                  <Form.Item className="mt-8">
+                  <Form.Item>
                     <Form.Label>
                       {t("orders.fulfillment.itemsToFulfill")}
                     </Form.Label>
@@ -350,28 +193,18 @@ export function OrderCreateFulfillmentForm({
                     </Form.Hint>
 
                     <div className="flex flex-col gap-y-1">
-                      {fulfillableItems.map((item) => {
-                        const isShippingProfileMatching =
-                          shipping_options.find(
-                            (o) => o?.id === shippingOptionId
-                          )?.shipping_profile_id ===
-                          item.variant?.product?.shipping_profile?.id
-
-                        return (
-                          <OrderCreateFulfillmentItem
-                            key={item.id}
-                            form={form}
-                            item={item}
-                            locationId={selectedLocationId}
-                            currencyCode={order.currency_code}
-                            onItemRemove={() => {}}
-                            disabled={!isShippingProfileMatching}
-                            itemReservedQuantitiesMap={
-                              itemReservedQuantitiesMap
-                            }
-                          />
-                        )
-                      })}
+                      {fulfillableItems.map((item) => (
+                        <OrderCreateFulfillmentItem
+                          key={item.id}
+                          form={form}
+                          item={item}
+                          locationId={locationId}
+                          currencyCode={order.currency_code}
+                          onItemRemove={() => {}}
+                          disabled={false}
+                          itemReservedQuantitiesMap={itemReservedQuantitiesMap}
+                        />
+                      ))}
                     </div>
                   </Form.Item>
                   {form.formState.errors.root && (
@@ -379,7 +212,6 @@ export function OrderCreateFulfillmentForm({
                       variant="error"
                       dismissible={false}
                       className="flex items-center"
-                      // classNameInner="flex justify-between flex-1 items-center"
                     >
                       {form.formState.errors.root.message}
                     </Alert>
@@ -398,13 +230,11 @@ export function OrderCreateFulfillmentForm({
                               {t("orders.returns.sendNotification")}
                             </Form.Label>
                             <Form.Control>
-                              <Form.Control>
-                                <Switch
-                                  checked={!!value}
-                                  onCheckedChange={onChange}
-                                  {...field}
-                                />
-                              </Form.Control>
+                              <Switch
+                                checked={!!value}
+                                onCheckedChange={onChange}
+                                {...field}
+                              />
                             </Form.Control>
                           </div>
                           <Form.Hint className="!mt-1">
@@ -430,8 +260,8 @@ export function OrderCreateFulfillmentForm({
             <Button
               size="small"
               type="submit"
-              isLoading={isMutating}
-              disabled={!shippingOptionId}
+              isLoading={isMutating || isSetupLoading}
+              disabled={!locationId || !fulfillableItems.length}
             >
               {t("orders.fulfillment.create")}
             </Button>

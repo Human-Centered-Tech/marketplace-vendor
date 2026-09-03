@@ -374,14 +374,9 @@ const Fulfillment = ({
             {t("orders.fulfillment.shippingFromLabel")}
           </Text>
           {stock_location ? (
-            <Link
-              to={`/settings/locations/${stock_location.id}`}
-              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover transition-fg"
-            >
-              <Text size="small" leading="compact">
-                {stock_location.name}
-              </Text>
-            </Link>
+            <Text size="small" leading="compact">
+              {stock_location.name}
+            </Text>
           ) : (
             <Skeleton className="w-16" />
           )}

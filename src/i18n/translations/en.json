@@ -1191,11 +1191,11 @@
       "placeholders": {
         "noReturnShippingOptions": {
           "title": "No return shipping options found",
-          "hint": "No return shipping options were created for the location. You can create one at <LinkComponent>Location & Shipping</LinkComponent>."
+          "hint": "No return shipping options are set up for your store. <LinkComponent>Contact support</LinkComponent> and we'll add one."
         },
         "outboundShippingOptions": {
           "title": "No outbound shipping options found",
-          "hint": "No outbound shipping options were created for the location. You can create one at <LinkComponent>Location & Shipping</LinkComponent>."
+          "hint": "No shipping options are set up for your store. <LinkComponent>Contact support</LinkComponent> and we'll add one."
         }
       },
       "receive": {
@@ -1345,7 +1345,8 @@
         "wrongQuantity_other": "Quantity should be a number between 1 and {{number}}",
         "noItems": "No items to fulfill.",
         "noShippingOption": "Shipping option is required",
-        "noLocation": "Location is required"
+        "noLocation": "Location is required",
+        "setupUnavailable": "We couldn't finish your store's shipping setup automatically. Please contact support and we'll fix it right away."
       },
       "status": {
         "notFulfilled": "Not fulfilled",

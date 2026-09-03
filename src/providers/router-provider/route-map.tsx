@@ -1104,90 +1104,12 @@ export const RouteMap: RouteObject[] = [
               },
             ],
           },
-          {
-            path: "locations",
-            errorElement: <ErrorBoundary />,
-            element: <Outlet />,
-            handle: {
-              breadcrumb: () => t("locations.domain"),
-            },
-            children: [
-              {
-                path: "",
-                lazy: () => import("../../routes/locations/location-list"),
-              },
-              // "create" deliberately unregistered — a seller gets exactly one
-              // stock location, provisioned for them. The form component is
-              // still on disk at routes/locations/location-create.
-              {
-                path: ":location_id",
-                lazy: async () => {
-                  const { Component, Breadcrumb, loader } = await import(
-                    "../../routes/locations/location-detail"
-                  )
-
-                  return {
-                    Component,
-                    loader,
-                    handle: {
-                      breadcrumb: (
-                        match: UIMatch<HttpTypes.AdminStockLocationResponse>
-                      ) => <Breadcrumb {...match} />,
-                    },
-                  }
-                },
-                children: [
-                  {
-                    path: "edit",
-                    lazy: () => import("../../routes/locations/location-edit"),
-                  },
-                  {
-                    path: "sales-channels",
-                    lazy: () =>
-                      import("../../routes/locations/location-sales-channels"),
-                  },
-                  {
-                    path: "fulfillment-providers",
-                    lazy: () =>
-                      import(
-                        "../../routes/locations/location-fulfillment-providers"
-                      ),
-                  },
-                  {
-                    path: "fulfillment-set/:fset_id",
-                    children: [
-                      {
-                        path: "service-zones/create",
-                        lazy: () =>
-                          import(
-                            "../../routes/locations/location-service-zone-create"
-                          ),
-                      },
-                      {
-                        path: "service-zone/:zone_id",
-                        children: [
-                          {
-                            path: "edit",
-                            lazy: () =>
-                              import(
-                                "../../routes/locations/location-service-zone-edit"
-                              ),
-                          },
-                          {
-                            path: "areas",
-                            lazy: () =>
-                              import(
-                                "../../routes/locations/location-service-zone-manage-areas"
-                              ),
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
+          // "/settings/locations" deliberately unregistered — shipping is
+          // included in product prices and the seller's single location,
+          // fulfillment set, zone and $0 option are provisioned and repaired
+          // server-side (backend lib/seller-shipping.ts). Nothing here was
+          // safe for a seller to touch. Components still on disk at
+          // routes/locations/*.
           {
             path: "product-tags",
             errorElement: <ErrorBoundary />,

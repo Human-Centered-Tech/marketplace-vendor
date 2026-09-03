@@ -1,5 +1,4 @@
 import { Trans, useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
 
 export const ReturnShippingPlaceholder = () => {
   const { t } = useTranslation()
@@ -14,9 +13,7 @@ export const ReturnShippingPlaceholder = () => {
         <Trans
           i18nKey="orders.returns.placeholders.noReturnShippingOptions.hint"
           components={{
-            LinkComponent: (
-              <Link to={`/settings/locations`} className="text-blue-500" />
-            ),
+            LinkComponent: <span />,
           }}
         />
       </span>
@@ -37,9 +34,7 @@ export const OutboundShippingPlaceholder = () => {
         <Trans
           i18nKey="orders.returns.placeholders.outboundShippingOptions.hint"
           components={{
-            LinkComponent: (
-              <Link to={`/settings/locations`} className="text-blue-500" />
-            ),
+            LinkComponent: <span />,
           }}
         />
       </span>

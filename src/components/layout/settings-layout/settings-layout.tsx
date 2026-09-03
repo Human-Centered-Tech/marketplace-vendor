@@ -26,7 +26,6 @@ const SERVICE_HIDDEN_SETTINGS = new Set([
   "/settings/product-types",
   "/settings/product-tags",
   "/settings/shop-collections",
-  "/settings/locations",
 ])
 
 const useSettingRoutes = (): INavItem[] => {
@@ -57,10 +56,6 @@ const useSettingRoutes = (): INavItem[] => {
       {
         label: "Shop Collections",
         to: "/settings/shop-collections",
-      },
-      {
-        label: t("stockLocations.domain"),
-        to: "/settings/locations",
       },
       {
         label: "Directory Listing",
